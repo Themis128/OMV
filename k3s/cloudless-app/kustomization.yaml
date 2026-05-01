@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cloudless
+resources:
+  - namespace.yaml
+  - ecr-cred-refresher.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+# NOTE: app-config (Secret) is intentionally NOT listed — it's populated
+# out-of-band from /etc/cloudless/pi-standby.env / SSM.  See app-config.example.yaml.

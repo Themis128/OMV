@@ -1,0 +1,17 @@
+# Reference copy of the Traefik HelmChartConfig that install.sh writes into
+# the k3s auto-apply manifests dir.  Kept in the repo so changes can be
+# reviewed and version-controlled.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      web:
+        port: 18080
+        exposedPort: 18080
+      websecure:
+        port: 18443
+        exposedPort: 18443

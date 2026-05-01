@@ -29,3 +29,7 @@ build/
 .env
 .env.local
 .env.*.local
+
+# Populated copies of *.example.yaml templates — never commit these
+k3s/cloudless-app/app-config.yaml
+k3s/cert-manager/route53-credentials.yaml

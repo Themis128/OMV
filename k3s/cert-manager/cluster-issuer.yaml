@@ -1,0 +1,51 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-route53
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: tbaltzakis@cloudless.gr
+    privateKeySecretRef:
+      name: letsencrypt-route53-account
+    solvers:
+      - selector:
+          dnsZones:
+            - cloudless.online
+        dns01:
+          route53:
+            region: us-east-1
+            hostedZoneID: Z04620301I2V4SU2RF1RV
+            # accessKeyID is referenced from the route53-credentials Secret
+            accessKeyIDSecretRef:
+              name: route53-credentials
+              key: access-key-id
+            secretAccessKeySecretRef:
+              name: route53-credentials
+              key: secret-access-key
+---
+# Staging issuer — useful for first-time setup so we don't burn LE production rate limits.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-route53-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: tbaltzakis@cloudless.gr
+    privateKeySecretRef:
+      name: letsencrypt-route53-staging-account
+    solvers:
+      - selector:
+          dnsZones:
+            - cloudless.online
+        dns01:
+          route53:
+            region: us-east-1
+            hostedZoneID: Z04620301I2V4SU2RF1RV
+            accessKeyIDSecretRef:
+              name: route53-credentials
+              key: access-key-id
+            secretAccessKeySecretRef:
+              name: route53-credentials
+              key: secret-access-key
