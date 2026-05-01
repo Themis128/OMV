@@ -1,0 +1,79 @@
+# Refreshes the dockerconfigjson Secret used by the cloudless Deployment to
+# pull from ECR.  ECR's GetAuthorizationToken returns a 12h token, so we
+# refresh every 8h on a CronJob.
+#
+# Prerequisite Secret in this namespace: pi-standby-aws-creds
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION
+# (created out-of-band from /etc/cloudless/pi-standby.env — never committed)
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecr-cred-refresher
+  namespace: cloudless
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ecr-cred-refresher
+  namespace: cloudless
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["regcred-ecr"]
+    verbs: ["get", "patch", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ecr-cred-refresher
+  namespace: cloudless
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ecr-cred-refresher
+subjects:
+  - kind: ServiceAccount
+    name: ecr-cred-refresher
+    namespace: cloudless
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecr-cred-refresher
+  namespace: cloudless
+spec:
+  schedule: "0 */8 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: ecr-cred-refresher
+          restartPolicy: OnFailure
+          containers:
+            - name: refresh
+              image: alpine/k8s:1.30.0
+              envFrom:
+                - secretRef:
+                    name: pi-standby-aws-creds
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  PASS=$(aws ecr get-login-password --region "$AWS_DEFAULT_REGION")
+                  AUTH=$(printf 'AWS:%s' "$PASS" | base64 -w0)
+                  cat > /tmp/dockercfg.json <<EOF
+                  {"auths":{"278585680617.dkr.ecr.us-east-1.amazonaws.com":{"username":"AWS","password":"$PASS","auth":"$AUTH"}}}
+                  EOF
+                  kubectl -n cloudless delete secret regcred-ecr --ignore-not-found
+                  kubectl -n cloudless create secret generic regcred-ecr \
+                    --type=kubernetes.io/dockerconfigjson \
+                    --from-file=.dockerconfigjson=/tmp/dockercfg.json
+                  echo "regcred-ecr refreshed at $(date -u +%FT%TZ)"

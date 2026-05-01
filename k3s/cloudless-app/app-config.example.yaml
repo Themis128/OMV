@@ -1,0 +1,20 @@
+# Template for the runtime configuration of the cloudless app.
+# Copy to app-config.yaml (gitignored), populate, and apply.
+# v1: values are managed manually via SSM and synced into this Secret out-of-band.
+# v2 (future): External Secrets Operator pulls them directly from /cloudless/production/*.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudless-app-config
+  namespace: cloudless
+type: Opaque
+stringData:
+  # -- Required env vars (populate from SSM) --
+  # NEXT_PUBLIC_SITE_URL: "https://cloudless.online"
+  # NEXTAUTH_URL: "https://cloudless.online"
+  # NEXTAUTH_SECRET: "from /cloudless/production/auth/secret"
+  # COGNITO_USER_POOL_ID: "us-east-1_JQWwFbO9a"
+  # COGNITO_CLIENT_ID: "from /cloudless/production/cognito/client-id"
+  # AWS_REGION: "us-east-1"
+  # ... add the rest as needed by the app
+  PLACEHOLDER: "replace-with-real-config"
