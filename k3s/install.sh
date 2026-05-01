@@ -61,6 +61,7 @@ install -m 0600 -o "${TARGET_USER}" -g "${TARGET_USER}" \
   /etc/rancher/k3s/k3s.yaml "${TARGET_HOME}/.kube/config"
 
 if ! grep -q '^export KUBECONFIG=' "${TARGET_HOME}/.bashrc" 2>/dev/null; then
+  # shellcheck disable=SC2016 # we want $HOME to be literal in .bashrc, not resolved here
   echo 'export KUBECONFIG=$HOME/.kube/config' >> "${TARGET_HOME}/.bashrc"
 fi
 
