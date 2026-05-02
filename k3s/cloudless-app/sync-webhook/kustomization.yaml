@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cloudless
+
+resources:
+  - manifests.yaml
+
+# Bake the Python script into a ConfigMap and mount at /app/sync-webhook.py.
+# Kustomize hashes the contents and injects a unique CM name on each build,
+# so the Deployment picks up script changes via natural rollout.
+configMapGenerator:
+  - name: sync-webhook-script
+    files:
+      - sync-webhook.py

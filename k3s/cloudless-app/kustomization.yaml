@@ -7,6 +7,7 @@ resources:
   - ecr-cred-refresher.yaml
   - image-sync.yaml
   - config-sync.yaml
+  - sync-webhook
   - middleware-ratelimit.yaml
   - deployment.yaml
   - hpa.yaml
