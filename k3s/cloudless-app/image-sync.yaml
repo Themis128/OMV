@@ -1,0 +1,107 @@
+# Compares ECR :latest digest vs the running cloudless-app pod's digest every
+# 15 minutes; on drift, runs `kubectl rollout restart deploy/cloudless-app` to
+# pull and roll. Idempotent — no-op when in sync.
+#
+# Why this exists: the standby's image build pipeline (build-pi-image GHA in
+# Themis128/cloudless.gr) pushes new images to ECR on every push to main, but
+# Pi-side rollout was previously manual via /ha deploy. Without this CronJob,
+# a CloudFront outage during a window where the Pi is N-1 commits behind would
+# serve users an outdated app.
+#
+# Prerequisite Secret: pi-standby-aws-creds (already exists for ecr-cred-refresher).
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: image-sync
+  namespace: cloudless
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: image-sync
+  namespace: cloudless
+rules:
+  # Read deployment to inspect spec; patch to trigger rollout restart.
+  # Need list+watch (not just get) so `kubectl rollout status` can poll.
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/status"]
+    verbs: ["get"]
+  # Read pods to extract the running image digest.
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: image-sync
+  namespace: cloudless
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: image-sync
+subjects:
+  - kind: ServiceAccount
+    name: image-sync
+    namespace: cloudless
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: image-sync
+  namespace: cloudless
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: image-sync
+          restartPolicy: OnFailure
+          containers:
+            - name: sync
+              image: alpine/k8s:1.30.0
+              resources:
+                requests: { cpu: "50m", memory: "64Mi" }
+                limits:   { cpu: "200m", memory: "256Mi" }
+              envFrom:
+                - secretRef:
+                    name: pi-standby-aws-creds
+              env:
+                - name: REPO
+                  value: "cloudless-pi-app"
+                - name: NAMESPACE
+                  value: "cloudless"
+                - name: DEPLOYMENT
+                  value: "cloudless-app"
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  ECR_DIGEST=$(aws ecr describe-images \
+                    --repository-name "$REPO" \
+                    --image-ids imageTag=latest \
+                    --query 'imageDetails[0].imageDigest' \
+                    --output text)
+                  RUNNING=$(kubectl -n "$NAMESPACE" get pod \
+                    -l app.kubernetes.io/name=cloudless-app \
+                    -o jsonpath='{.items[0].status.containerStatuses[0].imageID}' \
+                    | grep -oE 'sha256:[a-f0-9]+' || echo "unknown")
+                  echo "ECR :latest = $ECR_DIGEST"
+                  echo "running    = $RUNNING"
+                  if [ "$ECR_DIGEST" = "$RUNNING" ]; then
+                    echo "in sync — no-op"
+                    exit 0
+                  fi
+                  echo "drift detected — rollout restart"
+                  kubectl -n "$NAMESPACE" rollout restart deployment/"$DEPLOYMENT"
+                  kubectl -n "$NAMESPACE" rollout status deployment/"$DEPLOYMENT" --timeout=300s
+                  echo "rollout complete at $(date -u +%FT%TZ)"
