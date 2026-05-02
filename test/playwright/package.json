@@ -1,0 +1,12 @@
+{
+  "name": "cloudless-ha-playwright",
+  "private": true,
+  "version": "0.0.0",
+  "description": "End-to-end smoke + HA parity tests for cloudless.gr (main) and cloudless.online (Pi standby).",
+  "scripts": {
+    "test": "node run.js"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}
