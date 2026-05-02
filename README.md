@@ -12,9 +12,13 @@ k3s/
 ├── traefik-config.yaml        # Traefik HelmChartConfig — binds 18080/18443
 ├── cloudless-app/             # the cloudless workload (Deployment/Service/Ingress)
 │   ├── namespace.yaml
+│   ├── resourcequota.yaml          # cap cloudless ns at 5 GiB / 3 CPU / 10 pods
 │   ├── ecr-cred-refresher.yaml
+│   ├── middleware-ratelimit.yaml   # Traefik 50 req/s + 200 in-flight (fail-fast 429)
 │   ├── app-config.example.yaml
 │   ├── deployment.yaml
+│   ├── hpa.yaml                    # 1 → 4 replicas, CPU 60% target
+│   ├── pdb.yaml                    # always ≥1 pod through rollouts
 │   ├── service.yaml
 │   ├── ingress.yaml
 │   └── kustomization.yaml
@@ -25,6 +29,7 @@ k3s/
 
 docs/
 ├── ha-architecture.md         # how the failover works
+├── ha-autoscale.md            # capacity model + HPA + tuning levers
 ├── port-map.md                # what's listening on what port
 ├── phase1-acceptance.md       # 2026-05-02 end-to-end test results
 └── runbook-failover.md        # operational procedures

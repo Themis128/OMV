@@ -3,8 +3,12 @@ kind: Kustomization
 namespace: cloudless
 resources:
   - namespace.yaml
+  - resourcequota.yaml
   - ecr-cred-refresher.yaml
+  - middleware-ratelimit.yaml
   - deployment.yaml
+  - hpa.yaml
+  - pdb.yaml
   - service.yaml
   - ingress.yaml
 # NOTE: app-config (Secret) is intentionally NOT listed — it's populated

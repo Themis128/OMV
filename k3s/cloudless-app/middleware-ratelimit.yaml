@@ -1,0 +1,42 @@
+# Traefik Middleware — rate-limit + in-flight cap.
+#
+# Why: when DNS flips to the Pi, sudden full-traffic surge could overwhelm a
+# single Pi 5. Rate-limiting sheds excess traffic with HTTP 429 (Too Many
+# Requests) instead of crashing pods or filling kernel queues.
+#
+# Numbers:
+#   - rateLimit.average=50 req/s sustained, burst=100 — reasonable for SSR site
+#     on a Pi 5 with 4 replicas
+#   - inFlightReq.amount=200 simultaneous in-flight requests — protects against
+#     slow-loris / connection exhaustion
+#   - sourceCriterion: ipStrategy depth=1 strips one layer (e.g. router NAT) —
+#     adjust depth if you add a CDN proxy in front
+#
+# Attached to the cloudless-app Ingress via annotation:
+#   traefik.ingress.kubernetes.io/router.middlewares: cloudless-cloudless-app-ratelimit@kubernetescrd,cloudless-cloudless-app-inflight@kubernetescrd
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: cloudless-app-ratelimit
+  namespace: cloudless
+spec:
+  rateLimit:
+    average: 50
+    burst: 100
+    period: 1s
+    sourceCriterion:
+      ipStrategy:
+        depth: 1
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: cloudless-app-inflight
+  namespace: cloudless
+spec:
+  inFlightReq:
+    amount: 200
+    sourceCriterion:
+      ipStrategy:
+        depth: 1

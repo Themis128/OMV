@@ -1,0 +1,50 @@
+# HorizontalPodAutoscaler — scales cloudless-app on CPU pressure.
+#
+# Why these numbers:
+# - min 1 / max 4 replicas: the Pi 5 has 4 cores + 8 GB RAM. With pod limits of
+#   1.5 cores / 1.5 GiB each, 4 replicas fit (6 cores requested vs 4 real, but
+#   limits are bursty; ResourceQuota at 3 cores total is the actual hard cap).
+# - 60% CPU target: leaves headroom for sudden bursts. Lambda primary scaling is
+#   instant; this is the failover-mode "do my best" replica count.
+# - Fast scale-up (15s window, 100% step) so a sudden failover gets pods quickly.
+# - Slow scale-down (5min window, 50% step) so we don't thrash if traffic is bursty.
+#
+# Memory metric is intentionally omitted — Next.js memory footprint is fairly
+# static; CPU is the right scaling signal for SSR workloads.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cloudless-app
+  namespace: cloudless
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cloudless-app
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 15
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+      selectPolicy: Min

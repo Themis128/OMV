@@ -10,6 +10,9 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-route53
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
+    # Shed excess load gracefully (429) when failover takes the Pi to its limit.
+    # See middleware-ratelimit.yaml. Middleware names are namespace-prefixed.
+    traefik.ingress.kubernetes.io/router.middlewares: cloudless-cloudless-app-ratelimit@kubernetescrd,cloudless-cloudless-app-inflight@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:

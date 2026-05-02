@@ -1,0 +1,22 @@
+# ResourceQuota for the cloudless namespace.
+#
+# Hard ceiling for everything in this namespace combined. Sized so the HA app
+# at full HPA scale (4 replicas × 1.5 GiB / 1.5 CPU max) cannot starve the
+# Pi's existing Docker stack (homepage / portainer / pihole / uptime-kuma)
+# which lives outside k3s.
+#
+# Pi 5 has 8 GB RAM + 4 cores. Reserving:
+#   - 5 GiB / 3 cores  → cloudless namespace (this file)
+#   - ~3 GiB / 1 core  → kube-system + Docker stack + OMV system overhead
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: cloudless-quota
+  namespace: cloudless
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 2Gi
+    limits.cpu: "3"
+    limits.memory: 5Gi
+    pods: "10"

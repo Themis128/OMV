@@ -1,0 +1,14 @@
+# PodDisruptionBudget — keep at least 1 cloudless-app pod available during
+# voluntary disruptions (rollouts, node drains, evictions). With minReplicas=1
+# from the HPA, this means a rolling update has to surge a new pod before
+# terminating the old one, achieving zero-downtime rollouts.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cloudless-app
+  namespace: cloudless
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudless-app
