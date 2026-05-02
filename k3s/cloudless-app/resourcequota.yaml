@@ -3,20 +3,20 @@
 # Hard ceiling for everything in this namespace combined. Sized so the HA app
 # at full HPA scale (2 replicas × 1.5 CPU / 1.5 GiB limits — see hpa.yaml)
 # cannot starve the Pi's existing Docker stack (homepage / portainer / pihole /
-# uptime-kuma) which lives outside k3s. The 3 CPU / 5 GiB limits cap is what
-# actually constrains maxReplicas to 2.
+# uptime-kuma) which lives outside k3s. requests.cpu=1500m is what actually
+# constrains maxReplicas to 2 (each app pod requests 200m, but HPA + scheduler
+# headroom + webhook + cron pods consume the rest).
 #
 # Pi 5 has 8 GB RAM + 4 cores. Reserving:
-#   - 6 GiB / 4 cores  → cloudless namespace (this file)
-#   - ~2 GiB / 0 cores → kube-system + Docker stack + OMV system overhead
-#                        (these mostly burst within available headroom)
+#   - 6 GiB / cloudless namespace (this file)
+#   - ~2 GiB / kube-system + Docker stack + OMV system overhead
+# CPU limits intentionally allow burst above 4 physical cores — limits are caps,
+# not reservations; Linux throttles under contention.
 #
-# limits.cpu raised from 3 → 4 (and memory from 5 → 6 GiB) on 2026-05-03
-# to accommodate rolling-update surge: cloudless-app limits.cpu=1500m means
-# during surge (maxSurge=1, maxUnavailable=0) the deployment briefly needs
-# 2× 1500m = 3000m JUST for the app, plus sync-webhook + image/config-sync
-# job pods running in parallel. The 3 CPU cap blocked the surge and stalled
-# rollouts after the GHA-trigger flow landed multiple syncs back-to-back.
+# limits.cpu evolved 3 → 4 → 5 on 2026-05-03 to accommodate rolling-update
+# surge. At HPA max=2 with maxSurge=1/maxUnavailable=0, surge needs 3× 1500m
+# (app pods) + 200m (sync-webhook) + 200m (concurrent image/config-sync job)
+# = 4900m. The 4 CPU bump still blocked surge; 5 leaves ~100m headroom.
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -26,6 +26,6 @@ spec:
   hard:
     requests.cpu: "1500m"
     requests.memory: 2Gi
-    limits.cpu: "4"
+    limits.cpu: "5"
     limits.memory: 6Gi
     pods: "10"
