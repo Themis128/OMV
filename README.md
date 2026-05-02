@@ -26,6 +26,7 @@ k3s/
 docs/
 ├── ha-architecture.md         # how the failover works
 ├── port-map.md                # what's listening on what port
+├── phase1-acceptance.md       # 2026-05-02 end-to-end test results
 └── runbook-failover.md        # operational procedures
 
 scripts/                       # ad-hoc helpers
