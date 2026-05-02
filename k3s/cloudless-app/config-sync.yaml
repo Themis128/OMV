@@ -71,7 +71,9 @@ metadata:
   name: config-sync
   namespace: cloudless
 spec:
-  schedule: "*/15 * * * *"
+  # Every 5 minutes — SSM rotations are rare (manual ops). Per-run cost is
+  # higher than image-sync (fetches all 71 SSM params, hashes, diffs).
+  schedule: "*/5 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
