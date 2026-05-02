@@ -7,8 +7,16 @@
 # actually constrains maxReplicas to 2.
 #
 # Pi 5 has 8 GB RAM + 4 cores. Reserving:
-#   - 5 GiB / 3 cores  → cloudless namespace (this file)
-#   - ~3 GiB / 1 core  → kube-system + Docker stack + OMV system overhead
+#   - 6 GiB / 4 cores  → cloudless namespace (this file)
+#   - ~2 GiB / 0 cores → kube-system + Docker stack + OMV system overhead
+#                        (these mostly burst within available headroom)
+#
+# limits.cpu raised from 3 → 4 (and memory from 5 → 6 GiB) on 2026-05-03
+# to accommodate rolling-update surge: cloudless-app limits.cpu=1500m means
+# during surge (maxSurge=1, maxUnavailable=0) the deployment briefly needs
+# 2× 1500m = 3000m JUST for the app, plus sync-webhook + image/config-sync
+# job pods running in parallel. The 3 CPU cap blocked the surge and stalled
+# rollouts after the GHA-trigger flow landed multiple syncs back-to-back.
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -16,8 +24,8 @@ metadata:
   namespace: cloudless
 spec:
   hard:
-    requests.cpu: "1"
+    requests.cpu: "1500m"
     requests.memory: 2Gi
-    limits.cpu: "3"
-    limits.memory: 5Gi
+    limits.cpu: "4"
+    limits.memory: 6Gi
     pods: "10"
