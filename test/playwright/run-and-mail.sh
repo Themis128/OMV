@@ -25,6 +25,16 @@ fi
 node run.js >>"$OUT" 2>&1
 RC=$?
 
+# One retry on failure — guards against transient network blips
+# (Starlink/Tailscale ERR_NETWORK_CHANGED, single-shot 5xx, etc.).
+# Only escalate to SES if BOTH runs fail.
+if [ "$RC" -ne 0 ]; then
+  echo "--- attempt 1 failed (rc=$RC), retrying in 30s ---" >>"$OUT"
+  sleep 30
+  node run.js >>"$OUT" 2>&1
+  RC=$?
+fi
+
 # Trim old logs (keep last 50 runs).
 ls -1t "$LOG_DIR"/run-*.log 2>/dev/null | tail -n +51 | xargs -r rm -f
 
@@ -79,14 +89,20 @@ print(json.dumps({
 PYEOF
 rm -f "$BODY_FILE"
 
-AWS_ACCESS_KEY_ID="$AKID" AWS_SECRET_ACCESS_KEY="$SAK" \
-  aws ses send-email \
-    --region us-east-1 \
-    --from 'system-info@cloudless.gr' \
-    --destination 'ToAddresses=system-info@cloudless.gr' \
-    --message file:///tmp/cloudless-pw-msg.json >/dev/null 2>&1 || {
-      echo "SES send-email failed; suite RC=$RC; log=$OUT" >&2
-    }
+if [ -n "${SES_DRY_RUN:-}" ]; then
+  # Test mode: write the constructed message + log path, do NOT call SES.
+  cp /tmp/cloudless-pw-msg.json "$LOG_DIR/last-dryrun-msg.json"
+  echo "DRY-RUN: would email; msg at $LOG_DIR/last-dryrun-msg.json; suite RC=$RC; log=$OUT" >&2
+else
+  AWS_ACCESS_KEY_ID="$AKID" AWS_SECRET_ACCESS_KEY="$SAK" \
+    aws ses send-email \
+      --region us-east-1 \
+      --from 'system-info@cloudless.gr' \
+      --destination 'ToAddresses=system-info@cloudless.gr' \
+      --message file:///tmp/cloudless-pw-msg.json >/dev/null 2>&1 || {
+        echo "SES send-email failed; suite RC=$RC; log=$OUT" >&2
+      }
+fi
 
 rm -f /tmp/cloudless-pw-msg.json
 exit "$RC"
