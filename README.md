@@ -17,7 +17,7 @@ k3s/
 │   ├── middleware-ratelimit.yaml   # Traefik 50 req/s + 200 in-flight (fail-fast 429)
 │   ├── app-config.example.yaml
 │   ├── deployment.yaml
-│   ├── hpa.yaml                    # 1 → 4 replicas, CPU 60% target
+│   ├── hpa.yaml                    # 1 → 2 replicas, CPU 60% target
 │   ├── pdb.yaml                    # always ≥1 pod through rollouts
 │   ├── service.yaml
 │   ├── ingress.yaml

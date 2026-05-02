@@ -15,7 +15,7 @@ The Pi cannot match Lambda's elastic scale — it's one physical box. But within
 
 | Resource | File | Effect |
 |---|---|---|
-| HPA | `hpa.yaml` | 1 → 4 replicas, 60% CPU target, fast scale-up (15s), slow scale-down (5min) |
+| HPA | `hpa.yaml` | 1 → 2 replicas, 60% CPU target, fast scale-up (15s), slow scale-down (5min) |
 | ResourceQuota | `resourcequota.yaml` | Cloudless namespace capped at 5 GiB / 3 CPU / 10 pods total — protects Docker stack on same host |
 | PodDisruptionBudget | `pdb.yaml` | Always at least 1 pod running |
 | Traefik rate-limit middleware | `middleware-ratelimit.yaml` | 50 req/s sustained, 100 burst, 200 in-flight |
@@ -56,7 +56,7 @@ kubectl get nodes
 kubectl label node <new-pi> ha-tier=standby
 ```
 
-The pod anti-affinity in `deployment.yaml` will start spreading replicas across both nodes immediately. HPA `maxReplicas` may need bumping from 4 to 8.
+The pod anti-affinity in `deployment.yaml` will start spreading replicas across both nodes immediately. HPA `maxReplicas` and the namespace ResourceQuota may need bumping (current cap is 2 replicas, governed by the 3 CPU / 5 GiB `limits.*` quota).
 
 ## Tuning levers (knobs to turn during real failover)
 

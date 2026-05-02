@@ -6,7 +6,7 @@
 #
 # Numbers:
 #   - rateLimit.average=50 req/s sustained, burst=100 — reasonable for SSR site
-#     on a Pi 5 with 4 replicas
+#     on a Pi 5 with up to 2 replicas (HPA cap)
 #   - inFlightReq.amount=200 simultaneous in-flight requests — protects against
 #     slow-loris / connection exhaustion
 #   - sourceCriterion: ipStrategy depth=1 strips one layer (e.g. router NAT) —

@@ -61,10 +61,11 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
             failureThreshold: 5
-          # Resources sized so 4 replicas fit in the Pi 5 (8 GB RAM, 4 cores)
+          # Resources sized so 2 replicas fit in the Pi 5 (8 GB RAM, 4 cores)
           # without starving the Docker stack on the same host.
           # Per-pod ceiling: 1.5 GB RAM / 1.5 CPU. Floor: 384 MB / 0.2 CPU.
-          # Bound by ResourceQuota (resourcequota.yaml): 5 GiB / 3 cores total.
+          # Bound by ResourceQuota (resourcequota.yaml): 5 GiB / 3 cores total
+          # — that quota is what caps HPA at maxReplicas=2.
           resources:
             requests:
               cpu: "200m"

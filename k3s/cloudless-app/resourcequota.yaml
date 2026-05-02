@@ -1,9 +1,10 @@
 # ResourceQuota for the cloudless namespace.
 #
 # Hard ceiling for everything in this namespace combined. Sized so the HA app
-# at full HPA scale (4 replicas × 1.5 GiB / 1.5 CPU max) cannot starve the
-# Pi's existing Docker stack (homepage / portainer / pihole / uptime-kuma)
-# which lives outside k3s.
+# at full HPA scale (2 replicas × 1.5 CPU / 1.5 GiB limits — see hpa.yaml)
+# cannot starve the Pi's existing Docker stack (homepage / portainer / pihole /
+# uptime-kuma) which lives outside k3s. The 3 CPU / 5 GiB limits cap is what
+# actually constrains maxReplicas to 2.
 #
 # Pi 5 has 8 GB RAM + 4 cores. Reserving:
 #   - 5 GiB / 3 cores  → cloudless namespace (this file)
