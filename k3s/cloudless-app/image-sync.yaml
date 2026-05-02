@@ -55,7 +55,10 @@ metadata:
   name: image-sync
   namespace: cloudless
 spec:
-  schedule: "*/15 * * * *"
+  # Every minute — ECR pushes are frequent (every push to main). The job
+  # is a single ECR DescribeImages + kubectl pod query when no-op (~5s).
+  # concurrencyPolicy=Forbid prevents overlap during a slow rollout.
+  schedule: "* * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
