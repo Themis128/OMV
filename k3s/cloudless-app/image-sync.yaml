@@ -23,14 +23,12 @@ metadata:
   namespace: cloudless
 rules:
   # Read deployment to inspect spec; patch to trigger rollout restart.
+  # Need list+watch (not just get) so `kubectl rollout status` can poll.
   - apiGroups: ["apps"]
     resources: ["deployments"]
-    resourceNames: ["cloudless-app"]
-    verbs: ["get", "patch"]
-  # Read deployment status (rollout status doesn't need patch).
+    verbs: ["get", "list", "watch", "patch"]
   - apiGroups: ["apps"]
     resources: ["deployments/status"]
-    resourceNames: ["cloudless-app"]
     verbs: ["get"]
   # Read pods to extract the running image digest.
   - apiGroups: [""]
@@ -71,6 +69,9 @@ spec:
           containers:
             - name: sync
               image: alpine/k8s:1.30.0
+              resources:
+                requests: { cpu: "50m", memory: "64Mi" }
+                limits:   { cpu: "200m", memory: "256Mi" }
               envFrom:
                 - secretRef:
                     name: pi-standby-aws-creds

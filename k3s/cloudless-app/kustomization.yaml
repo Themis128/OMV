@@ -6,6 +6,7 @@ resources:
   - resourcequota.yaml
   - ecr-cred-refresher.yaml
   - image-sync.yaml
+  - config-sync.yaml
   - middleware-ratelimit.yaml
   - deployment.yaml
   - hpa.yaml
