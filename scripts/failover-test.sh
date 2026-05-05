@@ -30,8 +30,17 @@ fail() { printf '\033[1;31m[failover]\033[0m %s\n' "$*" >&2; exit 1; }
 
 if [[ "${1:-}" != "--yes" ]]; then
   cat >&2 <<EOF
-This will stop k3s on ${PRIMARY_NODE} for ~2 minutes. cloudless-app data plane
-should keep serving traffic but kubectl against omv will go down.
+This will stop k3s on ${PRIMARY_NODE} for ~2 minutes.
+
+WARNING — 2-member etcd has zero failure tolerance. With only ${PRIMARY_NODE} +
+${SECONDARY_NODE} as etcd members, stopping ${PRIMARY_NODE} causes etcd on
+${SECONDARY_NODE} to lose quorum: the API server stays up but goes effectively
+read-only (no scheduling, no rollouts) until ${PRIMARY_NODE} comes back.
+
+The cloudless-app data plane keeps serving traffic during the outage because
+running pods don't need API writes. This script verifies that — it does NOT
+prove control-plane HA, because 2-member etcd cannot provide it. See
+docs/ha-control-plane-promotion.md > "Failure tolerance" for context.
 
 Re-run with: $0 --yes
 EOF
@@ -50,8 +59,11 @@ ssh -o BatchMode=yes "${PRIMARY_HOST}" 'sudo systemctl stop k3s'
 TMP_KUBECONFIG="$(mktemp)"
 trap 'rm -f "${TMP_KUBECONFIG}"' EXIT
 kubectl config view --flatten --minify > "${TMP_KUBECONFIG}"
+# After --minify there is exactly one cluster entry; rewrite its server URL.
+# (Note: set-cluster takes a cluster *name*, not a context name.)
+CLUSTER_NAME="$(kubectl --kubeconfig="${TMP_KUBECONFIG}" config view -o jsonpath='{.clusters[0].name}')"
 kubectl --kubeconfig="${TMP_KUBECONFIG}" config set-cluster \
-  "$(kubectl config current-context)" --server="${SECONDARY_API}" >/dev/null
+  "${CLUSTER_NAME}" --server="${SECONDARY_API}" >/dev/null
 
 log "3/6 waiting for kubectl via ${SECONDARY_API}"
 ok=0

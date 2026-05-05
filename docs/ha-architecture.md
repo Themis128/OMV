@@ -35,7 +35,7 @@ The Pi runs the app continuously — it's an active/standby model where the stan
 ## Components
 
 - **Primary:** CloudFront + Lambda, deployed by SST in `cloudless.gr` repo.
-- **Standby:** k3s on two Pis (`omv` + `omv-ha`), manifests in this repo (`OMV`). 2-node embedded-etcd quorum: loss of either node leaves the API and workloads available on the other. See [ha-control-plane-promotion.md](ha-control-plane-promotion.md) for the worker→server promotion runbook.
+- **Standby:** k3s on two Pis (`omv` + `omv-ha`), manifests in this repo (`OMV`). Both nodes run as control-plane servers with embedded etcd, so cluster state is replicated. **Note:** 2-member etcd has zero failure tolerance (Raft needs majority); losing one node makes the survivor's API effectively read-only until the other returns. See [ha-control-plane-promotion.md](ha-control-plane-promotion.md) > *Failure tolerance* for the math and options for true HA.
 - **DNS authority:** Route 53 zones — `cloudless.gr` (Z079608614L53CC4EAZM3, SST-managed) and `cloudless.online` (Z04620301I2V4SU2RF1RV, this project).
 - **TLS:** cert-manager + Let's Encrypt DNS-01 via Route 53. Works behind NAT/CGNAT because no inbound port 80 challenge is needed.
 - **Image registry:** ECR `cloudless-pi-app` in us-east-1. Pulled via dockerconfigjson Secret refreshed by an in-cluster CronJob.
