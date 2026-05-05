@@ -3,6 +3,15 @@
 # control-plane server (embedded etcd). Designed to run on omv-ha as part of
 # the worker -> control-plane promotion. Idempotent.
 #
+# Modes:
+#   default  full server: apiserver + scheduler + controller-manager + etcd.
+#   ETCD_ONLY=1
+#            etcd-only voter: same etcd membership, but apiserver / scheduler /
+#            controller-manager are disabled to save RAM. Only useful as the
+#            *third* member of a 3-node etcd quorum (alongside two full
+#            servers). On a 2-node cluster, do NOT use this — you'd lose the
+#            ability to schedule pods to this node and still have no HA.
+#
 # Sequence:
 #   1. Refuse to run unless K3S_URL + K3S_TOKEN are set.
 #   2. If a k3s-agent install is present, run k3s-agent-uninstall.sh.
@@ -12,6 +21,10 @@
 #
 # Usage:
 #   sudo K3S_URL=https://192.168.1.128:6443 K3S_TOKEN=<node-token> \
+#     ./join-as-server.sh
+#
+#   # Etcd-only voter (only for 3+-member clusters):
+#   sudo ETCD_ONLY=1 K3S_URL=https://192.168.1.128:6443 K3S_TOKEN=<node-token> \
 #     ./join-as-server.sh
 #
 # Get the token on the existing server:
@@ -28,6 +41,7 @@ fi
 : "${K3S_URL:?K3S_URL must be set, e.g. https://192.168.1.128:6443}"
 : "${K3S_TOKEN:?K3S_TOKEN must be set (node-token from existing server)}"
 
+ETCD_ONLY="${ETCD_ONLY:-0}"
 TARGET_USER="${SUDO_USER:-tbaltzakis}"
 TARGET_HOME="$(getent passwd "${TARGET_USER}" | cut -d: -f6)"
 
@@ -41,27 +55,38 @@ if systemctl is-active --quiet k3s 2>/dev/null; then
   exit 0
 fi
 
+extra_flags=()
+if [[ "${ETCD_ONLY}" == "1" ]]; then
+  echo "[join] ETCD_ONLY=1 — installing as etcd voter only (no apiserver/scheduler/controller-manager)"
+  extra_flags+=(--disable-apiserver --disable-controller-manager --disable-scheduler)
+fi
+
 echo "[join] installing k3s as server, joining ${K3S_URL}"
 curl -sfL https://get.k3s.io \
   | INSTALL_K3S_CHANNEL=stable \
     K3S_TOKEN="${K3S_TOKEN}" \
     sh -s - server \
         --server "${K3S_URL}" \
-        --write-kubeconfig-mode=644
+        --write-kubeconfig-mode=644 \
+        "${extra_flags[@]}"
 
 echo "[join] waiting for local node Ready"
 KUBECONFIG=/etc/rancher/k3s/k3s.yaml \
   kubectl wait --for=condition=Ready node --all --timeout=180s
 
-echo "[join] copying kubeconfig to ${TARGET_HOME}/.kube/config"
-install -d -m 0700 -o "${TARGET_USER}" -g "${TARGET_USER}" "${TARGET_HOME}/.kube"
-install -m 0600 -o "${TARGET_USER}" -g "${TARGET_USER}" \
-  /etc/rancher/k3s/k3s.yaml "${TARGET_HOME}/.kube/config"
+if [[ "${ETCD_ONLY}" != "1" ]]; then
+  echo "[join] copying kubeconfig to ${TARGET_HOME}/.kube/config"
+  install -d -m 0700 -o "${TARGET_USER}" -g "${TARGET_USER}" "${TARGET_HOME}/.kube"
+  install -m 0600 -o "${TARGET_USER}" -g "${TARGET_USER}" \
+    /etc/rancher/k3s/k3s.yaml "${TARGET_HOME}/.kube/config"
 
-if ! grep -q '^export KUBECONFIG=' "${TARGET_HOME}/.bashrc" 2>/dev/null; then
-  # shellcheck disable=SC2016 # we want $HOME to be literal in .bashrc, not resolved here
-  echo 'export KUBECONFIG=$HOME/.kube/config' >> "${TARGET_HOME}/.bashrc"
+  if ! grep -q '^export KUBECONFIG=' "${TARGET_HOME}/.bashrc" 2>/dev/null; then
+    # shellcheck disable=SC2016 # we want $HOME to be literal in .bashrc, not resolved here
+    echo 'export KUBECONFIG=$HOME/.kube/config' >> "${TARGET_HOME}/.bashrc"
+  fi
+else
+  echo "[join] etcd-only mode — skipping kubeconfig copy (no apiserver on this node)"
 fi
 
-echo "[join] done. From either node:  kubectl get nodes -o wide"
+echo "[join] done. From a full-server node:  kubectl get nodes -o wide"
 echo "[join] etcd members:  sudo k3s kubectl -n kube-system exec -it \$(k3s kubectl -n kube-system get pod -l app=etcd -o name | head -1) -- etcdctl member list"
