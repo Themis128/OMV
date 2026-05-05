@@ -8,7 +8,8 @@ The primary site (`cloudless.gr`) runs on AWS Lambda + CloudFront. The standby i
 
 ```
 k3s/
-├── install.sh                 # one-shot k3s installer (idempotent)
+├── install.sh                 # one-shot k3s installer (idempotent, primary node)
+├── join-as-server.sh          # promote omv-ha from worker → control-plane server
 ├── traefik-config.yaml        # Traefik HelmChartConfig — binds 18080/18443
 ├── cloudless-app/             # the cloudless workload (Deployment/Service/Ingress)
 │   ├── namespace.yaml
@@ -28,13 +29,17 @@ k3s/
     └── cluster-issuer.yaml
 
 docs/
-├── ha-architecture.md         # how the failover works
-├── ha-autoscale.md            # capacity model + HPA + tuning levers
-├── port-map.md                # what's listening on what port
-├── phase1-acceptance.md       # 2026-05-02 end-to-end test results
-└── runbook-failover.md        # operational procedures
+├── ha-architecture.md             # how the failover works
+├── ha-autoscale.md                # capacity model + HPA + tuning levers
+├── ha-control-plane-promotion.md  # runbook: promote omv-ha → control-plane
+├── port-map.md                    # what's listening on what port
+├── phase1-acceptance.md           # 2026-05-02 end-to-end test results
+└── runbook-failover.md            # operational procedures
 
-scripts/                       # ad-hoc helpers
+scripts/
+├── promote-omv-ha.sh          # orchestrates worker → control-plane promotion
+├── verify-ha.sh               # nodes Ready, etcd healthy, pods Running
+└── failover-test.sh           # simulate omv outage, assert omv-ha takes over
 ```
 
 ## Quick start (on a fresh OMV Pi)

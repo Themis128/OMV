@@ -1,5 +1,9 @@
 # Runbook — failover & recovery
 
+For control-plane (k3s API) failover between `omv` and `omv-ha`, see
+[ha-control-plane-promotion.md](ha-control-plane-promotion.md). This file
+covers user-traffic failover (Route 53) and routine recovery.
+
 ## Verify standby is healthy
 
 ```bash
