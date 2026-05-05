@@ -13,6 +13,37 @@ Mirrors the Notion project *"k3s HA — omv-ha → Control Plane"*. Goal: form a
 User traffic is unaffected throughout: CloudFront → Lambda is the primary
 path, and `cloudless-app` runs with 2 replicas + PDB `minAvailable=1`.
 
+## Failure tolerance — important caveat
+
+Embedded etcd uses Raft, which requires a majority of members to elect a
+leader and accept writes. The math is `(N/2)+1`:
+
+| etcd members | quorum | failures tolerated |
+|--|--|--|
+| 1            | 1 | 0 |
+| **2**        | **2** | **0** |
+| 3            | 2 | 1 |
+| 5            | 3 | 2 |
+
+**A 2-member etcd cluster tolerates zero failures.** Promoting `omv-ha` to a
+control-plane gives you etcd state replicated across both Pis (faster recovery
+from a destroyed `omv` SD card, restorable from `omv-ha`), but it does **not**
+give you "API stays up if one node dies" — the survivor will sit in a
+no-quorum state with the API server effectively read-only until the other
+node returns or you manually run `k3s server --cluster-reset` on the
+survivor.
+
+If true control-plane HA matters, add a third member. Cheapest options:
+
+- A third Pi (Zero 2 W is enough for an etcd member if you stay below ~50
+  pods).
+- A small VM (1 vCPU / 1 GB) on the LAN or in the same AWS account, joined
+  via Tailscale.
+- Run `omv-ha` as a server *with* `--disable-apiserver --disable-controller-manager --disable-scheduler` to make it an etcd-only voter — saves RAM but still requires a third for true HA.
+
+Until then, `failover-test.sh` is a *data-plane* test (does the app keep
+serving traffic during a primary outage?), not a control-plane HA test.
+
 ## Pre-flight (one time)
 
 1. **Confirm embedded etcd is the datastore on `omv`** — not the default
