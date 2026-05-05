@@ -44,6 +44,36 @@ If true control-plane HA matters, add a third member. Cheapest options:
 Until then, `failover-test.sh` is a *data-plane* test (does the app keep
 serving traffic during a primary outage?), not a control-plane HA test.
 
+### Adding a 3rd etcd voter (etcd-only mode)
+
+The repo's `k3s/join-as-server.sh` supports an `ETCD_ONLY=1` mode that joins a
+node as an etcd voter only — apiserver, scheduler, and controller-manager are
+disabled, so it adds RAM-cheap quorum without consuming scheduling capacity.
+**Only use this with a 3+ member target topology.** On a 2-node cluster it
+just removes scheduling capacity without adding HA.
+
+Example: a small VM (`omv-vote`, 1 vCPU / 1 GB) joined via Tailscale alongside
+two full servers (`omv` + `omv-ha`):
+
+```bash
+# on the new voter, after Tailscale brings up routing to the LAN:
+sudo ETCD_ONLY=1 \
+  K3S_URL=https://192.168.1.128:6443 \
+  K3S_TOKEN="$(ssh omv 'sudo cat /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7/k3s/server/node-token')" \
+  bash /tmp/join-as-server.sh
+```
+
+After joining you should see three nodes from any full server:
+
+```bash
+kubectl get nodes -o wide
+# omv      Ready  control-plane,etcd,master  ...
+# omv-ha   Ready  control-plane,etcd,master  ...
+# omv-vote Ready  etcd                       ...
+```
+
+Quorum becomes `(3/2)+1 = 2`, and the cluster tolerates losing any one node.
+
 ## Pre-flight (one time)
 
 1. **Confirm embedded etcd is the datastore on `omv`** — not the default
