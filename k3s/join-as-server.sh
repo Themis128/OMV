@@ -45,9 +45,20 @@ ETCD_ONLY="${ETCD_ONLY:-0}"
 TARGET_USER="${SUDO_USER:-tbaltzakis}"
 TARGET_HOME="$(getent passwd "${TARGET_USER}" | cut -d: -f6)"
 
+# Robust k3s-agent cleanup: handle both a normal worker install and a stale
+# unit left by a partially-completed earlier uninstall (typical cause of a
+# "k3s-agent.service has failed" alert on a node that's already a server).
 if [[ -x /usr/local/bin/k3s-agent-uninstall.sh ]]; then
   echo "[join] k3s-agent install detected — running k3s-agent-uninstall.sh"
   /usr/local/bin/k3s-agent-uninstall.sh
+elif [[ -e /etc/systemd/system/k3s-agent.service ]]; then
+  echo "[join] stale k3s-agent.service unit found without uninstall script — removing"
+  systemctl stop k3s-agent.service 2>/dev/null || true
+  systemctl disable k3s-agent.service 2>/dev/null || true
+  rm -f /etc/systemd/system/k3s-agent.service \
+        /etc/systemd/system/k3s-agent.service.env
+  systemctl daemon-reload
+  systemctl reset-failed k3s-agent.service 2>/dev/null || true
 fi
 
 if systemctl is-active --quiet k3s 2>/dev/null; then
