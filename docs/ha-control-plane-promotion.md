@@ -159,6 +159,57 @@ kubectl uncordon omv-ha
 That puts `omv-ha` back to the pre-promotion worker state. The remaining etcd
 member on `omv` continues to serve.
 
+## Troubleshooting
+
+### Alert: `Service k3s-agent.service has failed` on `omv-ha`
+
+The journal in the alert tells you which scenario you're in:
+
+```bash
+ssh omv-ha 'sudo journalctl -u k3s-agent.service -n 200 --no-pager'
+```
+
+**Scenario A — `omv-ha` is still a worker (not yet promoted).**
+The agent crashed. On a 1 GB Pi 4 the most common causes are OOM and the
+primary API being unreachable. Diagnose:
+
+```bash
+ssh omv-ha 'free -m; dmesg -T | tail -50 | grep -i -e oom -e killed'
+ssh omv-ha 'curl -ksS --max-time 5 https://192.168.1.128:6443/healthz'
+```
+
+If it's a transient failure, restart it:
+
+```bash
+ssh omv-ha 'sudo systemctl reset-failed k3s-agent.service && \
+            sudo systemctl restart k3s-agent.service'
+```
+
+If you intend to promote `omv-ha` regardless, just run
+`scripts/promote-omv-ha.sh` — it uninstalls the agent as part of the
+promotion (see "Manual steps" above).
+
+**Scenario B — promotion was partial; a stale agent unit was left behind.**
+The k3s server is running on `omv-ha`, but a `k3s-agent.service` unit file
+is still on disk and systemd keeps trying (and failing) to start it.
+`k3s/join-as-server.sh` is idempotent and now repairs this case: it stops,
+disables, and removes the stale unit even when the server is already
+active.
+
+```bash
+export K3S_TOKEN="$(ssh omv 'sudo cat /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7/k3s/server/node-token')"
+scp k3s/join-as-server.sh omv-ha:/tmp/
+ssh omv-ha "sudo K3S_URL=https://192.168.1.128:6443 \
+  K3S_TOKEN='${K3S_TOKEN}' bash /tmp/join-as-server.sh"
+```
+
+Confirm afterwards:
+
+```bash
+ssh omv-ha 'systemctl status k3s-agent.service 2>&1 | head -3'
+# Expected: "Unit k3s-agent.service could not be found."
+```
+
 ## Known constraints to watch
 
 - **`omv-ha` has 1 GB RAM.** etcd is small, but the second control plane plus
