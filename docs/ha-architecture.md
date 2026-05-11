@@ -36,6 +36,8 @@ The Pi runs the app continuously — it's an active/standby model where the stan
 
 - **Primary:** CloudFront + Lambda, deployed by SST in `cloudless.gr` repo.
 - **Standby:** k3s on two Pis (`omv` + `omv-ha`), manifests in this repo (`OMV`). Both nodes run as control-plane servers with embedded etcd, so cluster state is replicated. **Note:** 2-member etcd has zero failure tolerance (Raft needs majority); losing one node makes the survivor's API effectively read-only until the other returns. See [ha-control-plane-promotion.md](ha-control-plane-promotion.md) > *Failure tolerance* for the math and options for true HA.
+- **VIP on the LAN:** keepalived holds `192.168.1.200` across both Pis; on `omv` failure it moves to `omv-ha` within seconds. Verified end-to-end on 2026-05-11 (`cloudless.online` and `manage.cloudless.online` kept serving traffic; the kubectl API went read-only as expected for 2-member etcd).
+- **etcd backup:** S3 snapshots to `cloudless-etcd-snapshots` every 6h (IAM `omv-main-cli`). Replaces the previously-considered EC2 etcd-witness plan — restore path is "snapshot from S3 + `k3s server --cluster-reset --cluster-reset-restore-path=…` on the survivor".
 - **DNS authority:** Route 53 zones — `cloudless.gr` (Z079608614L53CC4EAZM3, SST-managed) and `cloudless.online` (Z04620301I2V4SU2RF1RV, this project).
 - **TLS:** cert-manager + Let's Encrypt DNS-01 via Route 53. Works behind NAT/CGNAT because no inbound port 80 challenge is needed.
 - **Image registry:** ECR `cloudless-pi-app` in us-east-1. Pulled via dockerconfigjson Secret refreshed by an in-cluster CronJob.

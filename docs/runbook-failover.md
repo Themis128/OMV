@@ -35,6 +35,54 @@ Reverse the change afterwards.
 3. Tail logs:  `kubectl -n cloudless logs deploy/cloudless-app -f`.
 4. When primary recovers, Route 53 health-check will flip DNS back automatically (typically within one TTL).
 
+## Node failover on the LAN (`omv` down, `omv-ha` survives)
+
+keepalived holds a VIP at `192.168.1.200` shared by both Pis. When `omv` goes
+down, the VIP moves to `omv-ha` within seconds (BACKUP → MASTER) and user
+traffic to `cloudless.online` / `manage.cloudless.online` keeps serving.
+
+The kubectl API goes read-only during the outage — that is expected with
+2-member etcd (quorum is lost when one node is down). Verify and operate from
+the survivor:
+
+```bash
+# point kubectl at omv-ha or the VIP, not the dead primary
+kubectl --server=https://192.168.1.200:6443 get nodes
+kubectl --server=https://192.168.1.130:6443 get nodes
+```
+
+When `omv` returns, the VIP migrates back to it automatically. See the
+"Failure tolerance" caveat in
+[ha-control-plane-promotion.md](ha-control-plane-promotion.md) for what this
+buys you and what it doesn't.
+
+## etcd snapshot restore (catastrophic primary loss)
+
+Snapshots are written every 6 h to S3 bucket `cloudless-etcd-snapshots` by
+IAM principal `omv-main-cli`. If `omv` is unrecoverable and you need to
+rebuild etcd state on `omv-ha`:
+
+```bash
+# 1) pull the latest snapshot
+aws s3 ls s3://cloudless-etcd-snapshots/ --profile cloudless | tail -5
+aws s3 cp s3://cloudless-etcd-snapshots/<snapshot>.zip /tmp/ --profile cloudless
+
+# 2) on omv-ha, reset etcd from the snapshot (this rewrites cluster state —
+#    do NOT run unless omv is truly gone for good)
+sudo systemctl stop k3s
+sudo k3s server \
+  --cluster-reset \
+  --cluster-reset-restore-path=/tmp/<snapshot>.zip
+sudo systemctl start k3s
+
+# 3) verify
+kubectl get nodes
+kubectl get pods -A
+```
+
+After a `--cluster-reset` you'll need to re-join any other servers as fresh
+members; treat it as a clean cluster.
+
 ## Rotate ECR pull credentials manually
 
 ```bash
