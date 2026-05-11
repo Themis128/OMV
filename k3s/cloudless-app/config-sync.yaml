@@ -89,7 +89,7 @@ spec:
               image: alpine/k8s:1.30.0
               resources:
                 requests: { cpu: "50m", memory: "96Mi" }
-                limits:   { cpu: "300m", memory: "384Mi" }
+                limits: { cpu: "300m", memory: "384Mi" }
               envFrom:
                 - secretRef:
                     name: pi-standby-aws-creds
