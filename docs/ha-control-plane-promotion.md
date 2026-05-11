@@ -1,5 +1,10 @@
 # Runbook — promote `omv-ha` to a k3s control-plane server
 
+> **Status: Completed 2026-05-08.** `omv-ha` is now a control-plane server
+> with embedded etcd. This runbook is retained for re-creation (e.g. rebuilding
+> `omv-ha` from scratch) and for the *Failover Test* + *Troubleshooting*
+> sections below.
+
 Mirrors the Notion project *"k3s HA — omv-ha → Control Plane"*. Goal: form a
 2-member etcd quorum so the cluster API survives the loss of `omv`.
 
@@ -145,6 +150,25 @@ This stops `k3s` on `omv` for ~2 min, switches a temp kubeconfig to `omv-ha`'s
 API endpoint, hits `cloudless.online/api/health`, then restarts `omv` and
 confirms quorum reformed.
 
+### Real failover test — 2026-05-11
+
+Procedure: stopped `k3s` + `keepalived` on `omv` simultaneously to simulate a
+hard failure.
+
+Results:
+
+- VIP `192.168.1.200` moved to `omv-ha` within seconds (keepalived
+  `BACKUP → MASTER`).
+- `cloudless.online` → 307 ✅
+- `manage.cloudless.online` → 302 ✅
+- `kubectl` API unavailable, as expected — 2-member etcd loses quorum when one
+  node is down; the survivor's API goes read-only until quorum returns.
+- On `omv` restart: both nodes Ready within 15 s, VIP returned to `omv`.
+
+Conclusion: user-facing services keep serving traffic during an `omv` outage.
+Control-plane writes pause until `omv` recovers; for true control-plane HA see
+the "Failure tolerance" section above.
+
 ## Rollback
 
 If etcd fails to form quorum on `omv-ha`:
@@ -212,13 +236,25 @@ ssh omv-ha 'systemctl status k3s-agent.service 2>&1 | head -3'
 
 ## Known constraints to watch
 
-- **`omv-ha` has 1 GB RAM.** etcd is small, but the second control plane plus
-  the existing agent workloads make memory tight. `kubectl top node omv-ha`
-  before/after; if pressure shows, taint `omv-ha` to repel non-critical pods.
+- **`omv-ha` has 1 GB RAM** (955Mi usable; k3s server alone ≈ 330Mi). Memory
+  pressure is the dominant operational risk on this node. Placement rules:
+  - `kube-state-metrics` pinned to `omv` via `nodeSelector`.
+  - `cloudflare-geo-exporter` pinned to `omv` via `nodeSelector`.
+  - `ntfy` and `alertmanager` stay on `omv-ha` because they own NFS PVCs.
+  - Any new workload >100Mi requests must set
+    `nodeSelector: kubernetes.io/hostname: omv`.
+- **NFS PVCs only mount on `omv-ha`.** Pods on `omv` cannot mount the NFS
+  PVCs — all NFS-backed workloads must set
+  `nodeSelector: kubernetes.io/hostname: omv-ha`.
+- **NFS sunrpc tuning.** `tcp_slot_table_entries` defaulted to 2 on both
+  nodes, which caused NFS mount failures under concurrent load. Bumped to 128
+  and persisted in `/etc/sysctl.d/90-nfs-slots.conf` (host config, outside
+  this repo).
 - **Traefik / klipper-lb on host ports.** The first time klipper-lb tries to
   bind 18080/18443 on `omv-ha`, those ports must be free on the Pi 4. Check
   with `ss -tlnp` before promotion.
 - **Kubeconfig server URL.** Most operator kubeconfigs point at
   `https://192.168.1.128:6443` (omv). After promotion, that still works, but
   in a real failure of `omv`, you need a kubeconfig pointing at
-  `https://192.168.1.130:6443` (or a VIP). Keep both around.
+  `https://192.168.1.130:6443` (or the keepalived VIP `192.168.1.200`).
+  Keep both around.
