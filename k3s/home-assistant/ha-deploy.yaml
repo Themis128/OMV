@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+  labels:
+    app: home-assistant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: home-assistant
+  template:
+    metadata:
+      labels:
+        app: home-assistant
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: omv
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: home-assistant
+        image: ghcr.io/home-assistant/home-assistant:stable
+        env:
+        - {name: TZ, value: Europe/Athens}
+        ports:
+        - {name: http, containerPort: 8123}
+        volumeMounts:
+        - {name: config, mountPath: /config}
+        resources:
+          requests: {cpu: 200m, memory: 512Mi}
+          limits: {cpu: 1500m, memory: 1536Mi}
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: ha-config-pvc

@@ -66,8 +66,13 @@ async function testBackend(target) {
   try {
     const r = await getWithRetry(ctx, target.url, { maxRedirects: 0, timeout: 15000 }, `${target.name} root`);
     const loc = r.headers()['location'];
+<<<<<<< HEAD
     const okLoc = loc === '/en' || /^https?:\/\/[^/]+\/en\/?$/i.test(loc || '');
     rec(target.name, 'backend', 'root 307 → /en', r.status() === 307 && okLoc, `status=${r.status()} loc=${loc}`);
+=======
+    const expected = loc === '/en' || loc === `${target.url}/en`;
+    rec(target.name, 'backend', 'root 307 → /en', r.status() === 307 && expected, `status=${r.status()} loc=${loc}`);
+>>>>>>> 97a1556 (Save changes)
   } catch (e) {
     rec(target.name, 'backend', 'root redirect', false, e.message);
   }
