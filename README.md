@@ -11,10 +11,13 @@ k3s/
 ├── install.sh                 # one-shot k3s installer (idempotent, primary node)
 ├── join-as-server.sh          # promote omv-ha from worker → control-plane server
 ├── traefik-config.yaml        # Traefik HelmChartConfig — binds 18080/18443
-├── cloudless-app/             # the cloudless workload (Deployment/Service/Ingress)
+├── cloudless-app/             # the cloudless workload (Deployment/Service/Ingress + sync infra)
 │   ├── namespace.yaml
-│   ├── resourcequota.yaml          # cap cloudless ns at 5 GiB / 3 CPU / 10 pods
-│   ├── ecr-cred-refresher.yaml
+│   ├── resourcequota.yaml          # cap cloudless ns at 6 GiB / 5 CPU / 10 pods
+│   ├── ecr-cred-refresher.yaml     # CronJob */6h — refreshes regcred-ecr (ECR token 12h TTL)
+│   ├── image-sync.yaml             # CronJob */1min — rollout on ECR digest diff
+│   ├── config-sync.yaml            # CronJob */5min — rebuild Secret on SSM diff
+│   ├── sync-webhook/               # HMAC webhook that fires one-off image-sync Jobs (~5s drift)
 │   ├── middleware-ratelimit.yaml   # Traefik 50 req/s + 200 in-flight (fail-fast 429)
 │   ├── app-config.example.yaml
 │   ├── deployment.yaml
@@ -32,6 +35,7 @@ docs/
 ├── ha-architecture.md             # how the failover works
 ├── ha-autoscale.md                # capacity model + HPA + tuning levers
 ├── ha-control-plane-promotion.md  # runbook: promote omv-ha → control-plane
+├── branch-cleanup.md              # how the cleanup-branches workflow works
 ├── port-map.md                    # what's listening on what port
 ├── phase1-acceptance.md           # 2026-05-02 end-to-end test results
 └── runbook-failover.md            # operational procedures
