@@ -69,7 +69,7 @@ To send a real test email, drop `SES_DRY_RUN=1`. The SES sender (`system-info@cl
 | Symptom | Cause | Response |
 |---|---|---|
 | Email: `health reachable: ENOTFOUND` for both targets | DNS / Starlink down | Check Pi WAN; verify Tailscale (`tailscale status`). |
-| Email: `health reachable` for **standby only** | Funnel down or Pi k3s app crashed | `tailscale funnel status`, `kubectl -n cloudless get pods,ing`. See [runbook-failover.md](runbook-failover.md). |
+| Email: `health reachable` for **standby only** | Cloudflare/origin path broken, or Pi k3s app crashed | `curl -I https://cloudless.online/api/health`, `kubectl -n cloudless get pods,ing`, check `cloudflared` on `omv` if used. See [runbook-failover.md](runbook-failover.md). |
 | Email: `health reachable` for **main only** | AWS Lambda / CloudFront issue | Check AWS console; HA failover may already be active. |
 | Email: HA parity (version mismatch) | Pi standby out of date — image-sync stuck | `kubectl -n cloudless get cronjob image-sync`, `kubectl -n cloudless logs job/$(kubectl -n cloudless get jobs ... )` |
 | Email: HA parity (title mismatch) | One side serving a different build/branch | Same as above; check sync-webhook + last config-sync run. |

@@ -1,7 +1,7 @@
 # Webhook receiver for image-sync / config-sync triggers.
 #
-# Ingress path:
-#   internet → Tailscale Funnel (omv.tail8eb71.ts.net) → Pi Traefik :18443
+# Ingress path (as of 2026-05-12, Tailscale Funnel decommissioned):
+#   internet → Cloudflare (cloudless.online) → Pi Traefik :18443
 #            → IngressRoute /_sync/* → Service sync-webhook:8080 → Deployment
 #
 # The receiver runs the Python script from a ConfigMap; the alpine/k8s base
