@@ -16,11 +16,42 @@ function rec(target, kind, name, ok, detail = '') {
   console.log(`  [${tag}] ${kind}: ${name}${detail ? ' — ' + detail : ''}`);
 }
 
+// Retry transient failures from the standby's Tailscale Funnel path
+// (occasional 403 "Host resol..." mid-flight) and any 5xx. Other statuses
+// are returned as-is so real bugs aren't masked. Network errors retry too.
+async function getWithRetry(ctx, url, opts, label) {
+  const MAX_ATTEMPTS = 3;
+  const BACKOFF_MS = 3000;
+  let lastResp = null;
+  let lastErr = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const r = await ctx.get(url, opts);
+      const transient = r.status() === 403 || r.status() >= 500;
+      if (transient && attempt < MAX_ATTEMPTS) {
+        console.log(`  ↻ ${label}: status=${r.status()} attempt ${attempt}/${MAX_ATTEMPTS}, retrying in ${BACKOFF_MS}ms`);
+        lastResp = r;
+        await new Promise(s => setTimeout(s, BACKOFF_MS));
+        continue;
+      }
+      return r;
+    } catch (e) {
+      lastErr = e;
+      if (attempt < MAX_ATTEMPTS) {
+        console.log(`  ↻ ${label}: ${e.message} attempt ${attempt}/${MAX_ATTEMPTS}, retrying in ${BACKOFF_MS}ms`);
+        await new Promise(s => setTimeout(s, BACKOFF_MS));
+      }
+    }
+  }
+  if (lastResp) return lastResp;
+  throw lastErr;
+}
+
 async function testBackend(target) {
   const ctx = await request.newContext({ ignoreHTTPSErrors: false });
   // /api/health
   try {
-    const r = await ctx.get(`${target.url}/api/health`, { timeout: 15000 });
+    const r = await getWithRetry(ctx, `${target.url}/api/health`, { timeout: 15000 }, `${target.name} health`);
     rec(target.name, 'backend', 'health 200', r.status() === 200, `status=${r.status()}`);
     const body = await r.json();
     rec(target.name, 'backend', 'health.status=ok', body.status === 'ok', JSON.stringify(body));
@@ -33,7 +64,7 @@ async function testBackend(target) {
   // root redirect → /en (accept either relative "/en" or absolute "https://host/en":
   // main returns the relative form, standby returns absolute — both are RFC-7231 valid)
   try {
-    const r = await ctx.get(target.url, { maxRedirects: 0, timeout: 15000 });
+    const r = await getWithRetry(ctx, target.url, { maxRedirects: 0, timeout: 15000 }, `${target.name} root`);
     const loc = r.headers()['location'];
     const okLoc = loc === '/en' || /^https?:\/\/[^/]+\/en\/?$/i.test(loc || '');
     rec(target.name, 'backend', 'root 307 → /en', r.status() === 307 && okLoc, `status=${r.status()} loc=${loc}`);
