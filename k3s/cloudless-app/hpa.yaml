@@ -2,10 +2,11 @@
 #
 # Why these numbers:
 # - min 1 / max 2 replicas: the Pi 5 has 4 cores + 8 GB RAM. ResourceQuota
-#   (resourcequota.yaml) caps the namespace at 3 CPU / 5 GiB of *limits*, and
-#   each pod has limits of 1.5 CPU / 1.5 GiB — so only 2 pods can be admitted.
-#   2 fat SSR workers is also the realistic ceiling for a 4-core box: more
-#   replicas wouldn't add throughput, just contend for the same CPUs.
+#   (resourcequota.yaml) caps the namespace at 5 CPU / 6 GiB of *limits* so
+#   2 fat SSR workers (1.5 CPU / 1.5 GiB each) fit alongside the sync
+#   infrastructure (sync-webhook + image-sync + config-sync jobs). 2 is also
+#   the realistic ceiling for a 4-core box: more replicas wouldn't add
+#   throughput, just contend for the same CPUs.
 # - 60% CPU target: leaves headroom for sudden bursts. Lambda primary scaling is
 #   instant; this is the failover-mode "do my best" replica count.
 # - Fast scale-up (15s window, 100% step) so a sudden failover gets pods quickly.
