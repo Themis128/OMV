@@ -55,3 +55,14 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck
           shellcheck $(find k3s scripts -type f -name '*.sh')
+
+  js:
+    name: node syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Syntax-only check — catches committed merge-conflict markers and
+      # parse errors in the synthetic-monitoring suite (the lint suite
+      # otherwise never executes or parses run.js).
+      - name: node --check
+        run: node --check test/playwright/run.js
