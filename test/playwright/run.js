@@ -3,7 +3,7 @@ const fs = require('fs');
 
 const TARGETS = [
   { name: 'main',     url: 'https://cloudless.gr',     label: 'AWS Lambda + CloudFront' },
-  { name: 'standby',  url: 'https://cloudless.online', label: 'Pi k3s + Tailscale Funnel' },
+  { name: 'standby',  url: 'https://cloudless.online', label: 'Pi k3s + Cloudflare' },
 ];
 
 const results = [];
@@ -16,7 +16,7 @@ function rec(target, kind, name, ok, detail = '') {
   console.log(`  [${tag}] ${kind}: ${name}${detail ? ' — ' + detail : ''}`);
 }
 
-// Retry transient failures from the standby's Tailscale Funnel path
+// Retry transient failures from the standby's CDN/ingress path
 // (occasional 403 "Host resol..." mid-flight) and any 5xx. Other statuses
 // are returned as-is so real bugs aren't masked. Network errors retry too.
 async function getWithRetry(ctx, url, opts, label) {
