@@ -11,6 +11,7 @@ Single host, multiple processes. Document any change here in the same PR.
 | **18080** | **k3s Traefik (HTTP entrypoint)** | router forwards external 80 → 18080 |
 | **18443** | **k3s Traefik (HTTPS entrypoint)** | router forwards external 443 → 18443 |
 | 6443 | k3s API server | LAN-only |
+| 8123 | Home Assistant (`home-assistant` ns, `hostNetwork: true` on omv) | LAN/tailnet only |
 | 9090 | uptime-kuma | LAN/tailnet only |
 | 9091 | portainer | LAN/tailnet only |
 | 3000 | (reserved — homepage) | LAN/tailnet only |
