@@ -43,7 +43,11 @@ docs/
 scripts/
 ├── promote-omv-ha.sh          # orchestrates worker → control-plane promotion
 ├── verify-ha.sh               # nodes Ready, etcd healthy, pods Running
-└── failover-test.sh           # simulate omv outage, assert omv-ha takes over
+├── failover-test.sh           # simulate omv outage, assert omv-ha takes over
+├── omv-healthcheck.sh         # read-only OMV host health check
+├── omv-inventory.sh           # read-only full OMV host inventory
+├── omv-report-to-github.sh    # publish health/inventory reports to a branch
+└── omv-apply-fixes.sh         # idempotent OMV host maintenance fixes
 ```
 
 ## Quick start (on a fresh OMV Pi)
@@ -68,6 +72,53 @@ kubectl apply -f k3s/cert-manager/cluster-issuer.yaml
 # 4) populate the app config secret (env vars — see app-config.example.yaml)
 # then deploy the cloudless app:
 kubectl apply -k k3s/cloudless-app/
+```
+
+## OMV host maintenance
+
+Beyond the k3s cluster, the Pi runs OpenMediaVault. These scripts manage the
+OMV host itself; all are read-only except `omv-apply-fixes.sh`.
+
+### Health check
+
+`scripts/omv-healthcheck.sh` runs a read-only diagnostic sweep — OMV engine
+daemon, failed units, journal and kernel errors, disk usage, memory, load
+average, APT repositories, logrotate, time sync, and SMART. It prints a
+pass/warn/fail summary and exits non-zero if any check fails.
+
+```bash
+./scripts/omv-healthcheck.sh           # full report
+./scripts/omv-healthcheck.sh --quiet   # summary only
+```
+
+### Inventory
+
+`scripts/omv-inventory.sh` prints a full read-only inventory of the host —
+hardware, OS, OMV version and plugins, storage (disks, filesystems, RAID,
+mergerfs, ZFS, LVM, SMART), network, services, shares, containers, and users.
+
+```bash
+./scripts/omv-inventory.sh > inventory.txt
+```
+
+### Publish reports to GitHub
+
+`scripts/omv-report-to-github.sh` runs the health check and inventory on the
+Pi and pushes the results to a dedicated `omv-reports` branch, so the Pi's
+state can be reviewed from GitHub without SSH access. Reports land under
+`reports/` with timestamped and `latest-*` copies; schedule it via cron. See
+the script header for the one-time deploy-key setup.
+
+### Apply maintenance fixes
+
+`scripts/omv-apply-fixes.sh` applies host maintenance fixes — dead APT repo
+removal, `systemd-networkd-wait-online` masking, `apt-daily` timer deferral,
+duplicate `fail2ban.log` logrotate stanza removal, stale Salt cache cleanup,
+and failed-unit reset. Every fix is idempotent.
+
+```bash
+sudo ./scripts/omv-apply-fixes.sh --dry-run   # preview, change nothing
+sudo ./scripts/omv-apply-fixes.sh             # apply
 ```
 
 ## Cluster facts
