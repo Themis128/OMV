@@ -79,9 +79,10 @@ and applies the cheapest fix at each layer:
 same script on a self-hosted runner inside the LAN — trigger it from
 [Actions → recover-standby](https://github.com/Themis128/OMV/actions/workflows/recover-standby.yml)
 in any browser, phone included. It needs a runner labelled `omv-recovery`,
-installed once with `scripts/install-cluster-runner.sh` (run on `omv-ha` so
-the runner survives an `omv` outage). See that script's header for the
-one-time setup.
+installed once with `scripts/install-cluster-runner.sh` — run it on `omv`
+(the Pi 5; it has the RAM headroom). Do **not** install on the ~1 GB
+`omv-ha`: a job-spiking runner there can OOM-kill the etcd member it co-hosts.
+See that script's header for the one-time setup.
 
 If the script can't even SSH to `omv` (and `omv` is unreachable by Tailscale
 and LAN too), the Pi itself is down — **power-cycle it**; `k3s` and
