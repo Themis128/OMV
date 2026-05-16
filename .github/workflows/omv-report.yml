@@ -14,6 +14,15 @@ name: omv-report
 
 on:
   workflow_dispatch:
+  schedule:
+    # Daily at 05:17 UTC — keeps the omv-reports branch fresh on its own.
+    - cron: '17 5 * * *'
+  push:
+    # Editing this workflow fires one run, so a merge of a change here
+    # produces an immediate report without a manual dispatch.
+    branches: [main]
+    paths:
+      - .github/workflows/omv-report.yml
 
 permissions:
   contents: write
