@@ -37,7 +37,11 @@ cat /proc/device-tree/model 2>/dev/null && echo || echo "(unknown)"
 sub "Serial"
 awk -F': ' '/Serial/{print $2}' /proc/cpuinfo 2>/dev/null | tail -1
 sub "CPU"
-have lscpu && lscpu | grep -E 'Model name|^CPU\(s\)|Architecture' || nproc
+if have lscpu; then
+    lscpu | grep -E 'Model name|^CPU\(s\)|Architecture'
+else
+    nproc
+fi
 sub "Memory"
 free -h
 
