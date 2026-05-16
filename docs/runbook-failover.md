@@ -56,6 +56,43 @@ When `omv` returns, the VIP migrates back to it automatically. See the
 [ha-control-plane-promotion.md](ha-control-plane-promotion.md) for what this
 buys you and what it doesn't.
 
+## Standby returns 5xx / Cloudflare 530 (`cloudless.online` down)
+
+`cloudless.online` is fronted by Cloudflare. A `502` means Cloudflare reached
+the Pi origin but it answered badly; a `530` means the tunnel has **no origin
+connection at all** — both mean "something on the Pi is down". If
+`manage.cloudless.online` is also affected, it's the whole Pi ingress, not
+just `cloudless-app`.
+
+`scripts/recover-standby.sh` walks the stack outside-in (SSH reachability →
+host services `k3s`/`cloudflared`/`tailscaled` → k3s node → `cloudless-app`)
+and applies the cheapest fix at each layer:
+
+```bash
+./scripts/recover-standby.sh          # diagnose only, change nothing
+./scripts/recover-standby.sh --yes    # diagnose AND restart / roll back
+
+# defaults: OMV_HOST=tbaltzakis@omv  STANDBY_URL=https://cloudless.online/api/health
+```
+
+**No SSH / no laptop?** The `recover-standby` GitHub Actions workflow runs that
+same script on a self-hosted runner inside the LAN — trigger it from
+[Actions → recover-standby](https://github.com/Themis128/OMV/actions/workflows/recover-standby.yml)
+in any browser, phone included. It needs a runner labelled `omv-recovery`,
+installed once with `scripts/install-cluster-runner.sh` (run on `omv-ha` so
+the runner survives an `omv` outage). See that script's header for the
+one-time setup.
+
+If the script can't even SSH to `omv` (and `omv` is unreachable by Tailscale
+and LAN too), the Pi itself is down — **power-cycle it**; `k3s` and
+`cloudflared` are enabled systemd units and rejoin on boot. The script's
+final `--yes` step rolls `cloudless-app`, and rolls it **back** to the
+previous ReplicaSet if a fresh rollout doesn't converge — the recovery path
+when a bad image was deployed.
+
+The primary (`cloudless.gr`, CloudFront + Lambda) is independent of the Pi
+and unaffected by a standby outage; only HA redundancy is lost.
+
 ## etcd snapshot restore (catastrophic primary loss)
 
 Snapshots are written every 6 h to S3 bucket `cloudless-etcd-snapshots` by

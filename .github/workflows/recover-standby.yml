@@ -1,0 +1,34 @@
+name: recover-standby
+
+# Operator-triggered cluster recovery. Runs scripts/recover-standby.sh on a
+# self-hosted runner inside the LAN (installed via
+# scripts/install-cluster-runner.sh), so the cloudless.online standby can be
+# recovered straight from the GitHub UI — phone included — with no SSH,
+# laptop, or Tailscale.
+#
+# Requires a self-hosted runner labelled `omv-recovery`. With no such runner
+# registered, a dispatch here just queues until one appears — harmless.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply fixes (restart services / roll cloudless-app). Off = diagnose only."
+        type: boolean
+        default: true
+
+# No GITHUB_TOKEN write scope needed — the script only probes + SSHes to omv.
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: [self-hosted, omv-recovery]
+    steps:
+      - uses: actions/checkout@v4
+      - name: recover standby
+        run: |
+          if [ "${{ inputs.apply }}" = "true" ]; then
+            ./scripts/recover-standby.sh --yes
+          else
+            ./scripts/recover-standby.sh
+          fi
