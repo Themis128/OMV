@@ -36,6 +36,17 @@ errors, disk usage, memory, load average, APT repositories, logrotate config,
 time synchronisation, and SMART disk health. Exit code is non-zero if any
 check fails.
 
+## Inventory
+
+`scripts/omv-inventory.sh` prints a full read-only inventory of the OMV host —
+hardware, OS, OMV version and plugins, storage (disks, filesystems, RAID,
+mergerfs, ZFS, LVM, SMART), network, services, shares, containers, and users.
+
+```bash
+./scripts/omv-inventory.sh                  # print report
+./scripts/omv-inventory.sh > inventory.txt  # save to a file
+```
+
 ## Apply Maintenance Fixes
 
 `scripts/omv-apply-fixes.sh` applies the maintenance fixes from the OMV tune-up:
@@ -60,6 +71,7 @@ sudo ./scripts/omv-apply-fixes.sh             # apply
 - `LICENSE` — MIT license
 - `.gitignore` — common ignore patterns (OS, editors, Node, Python, env files)
 - `scripts/omv-healthcheck.sh` — read-only OMV host health check
+- `scripts/omv-inventory.sh` — read-only full OMV host inventory
 - `scripts/omv-apply-fixes.sh` — idempotent OMV host maintenance fixes
 
 ## License
