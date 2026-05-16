@@ -76,7 +76,7 @@ if ! git clone --quiet "$ORIGIN_URL" "$CLONE"; then
     echo "ERROR: could not clone $ORIGIN_URL — check the Pi's push access." >&2
     exit 1
 fi
-cd "$CLONE"
+cd "$CLONE" || { echo "ERROR: cannot enter clone directory." >&2; exit 1; }
 
 if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
     # Branch exists — check it out and add to it.

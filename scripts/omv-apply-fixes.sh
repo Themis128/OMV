@@ -146,7 +146,10 @@ else
         ' "$NAS_LOGS" > "$tmp"
         if [ -s "$tmp" ] && ! grep -qE '^[[:space:]]*/var/log/fail2ban\.log[[:space:]]*\{' "$tmp"; then
             cp "$NAS_LOGS" "${NAS_LOGS}.bak.$(date +%Y%m%d%H%M%S)"
-            mv "$tmp" "$NAS_LOGS"
+            # Write back via redirection so the file keeps its original
+            # owner and permissions (mktemp files are mode 600).
+            cat "$tmp" > "$NAS_LOGS"
+            rm -f "$tmp"
             applied "removed duplicate fail2ban.log stanza (backup saved)"
         else
             rm -f "$tmp"

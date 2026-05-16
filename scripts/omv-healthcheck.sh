@@ -138,9 +138,9 @@ else
     ok "apt update is clean"
 fi
 
-upgradable=$(apt list --upgradable 2>/dev/null | grep -c upgradable || true)
-if [ "${upgradable:-0}" -gt 1 ]; then
-    warn "$((upgradable-1)) package(s) upgradable"
+upgradable=$(apt list --upgradable 2>/dev/null | grep -c '\[upgradable from' || true)
+if [ "${upgradable:-0}" -gt 0 ]; then
+    warn "$upgradable package(s) upgradable"
 else
     ok "all packages up to date"
 fi
