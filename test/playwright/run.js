@@ -66,13 +66,8 @@ async function testBackend(target) {
   try {
     const r = await getWithRetry(ctx, target.url, { maxRedirects: 0, timeout: 15000 }, `${target.name} root`);
     const loc = r.headers()['location'];
-<<<<<<< HEAD
     const okLoc = loc === '/en' || /^https?:\/\/[^/]+\/en\/?$/i.test(loc || '');
     rec(target.name, 'backend', 'root 307 → /en', r.status() === 307 && okLoc, `status=${r.status()} loc=${loc}`);
-=======
-    const expected = loc === '/en' || loc === `${target.url}/en`;
-    rec(target.name, 'backend', 'root 307 → /en', r.status() === 307 && expected, `status=${r.status()} loc=${loc}`);
->>>>>>> 97a1556 (Save changes)
   } catch (e) {
     rec(target.name, 'backend', 'root redirect', false, e.message);
   }
@@ -140,11 +135,13 @@ async function testInfra(target) {
 async function testHAParity() {
   const main = TARGETS.find(t => t.name === 'main');
   const standby = TARGETS.find(t => t.name === 'standby');
-  // The two sides intentionally use different version schemes: main reports
-  // the git commit SHA from the Lambda build, standby reports the semver of
-  // the Pi image. Equality would always fail. Just record both for visibility.
+  // Both sides now report the build's git commit SHA (the standby moved off
+  // its old "0.1.0" semver). They converge after every deploy — the
+  // image-sync CronJob rolls the standby within ~1min. This monitor runs
+  // every 30min, so a mismatch here means the sync is genuinely stuck (see
+  // issue #21), not transient deploy lag — assert equality.
   if (main?.healthVersion && standby?.healthVersion) {
-    rec('parity', 'ha', 'health versions reported', true,
+    rec('parity', 'ha', 'health version match', main.healthVersion === standby.healthVersion,
         `main=${main.healthVersion} standby=${standby.healthVersion}`);
   }
   if (main?.title && standby?.title) {
