@@ -1,0 +1,31 @@
+# ResourceQuota for the cloudless namespace.
+#
+# Hard ceiling for everything in this namespace combined. Sized so the HA app
+# at full HPA scale (2 replicas × 1.5 CPU / 1.5 GiB limits — see hpa.yaml)
+# cannot starve the Pi's existing Docker stack (homepage / portainer / pihole /
+# uptime-kuma) which lives outside k3s. requests.cpu=1500m is what actually
+# constrains maxReplicas to 2 (each app pod requests 200m, but HPA + scheduler
+# headroom + webhook + cron pods consume the rest).
+#
+# Pi 5 has 8 GB RAM + 4 cores. Reserving:
+#   - 6 GiB / cloudless namespace (this file)
+#   - ~2 GiB / kube-system + Docker stack + OMV system overhead
+# CPU limits intentionally allow burst above 4 physical cores — limits are caps,
+# not reservations; Linux throttles under contention.
+#
+# limits.cpu evolved 3 → 4 → 5 on 2026-05-03 to accommodate rolling-update
+# surge. At HPA max=2 with maxSurge=1/maxUnavailable=0, surge needs 3× 1500m
+# (app pods) + 200m (sync-webhook) + 200m (concurrent image/config-sync job)
+# = 4900m. The 4 CPU bump still blocked surge; 5 leaves ~100m headroom.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: cloudless-quota
+  namespace: cloudless
+spec:
+  hard:
+    requests.cpu: "1500m"
+    requests.memory: 2Gi
+    limits.cpu: "5"
+    limits.memory: 6Gi
+    pods: "10"

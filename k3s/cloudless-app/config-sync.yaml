@@ -1,0 +1,187 @@
+# Polls SSM /cloudless/production/* every 15 minutes; rebuilds the
+# cloudless-app-config Secret if any depth-1 parameter changed; restarts the
+# deployment on drift so the pod picks up the fresh values from envFrom.
+#
+# Why this exists: the Secret was originally created out-of-band from a
+# /etc/cloudless/pi-standby.env snapshot. SSM mutations on the AWS side
+# (e.g. rotating a Stripe key, adding a new Notion DB ID) wouldn't reach the
+# Pi until somebody re-ran the bootstrap manually. This makes the standby
+# eventually-consistent with the SSM source-of-truth, mirroring the
+# image-sync CronJob's role for the container image.
+#
+# Filter rule:
+#   /cloudless/production/<KEY>          → INCLUDED (auto-sync)
+#   /cloudless/production/<NS>/<...>     → EXCLUDED (operational creds —
+#                                          mailer/, cert-manager/,
+#                                          pi-standby/, failover-monitor/,
+#                                          dns-watch/)
+#
+# Build-time constants in the Secret that don't have an SSM source (e.g.
+# NEXTAUTH_URL, NEXT_PUBLIC_APP_URL, NODE_ENV, PORT) are preserved on each
+# sync — they don't get clobbered.
+#
+# Drift detection uses a SHA-256 hash of the desired Secret data, stored as
+# the annotation `cloudless.gr/config-hash` on the Secret. Hash unchanged →
+# no-op. Hash changed → kubectl apply + kubectl rollout restart.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: config-sync
+  namespace: cloudless
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: config-sync
+  namespace: cloudless
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["cloudless-app-config"]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]
+  # Need list+watch (not just get) so `kubectl rollout status` can poll.
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/status"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: config-sync
+  namespace: cloudless
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: config-sync
+subjects:
+  - kind: ServiceAccount
+    name: config-sync
+    namespace: cloudless
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: config-sync
+  namespace: cloudless
+spec:
+  # Every 5 minutes — SSM rotations are rare (manual ops). Per-run cost is
+  # higher than image-sync (fetches all 71 SSM params, hashes, diffs).
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: config-sync
+          restartPolicy: OnFailure
+          containers:
+            - name: sync
+              image: alpine/k8s:1.30.0
+              resources:
+                requests: { cpu: "50m", memory: "96Mi" }
+                limits: { cpu: "300m", memory: "384Mi" }
+              envFrom:
+                - secretRef:
+                    name: pi-standby-aws-creds
+              env:
+                - name: NAMESPACE
+                  value: "cloudless"
+                - name: SECRET_NAME
+                  value: "cloudless-app-config"
+                - name: DEPLOYMENT
+                  value: "cloudless-app"
+                - name: SSM_PREFIX
+                  value: "/cloudless/production/"
+                - name: HASH_ANNOTATION
+                  value: "cloudless.gr/config-hash"
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+
+                  # --- 1. fetch SSM depth-1 params ---------------------------
+                  TMP=$(mktemp -d)
+                  trap "rm -rf $TMP" EXIT
+
+                  aws ssm get-parameters-by-path \
+                    --path "$SSM_PREFIX" \
+                    --recursive \
+                    --with-decryption \
+                    --query 'Parameters[*].{n:Name,v:Value}' \
+                    --output json > "$TMP/ssm.json"
+
+                  # filter to depth-1 only (no further '/' after the prefix)
+                  jq --arg p "$SSM_PREFIX" '
+                    map(select((.n | sub($p; "")) | contains("/") | not))
+                    | map({(.n | sub($p; "")): .v})
+                    | add // {}
+                  ' "$TMP/ssm.json" > "$TMP/ssm-depth1.json"
+
+                  echo "SSM depth-1 keys: $(jq 'length' "$TMP/ssm-depth1.json")"
+
+                  # --- 2. fetch current Secret data (base64-decoded JSON) ----
+                  if kubectl -n "$NAMESPACE" get secret "$SECRET_NAME" >/dev/null 2>&1; then
+                    kubectl -n "$NAMESPACE" get secret "$SECRET_NAME" -o json \
+                      | jq '.data // {} | with_entries(.value |= @base64d)' \
+                      > "$TMP/current.json"
+                  else
+                    echo '{}' > "$TMP/current.json"
+                  fi
+
+                  # --- 3. merge: SSM keys override; non-SSM keys preserved ---
+                  jq -s '.[0] * .[1]' "$TMP/current.json" "$TMP/ssm-depth1.json" \
+                    > "$TMP/desired.json"
+
+                  echo "Desired Secret keys: $(jq 'length' "$TMP/desired.json")"
+
+                  # --- 4. hash desired data; compare against annotation ------
+                  DESIRED_HASH=$(jq -S -c . "$TMP/desired.json" | sha256sum | cut -d' ' -f1)
+                  CURRENT_HASH=$(kubectl -n "$NAMESPACE" get secret "$SECRET_NAME" \
+                    -o jsonpath="{.metadata.annotations.cloudless\.gr/config-hash}" 2>/dev/null || true)
+
+                  echo "current hash: ${CURRENT_HASH:-<none>}"
+                  echo "desired hash: $DESIRED_HASH"
+
+                  if [ "$DESIRED_HASH" = "$CURRENT_HASH" ]; then
+                    echo "in sync — no-op"
+                    exit 0
+                  fi
+
+                  echo "drift detected — applying new Secret + rolling deployment"
+
+                  # --- 5. build new Secret manifest -------------------------
+                  # base64-encode each value, build data: section
+                  jq -r 'to_entries | map("  " + .key + ": " + (.value | @base64)) | .[]' \
+                    "$TMP/desired.json" > "$TMP/data.txt"
+
+                  cat > "$TMP/secret.yaml" <<EOF
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: $SECRET_NAME
+                    namespace: $NAMESPACE
+                    annotations:
+                      cloudless.gr/config-hash: "$DESIRED_HASH"
+                      cloudless.gr/config-source: "ssm:$SSM_PREFIX"
+                      cloudless.gr/config-synced-at: "$(date -u +%FT%TZ)"
+                  type: Opaque
+                  data:
+                  EOF
+                  cat "$TMP/data.txt" >> "$TMP/secret.yaml"
+
+                  # --- 6. apply + rollout ------------------------------------
+                  kubectl apply -f "$TMP/secret.yaml"
+                  kubectl -n "$NAMESPACE" rollout restart deployment/"$DEPLOYMENT"
+                  kubectl -n "$NAMESPACE" rollout status deployment/"$DEPLOYMENT" --timeout=300s
+
+                  echo "config-sync complete at $(date -u +%FT%TZ); hash=$DESIRED_HASH"

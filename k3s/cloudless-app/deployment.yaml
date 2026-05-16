@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudless-app
+  namespace: cloudless
+  labels:
+    app.kubernetes.io/name: cloudless-app
+    app.kubernetes.io/component: web
+spec:
+  # NOTE: replicas is intentionally NOT set here — managed by HPA (see hpa.yaml).
+  # Initial scale set on first apply only; subsequent rollouts preserve current replica count.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudless-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cloudless-app
+    spec:
+      imagePullSecrets:
+        - name: regcred-ecr
+      # Soft anti-affinity — meaningful when a 2nd worker node is added.
+      # Currently single-node, so this is informational/forward-compatible.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: cloudless-app
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: app
+          image: 278585680617.dkr.ecr.us-east-1.amazonaws.com/cloudless-pi-app:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: cloudless-app-config
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              httpHeaders:
+                - name: X-Forwarded-Proto
+                  value: https
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              httpHeaders:
+                - name: X-Forwarded-Proto
+                  value: https
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 5
+          # Resources sized so 2 replicas fit in the Pi 5 (8 GB RAM, 4 cores)
+          # without starving the Docker stack on the same host.
+          # Per-pod ceiling: 1.5 GB RAM / 1.5 CPU. Floor: 384 MB / 0.2 CPU.
+          # Bound by ResourceQuota (resourcequota.yaml): 6 GiB / 5 CPU total
+          # — HPA maxReplicas=2 is set independently in hpa.yaml because more
+          # than 2 SSR workers on a 4-core Pi just contends for CPU.
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "384Mi"
+            limits:
+              cpu: "1500m"
+              memory: "1536Mi"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]

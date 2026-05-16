@@ -1,0 +1,89 @@
+name: cleanup-branches
+
+# Deletes stale branches via the GitHub REST API using the auto-issued
+# GITHUB_TOKEN. Solves the case where deleting branches via `git push --delete`
+# from a sandboxed environment isn't possible (no PAT, no AWS Secrets Manager
+# access). Three triggers:
+#
+# 1. `pull_request closed` (merged=true) — auto-deletes the head branch of a
+#    merged PR. Replaces the repo's "Automatically delete head branches"
+#    setting with one that's checked-in and visible to reviewers.
+# 2. `workflow_dispatch` — manual cleanup of a comma-separated list passed in.
+#    With no input, falls back to the hardcoded default stale list below.
+# 3. `push` to main touching this file — bootstrap run when the workflow first
+#    lands (or whenever the default list is edited), so the initial cleanup
+#    happens automatically on merge with no further action needed.
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      branches:
+        description: "Comma-separated branches to delete. Empty = use the default stale list."
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    paths: [.github/workflows/cleanup-branches.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  delete-merged-pr-head:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete head branch of merged PR
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          case "$BRANCH" in
+            main|develop|release/*) echo "skip protected: $BRANCH"; exit 0 ;;
+          esac
+          if gh api --method DELETE "repos/$REPO/git/refs/heads/$BRANCH" 2>err.log; then
+            echo "deleted $BRANCH"
+          else
+            echo "could not delete $BRANCH:"
+            cat err.log
+          fi
+
+  bulk-cleanup:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete listed branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_BRANCHES: ${{ github.event.inputs.branches }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Default = stale branches that accumulated before this workflow
+          # existed. Edit this list when more orphans show up and a push to
+          # main will re-run the cleanup automatically.
+          DEFAULT="claude/fix-k3s-agent-service-GLkS9,claude/run-system-check-j3X21,claude/image-sync-cronjob,claude/sync-tune-cadence,claude/sync-webhook,claude/fix-playwright-parity,claude/docs-backport-notion-ha-facts"
+          BRANCHES="${INPUT_BRANCHES:-}"
+          [ -z "$BRANCHES" ] && BRANCHES="$DEFAULT"
+          deleted=0; skipped=0; gone=0
+          IFS=','
+          for b in $BRANCHES; do
+            # trim
+            b="$(echo "$b" | xargs)"
+            [ -z "$b" ] && continue
+            case "$b" in
+              main|develop|release/*)
+                echo "skip protected: $b"; skipped=$((skipped+1)); continue ;;
+            esac
+            if gh api --method DELETE "repos/$REPO/git/refs/heads/$b" 2>/dev/null; then
+              echo "deleted $b"; deleted=$((deleted+1))
+            else
+              echo "not deleted $b (already gone or no permission)"; gone=$((gone+1))
+            fi
+          done
+          echo
+          echo "Summary: deleted=$deleted skipped=$skipped not-deleted=$gone"

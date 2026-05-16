@@ -1,0 +1,32 @@
+# Traefik (k3s default) Ingress for cloudless.online.
+# TLS is issued by cert-manager via the cluster-issuer-route53 ClusterIssuer
+# (Let's Encrypt DNS-01 over Route 53).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloudless-app
+  namespace: cloudless
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-route53
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    # Shed excess load gracefully (429) when failover takes the Pi to its limit.
+    # See middleware-ratelimit.yaml. Middleware names are namespace-prefixed.
+    traefik.ingress.kubernetes.io/router.middlewares: cloudless-cloudless-app-ratelimit@kubernetescrd,cloudless-cloudless-app-inflight@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - cloudless.online
+      secretName: cloudless-online-tls
+  rules:
+    - host: cloudless.online
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cloudless-app
+                port:
+                  name: http

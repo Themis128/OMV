@@ -1,0 +1,68 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  yaml:
+    name: yamllint + kubeconform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: yamllint
+        run: |
+          pip install --quiet yamllint
+          yamllint -d '{extends: relaxed, rules: {line-length: {max: 200}, indentation: {indent-sequences: consistent}}}' .
+
+      - name: kubeconform (validate manifests against k8s schemas)
+        run: |
+          curl -sSL -o /tmp/kubeconform.tar.gz \
+            https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          tar -xzf /tmp/kubeconform.tar.gz -C /tmp
+          # cert-manager + Traefik HelmChartConfig CRDs aren't in the default schema set;
+          # use the community CRD repo as a fallback so we don't fail on them.
+          /tmp/kubeconform \
+            -strict \
+            -summary \
+            -ignore-missing-schemas \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            -kubernetes-version 1.30.0 \
+            $(find k3s -name '*.yaml' -not -name '*.example.yaml')
+
+  kustomize:
+    name: kustomize build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install kustomize
+        run: |
+          curl -sSL https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
+          sudo mv kustomize /usr/local/bin/
+      - name: kustomize build cloudless-app
+        run: kustomize build k3s/cloudless-app/ > /tmp/rendered.yaml && wc -l /tmp/rendered.yaml
+
+  shell:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck $(find k3s scripts -type f -name '*.sh')
+
+  js:
+    name: node syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Syntax-only check — catches committed merge-conflict markers and
+      # parse errors in the synthetic-monitoring suite (the lint suite
+      # otherwise never executes or parses run.js).
+      - name: node --check
+        run: node --check test/playwright/run.js
