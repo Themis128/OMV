@@ -47,6 +47,24 @@ mergerfs, ZFS, LVM, SMART), network, services, shares, containers, and users.
 ./scripts/omv-inventory.sh > inventory.txt  # save to a file
 ```
 
+## Publish Reports to GitHub
+
+`scripts/omv-report-to-github.sh` runs the health check and inventory on the
+Pi and pushes the results to a dedicated `omv-reports` branch, so the Pi's
+state can be reviewed from GitHub without SSH access to the Pi.
+
+One-time setup on the Pi:
+
+```bash
+git clone git@github.com:Themis128/OMV.git ~/OMV
+cat ~/.ssh/id_ed25519.pub   # add as a deploy key with write access
+~/OMV/scripts/omv-report-to-github.sh
+```
+
+Reports land on the `omv-reports` branch under `reports/`, with both
+timestamped files and `latest-*` copies. Add a cron entry to run it on a
+schedule. See the script header for full setup notes.
+
 ## Apply Maintenance Fixes
 
 `scripts/omv-apply-fixes.sh` applies the maintenance fixes from the OMV tune-up:
@@ -72,6 +90,7 @@ sudo ./scripts/omv-apply-fixes.sh             # apply
 - `.gitignore` — common ignore patterns (OS, editors, Node, Python, env files)
 - `scripts/omv-healthcheck.sh` — read-only OMV host health check
 - `scripts/omv-inventory.sh` — read-only full OMV host inventory
+- `scripts/omv-report-to-github.sh` — publish health/inventory reports to the repo
 - `scripts/omv-apply-fixes.sh` — idempotent OMV host maintenance fixes
 
 ## License
