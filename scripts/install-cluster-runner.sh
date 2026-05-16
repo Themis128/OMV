@@ -4,10 +4,14 @@
 # can be triggered from the GitHub UI — phone included — with no SSH, laptop,
 # or Tailscale.
 #
-# Run this ON the target Pi. Recommended host: omv-ha — a runner there
-# survives an omv outage. Trade-off: omv-ha is a 1 GB Pi 4 and an idle runner
-# is ~100-150 MB; if that's too tight, install on omv instead (it then can't
-# help when omv itself is down).
+# Run this ON the target Pi. Recommended host: omv (Pi 5, 8 GB) — it has the
+# RAM headroom for a runner, whose memory spikes during a job. Do NOT install
+# on omv-ha: it is a ~1 GB Pi 4 already carrying an etcd quorum member +
+# alertmanager + ntfy, and a job-spiking runner there can OOM-kill etcd and
+# destabilise the node that anchors control-plane HA. "A runner on omv-ha
+# survives an omv outage" is a false economy — recover-standby.sh fixes omv's
+# *services* (cloudflared / k3s / Traefik / cloudless-app), and a fully-dead
+# omv node needs a power-cycle either way, which no runner can perform.
 #
 # The runner is a HOST systemd service, NOT a k8s pod — on purpose: it must
 # stay up when k3s itself is down.
