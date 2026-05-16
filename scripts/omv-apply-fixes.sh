@@ -107,10 +107,11 @@ RandomizedDelaySec=5min"
         printf '  [%s]  would: write %s (OnBootSec=%s)\n' "$(c_blue DRY)" "$file" "$boot_delay"
         return 0
     fi
-    mkdir -p "$dir" \
-        && printf '%s\n' "$content" > "$file" \
-        && applied "${timer} deferred to OnBootSec=${boot_delay}" \
-        || errored "writing ${file}"
+    if mkdir -p "$dir" && printf '%s\n' "$content" > "$file"; then
+        applied "${timer} deferred to OnBootSec=${boot_delay}"
+    else
+        errored "writing ${file}"
+    fi
 }
 write_timer_override "apt-daily.timer" "15min"
 write_timer_override "apt-daily-upgrade.timer" "30min"
