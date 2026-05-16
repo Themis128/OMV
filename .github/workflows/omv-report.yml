@@ -1,0 +1,63 @@
+name: omv-report
+
+# Generate an OMV host health check + inventory and publish them to the
+# 'omv-reports' branch. Runs on the self-hosted runner on the Pi (label
+# omv-recovery, installed via scripts/install-cluster-runner.sh), so the
+# Pi's state can be captured straight from the GitHub UI — phone included —
+# with no SSH, laptop, or Tailscale.
+#
+# With no such runner registered, a dispatch just queues until one appears.
+#
+# For a complete inventory the runner user needs passwordless sudo; without
+# it the root-only probes (blkid, smartctl, dmesg, journalctl) degrade
+# gracefully to "(unavailable)" rather than failing the run.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: [self-hosted, omv-recovery]
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate reports
+        run: |
+          set -u
+          esc=$(printf '\033')
+          bash scripts/omv-healthcheck.sh 2>&1 \
+            | sed "s/${esc}\[[0-9;]*m//g" > "$RUNNER_TEMP/healthcheck.txt"
+          bash scripts/omv-inventory.sh 2>&1 \
+            | sed "s/${esc}\[[0-9;]*m//g" > "$RUNNER_TEMP/inventory.txt"
+
+      - name: Publish to omv-reports branch
+        run: |
+          set -eu
+          ts=$(date +%Y%m%d-%H%M%S)
+          git fetch origin
+          if git show-ref --verify --quiet refs/remotes/origin/omv-reports; then
+            git checkout -B omv-reports origin/omv-reports
+          else
+            git checkout --orphan omv-reports
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          mkdir -p reports
+          cp "$RUNNER_TEMP/healthcheck.txt" "reports/healthcheck-${ts}.txt"
+          cp "$RUNNER_TEMP/inventory.txt" "reports/inventory-${ts}.txt"
+          cp "$RUNNER_TEMP/healthcheck.txt" reports/latest-healthcheck.txt
+          cp "$RUNNER_TEMP/inventory.txt" reports/latest-inventory.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports
+          if git diff --cached --quiet; then
+            echo "No changes to publish."
+            exit 0
+          fi
+          git commit -m "OMV report ${ts}"
+          git push origin omv-reports
