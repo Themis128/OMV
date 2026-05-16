@@ -2,7 +2,7 @@
 
 ## Goal
 
-When DNS failover sends production traffic from the AWS primary (CloudFront + Lambda — effectively unbounded) to the **single-Pi k3s standby**, the Pi has to absorb the surge without crashing or losing data.
+When DNS failover sends production traffic from the AWS primary (CloudFront + Lambda — effectively unbounded) to the **Pi k3s standby**, the cluster has to absorb the surge without crashing or losing data. `cloudless-app` runs on the `omv` node (Pi 5); the second node, `omv-ha`, is a control-plane peer too small to host the app.
 
 The Pi cannot match Lambda's elastic scale — it's one physical box. But within its envelope it can:
 
