@@ -1,16 +1,30 @@
 name: omv-report
 
-# Generate an OMV host health check + inventory and publish them to the
-# 'omv-reports' branch. Runs on the self-hosted runner on the Pi (label
-# omv-recovery, installed via scripts/install-cluster-runner.sh), so the
-# Pi's state can be captured straight from the GitHub UI — phone included —
-# with no SSH, laptop, or Tailscale.
+# Capture the OMV host's health check + inventory and publish them to the
+# 'omv-reports' branch. Runs on a GitHub-hosted runner that joins the
+# tailnet via Tailscale and SSHes into the Pi — so no self-hosted runner is
+# needed and the report can be produced entirely from GitHub's side.
 #
-# With no such runner registered, a dispatch just queues until one appears.
+# Required repository secrets
+#   (Settings -> Secrets and variables -> Actions -> New repository secret):
 #
-# For a complete inventory the runner user needs passwordless sudo; without
-# it the root-only probes (blkid, smartctl, dmesg, journalctl) degrade
-# gracefully to "(unavailable)" rather than failing the run.
+#   TS_AUTHKEY    Tailscale auth key. Create at the Tailscale admin console
+#                 -> Settings -> Keys -> Generate auth key (reusable;
+#                 ephemeral recommended so CI nodes self-expire).
+#
+#   OMV_SSH_KEY   Private SSH key whose public half is in the Pi's
+#                 ~/.ssh/authorized_keys for user tbaltzakis. Generate a
+#                 dedicated key on the Pi:
+#                   ssh-keygen -t ed25519 -N "" -f ~/.ssh/ci_omv
+#                   cat ~/.ssh/ci_omv.pub >> ~/.ssh/authorized_keys
+#                   cat ~/.ssh/ci_omv   # paste this as the secret
+#
+# Optional repository variable:
+#   OMV_SSH_HOST  Pi address on the tailnet (default: 100.113.41.119).
+#
+# For a complete inventory the Pi user needs passwordless sudo; without it
+# the root-only probes (blkid, smartctl, dmesg, journalctl) degrade to
+# "(unavailable)" rather than failing the run.
 
 on:
   workflow_dispatch:
@@ -29,25 +43,47 @@ permissions:
 
 jobs:
   report:
-    runs-on: [self-hosted, omv-recovery]
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Generate reports
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          hostname: omv-report-ci
+
+      - name: Run health check + inventory on the Pi
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST }}
         run: |
-          set -u
+          host="${OMV_SSH_HOST:-100.113.41.119}"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$OMV_SSH_KEY" > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          ssh_opts=(-i "$HOME/.ssh/omv_key"
+                    -o StrictHostKeyChecking=accept-new
+                    -o ConnectTimeout=20)
+          # Fail fast and loudly if the Pi is unreachable.
+          if ! ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'echo connected'; then
+            echo "ERROR: cannot SSH to the Pi at ${host} over Tailscale." >&2
+            exit 1
+          fi
           esc=$(printf '\033')
-          bash scripts/omv-healthcheck.sh 2>&1 \
-            | sed "s/${esc}\[[0-9;]*m//g" > "$RUNNER_TEMP/healthcheck.txt"
-          bash scripts/omv-inventory.sh 2>&1 \
-            | sed "s/${esc}\[[0-9;]*m//g" > "$RUNNER_TEMP/inventory.txt"
+          # '|| true' so a health-check FAIL exit does not fail the workflow.
+          ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'bash -s' \
+            < scripts/omv-healthcheck.sh 2>&1 \
+            | sed "s/${esc}\[[0-9;]*m//g" > "$RUNNER_TEMP/healthcheck.txt" || true
+          ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'bash -s' \
+            < scripts/omv-inventory.sh 2>&1 \
+            | sed "s/${esc}\[[0-9;]*m//g" > "$RUNNER_TEMP/inventory.txt" || true
 
       - name: Publish to omv-reports branch
         run: |
-          set -eu
           ts=$(date +%Y%m%d-%H%M%S)
           git fetch origin
           if git show-ref --verify --quiet refs/remotes/origin/omv-reports; then
