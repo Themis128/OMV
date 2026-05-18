@@ -47,7 +47,8 @@ scripts/
 ├── omv-healthcheck.sh         # read-only OMV host health check
 ├── omv-inventory.sh           # read-only full OMV host inventory
 ├── omv-report-to-github.sh    # publish health/inventory reports to a branch
-└── omv-apply-fixes.sh         # idempotent OMV host maintenance fixes
+├── omv-apply-fixes.sh         # idempotent OMV host maintenance fixes
+└── omv-repair.sh              # diagnose/repair a broken OMV control plane
 ```
 
 ## Quick start (on a fresh OMV Pi)
@@ -119,6 +120,18 @@ and failed-unit reset. Every fix is idempotent.
 ```bash
 sudo ./scripts/omv-apply-fixes.sh --dry-run   # preview, change nothing
 sudo ./scripts/omv-apply-fixes.sh             # apply
+```
+
+### Repair a broken control plane
+
+`scripts/omv-repair.sh` diagnoses and repairs the case where the
+`openmediavault` package is installed but its service units
+(`openmediavault-engined`, `nginx`, `php-fpm`, `rrdcached`) are missing, so
+the web UI and engine are down. It is diagnose-only by default.
+
+```bash
+sudo ./scripts/omv-repair.sh            # diagnose, change nothing
+sudo ./scripts/omv-repair.sh --apply    # reinstall openmediavault and restart
 ```
 
 ## Cluster facts
