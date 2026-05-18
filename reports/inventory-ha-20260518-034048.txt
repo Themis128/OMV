@@ -1,0 +1,3 @@
+omv-ha unreachable from omv (ssh exit 255).
+omv needs passwordless SSH to tbaltzakis@192.168.1.130.
+See latest-diagnostics.txt.
