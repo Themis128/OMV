@@ -51,7 +51,7 @@ jobs:
           fetch-depth: 0
 
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
+        uses: tailscale/github-action@v4
         with:
           authkey: ${{ secrets.TS_AUTHKEY }}
           hostname: omv-report-ci
