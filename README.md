@@ -49,6 +49,7 @@ scripts/
 ├── omv-report-to-github.sh    # publish health/inventory reports to a branch
 ├── omv-apply-fixes.sh         # idempotent OMV host maintenance fixes
 ├── omv-repair.sh              # diagnose/repair a broken OMV control plane
+├── omv-install.sh             # install OpenMediaVault on the omv NAS node
 └── omv-ha-k3s-prep.sh         # keep omv-ha a lean, stable k3s node
 ```
 
@@ -121,6 +122,18 @@ and failed-unit reset. Every fix is idempotent.
 ```bash
 sudo ./scripts/omv-apply-fixes.sh --dry-run   # preview, change nothing
 sudo ./scripts/omv-apply-fixes.sh             # apply
+```
+
+### Install OpenMediaVault
+
+`scripts/omv-install.sh` installs OpenMediaVault on the `omv` NAS node. It
+**refuses to run on `omv-ha`** (a 1 GB k3s/etcd node, where OMV would
+OOM-kill etcd) and on any host with under 3 GiB RAM. Diagnose-only by
+default.
+
+```bash
+sudo ./scripts/omv-install.sh           # diagnose, change nothing
+sudo ./scripts/omv-install.sh --apply   # install OpenMediaVault
 ```
 
 ### Repair a broken control plane
