@@ -43,7 +43,9 @@ printf 'OMV Health Check — %s — %s\n' "$(hostname)" "$(date '+%Y-%m-%d %H:%M
 
 # --- OMV engine ------------------------------------------------------------
 section "OMV engine daemon"
-if systemctl is-active --quiet openmediavault-engined; then
+if ! dpkg-query -W -f='${db:Status-Abbrev}' openmediavault 2>/dev/null | grep -q '^ii'; then
+    ok "OpenMediaVault not installed on this host — skipping OMV checks"
+elif systemctl is-active --quiet openmediavault-engined; then
     ok "openmediavault-engined is running"
 else
     fail "openmediavault-engined is not running"
