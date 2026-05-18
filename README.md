@@ -48,7 +48,8 @@ scripts/
 ├── omv-inventory.sh           # read-only full OMV host inventory
 ├── omv-report-to-github.sh    # publish health/inventory reports to a branch
 ├── omv-apply-fixes.sh         # idempotent OMV host maintenance fixes
-└── omv-repair.sh              # diagnose/repair a broken OMV control plane
+├── omv-repair.sh              # diagnose/repair a broken OMV control plane
+└── omv-ha-k3s-prep.sh         # keep omv-ha a lean, stable k3s node
 ```
 
 ## Quick start (on a fresh OMV Pi)
@@ -132,6 +133,20 @@ the web UI and engine are down. It is diagnose-only by default.
 ```bash
 sudo ./scripts/omv-repair.sh            # diagnose, change nothing
 sudo ./scripts/omv-repair.sh --apply    # reinstall openmediavault and restart
+```
+
+### Prepare the HA node for k3s
+
+`scripts/omv-ha-k3s-prep.sh` keeps `omv-ha` (a 1 GB Pi 3 running the k3s
+control plane and an etcd member) lean and stable — without installing
+OpenMediaVault, which would consume the RAM k3s needs. It reports power
+state, memory pressure, swap, journal size, etcd snapshots and pending
+upgrades; under `--apply` it caps the systemd journal (less SD-card wear)
+and adds a sysctl drop-in tuned for a memory-constrained k3s node.
+
+```bash
+sudo ./scripts/omv-ha-k3s-prep.sh           # diagnose, change nothing
+sudo ./scripts/omv-ha-k3s-prep.sh --apply   # apply the safe tunes
 ```
 
 ## Cluster facts
