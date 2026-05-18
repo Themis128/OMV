@@ -2,29 +2,26 @@ name: omv-report
 
 # Capture the OMV host's health check + inventory and publish them to the
 # 'omv-reports' branch. Runs on a GitHub-hosted runner that joins the
-# tailnet via Tailscale and SSHes into the Pi — so no self-hosted runner is
-# needed and the report can be produced entirely from GitHub's side.
+# tailnet via Tailscale and SSHes into the Pi.
+#
+# Self-diagnosing: a diagnostics file (Tailscale status, SSH result, step
+# outcomes) is published to the omv-reports branch on EVERY run, success or
+# failure — so a failed run still produces something readable.
 #
 # Required repository secrets
 #   (Settings -> Secrets and variables -> Actions -> New repository secret):
 #
-#   TS_AUTHKEY    Tailscale auth key. Create at the Tailscale admin console
-#                 -> Settings -> Keys -> Generate auth key (reusable;
-#                 ephemeral recommended so CI nodes self-expire).
+#   TS_AUTHKEY    Tailscale auth key (reusable; ephemeral recommended).
+#                 Tailscale admin -> Settings -> Keys -> Generate auth key.
 #
 #   OMV_SSH_KEY   Private SSH key whose public half is in the Pi's
-#                 ~/.ssh/authorized_keys for user tbaltzakis. Generate a
-#                 dedicated key on the Pi:
+#                 ~/.ssh/authorized_keys for user tbaltzakis:
 #                   ssh-keygen -t ed25519 -N "" -f ~/.ssh/ci_omv
 #                   cat ~/.ssh/ci_omv.pub >> ~/.ssh/authorized_keys
 #                   cat ~/.ssh/ci_omv   # paste this as the secret
 #
 # Optional repository variable:
 #   OMV_SSH_HOST  Pi address on the tailnet (default: 100.113.41.119).
-#
-# For a complete inventory the Pi user needs passwordless sudo; without it
-# the root-only probes (blkid, smartctl, dmesg, journalctl) degrade to
-# "(unavailable)" rather than failing the run.
 
 on:
   workflow_dispatch:
@@ -51,38 +48,81 @@ jobs:
           fetch-depth: 0
 
       - name: Connect to Tailscale
+        id: tailscale
         uses: tailscale/github-action@v4
         with:
           authkey: ${{ secrets.TS_AUTHKEY }}
           hostname: omv-report-ci
 
-      - name: Run health check + inventory on the Pi
+      - name: Collect reports and diagnostics
+        id: collect
+        if: always()
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST }}
         run: |
+          # Never abort — diagnostics must be published whatever happens.
+          set +e
           host="${OMV_SSH_HOST:-100.113.41.119}"
+          diag="$RUNNER_TEMP/diagnostics.txt"
+          hc="$RUNNER_TEMP/healthcheck.txt"
+          inv="$RUNNER_TEMP/inventory.txt"
+          esc=$(printf '\033')
+
+          {
+            echo "omv-report diagnostics — $(date -u +%FT%TZ)"
+            echo
+            echo "Tailscale step outcome : ${{ steps.tailscale.outcome }}"
+          } > "$diag"
+          if [ -n "${OMV_SSH_KEY:-}" ]; then
+            echo "OMV_SSH_KEY secret     : present" >> "$diag"
+          else
+            echo "OMV_SSH_KEY secret     : MISSING (empty)" >> "$diag"
+          fi
+          echo "Pi tailnet host        : $host" >> "$diag"
+          {
+            echo
+            echo "## tailscale status"
+            tailscale status 2>&1
+            echo
+            echo "## ping the Pi over Tailscale"
+            tailscale ping --c 1 "$host" 2>&1
+          } >> "$diag"
+
           install -d -m 700 ~/.ssh
-          printf '%s\n' "$OMV_SSH_KEY" > ~/.ssh/omv_key
+          printf '%s\n' "${OMV_SSH_KEY:-}" > ~/.ssh/omv_key
           chmod 600 ~/.ssh/omv_key
           ssh_opts=(-i "$HOME/.ssh/omv_key"
                     -o StrictHostKeyChecking=accept-new
+                    -o BatchMode=yes
                     -o ConnectTimeout=20)
-          # Fail fast and loudly if the Pi is unreachable.
-          if ! ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'echo connected'; then
-            echo "ERROR: cannot SSH to the Pi at ${host} over Tailscale." >&2
-            exit 1
+
+          {
+            echo
+            echo "## SSH connectivity test (tbaltzakis@$host)"
+          } >> "$diag"
+          ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'echo SSH-OK on $(hostname)' \
+            >> "$diag" 2>&1
+          ssh_rc=$?
+          echo "(ssh exit code: $ssh_rc)" >> "$diag"
+
+          if [ "$ssh_rc" -eq 0 ]; then
+            ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'bash -s' \
+              < scripts/omv-healthcheck.sh 2>&1 \
+              | sed "s/${esc}\[[0-9;]*m//g" > "$hc"
+            ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'bash -s' \
+              < scripts/omv-inventory.sh 2>&1 \
+              | sed "s/${esc}\[[0-9;]*m//g" > "$inv"
+            echo "ssh=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "SSH to the Pi failed — see latest-diagnostics.txt." > "$hc"
+            cp "$hc" "$inv"
+            echo "ssh=fail" >> "$GITHUB_OUTPUT"
           fi
-          esc=$(printf '\033')
-          # '|| true' so a health-check FAIL exit does not fail the workflow.
-          ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'bash -s' \
-            < scripts/omv-healthcheck.sh 2>&1 \
-            | sed "s/${esc}\[[0-9;]*m//g" > "$RUNNER_TEMP/healthcheck.txt" || true
-          ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'bash -s' \
-            < scripts/omv-inventory.sh 2>&1 \
-            | sed "s/${esc}\[[0-9;]*m//g" > "$RUNNER_TEMP/inventory.txt" || true
+          exit 0
 
       - name: Publish to omv-reports branch
+        if: always()
         run: |
           ts=$(date +%Y%m%d-%H%M%S)
           git fetch origin
@@ -93,9 +133,11 @@ jobs:
             git rm -rf . >/dev/null 2>&1 || true
           fi
           mkdir -p reports
+          cp "$RUNNER_TEMP/diagnostics.txt" "reports/diagnostics-${ts}.txt"
+          cp "$RUNNER_TEMP/diagnostics.txt" reports/latest-diagnostics.txt
           cp "$RUNNER_TEMP/healthcheck.txt" "reports/healthcheck-${ts}.txt"
-          cp "$RUNNER_TEMP/inventory.txt" "reports/inventory-${ts}.txt"
           cp "$RUNNER_TEMP/healthcheck.txt" reports/latest-healthcheck.txt
+          cp "$RUNNER_TEMP/inventory.txt" "reports/inventory-${ts}.txt"
           cp "$RUNNER_TEMP/inventory.txt" reports/latest-inventory.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -106,3 +148,10 @@ jobs:
           fi
           git commit -m "OMV report ${ts}"
           git push origin omv-reports
+
+      - name: Fail the run if the Pi was unreachable
+        if: always() && steps.collect.outputs.ssh != 'ok'
+        run: |
+          echo "The Pi was unreachable — diagnostics were published to the" >&2
+          echo "omv-reports branch (reports/latest-diagnostics.txt)." >&2
+          exit 1
