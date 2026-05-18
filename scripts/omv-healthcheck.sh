@@ -130,6 +130,29 @@ else
     ok "5-min load ${load5} (${cores} cores)"
 fi
 
+# --- Power / undervoltage (Raspberry Pi) -----------------------------------
+section "Power"
+if command -v vcgencmd >/dev/null 2>&1; then
+    throttled=$(vcgencmd get_throttled 2>/dev/null | sed 's/.*=//')
+    tval=$(( ${throttled:-0} ))
+    if [ "$tval" -eq 0 ]; then
+        ok "no undervoltage or throttling"
+    else
+        if (( tval & 0x1 )); then
+            fail "under-voltage right now (get_throttled=$throttled) — check PSU/cable"
+        elif (( tval & 0x10000 )); then
+            warn "under-voltage has occurred since boot (get_throttled=$throttled)"
+        fi
+        if (( tval & 0x4 )); then
+            warn "CPU is currently throttled (get_throttled=$throttled)"
+        elif (( tval & 0x40000 )); then
+            warn "throttling has occurred since boot (get_throttled=$throttled)"
+        fi
+    fi
+else
+    ok "vcgencmd not available — skipping power check"
+fi
+
 # --- APT repositories ------------------------------------------------------
 section "APT repositories"
 apt_out=$($SUDO apt-get update -qq 2>&1)
