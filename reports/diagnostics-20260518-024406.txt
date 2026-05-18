@@ -1,0 +1,15 @@
+omv-report diagnostics — 2026-05-18T02:43:46Z
+
+Tailscale step outcome : failure
+OMV_SSH_KEY secret     : MISSING (empty)
+Pi tailnet host        : 100.113.41.119
+
+## tailscale status
+/home/runner/work/_temp/ca149fd6-b7fd-470a-8bdf-b90010ef2296.sh: line 23: tailscale: command not found
+
+## ping the Pi over Tailscale
+/home/runner/work/_temp/ca149fd6-b7fd-470a-8bdf-b90010ef2296.sh: line 26: tailscale: command not found
+
+## SSH connectivity test (tbaltzakis@100.113.41.119)
+ssh: connect to host 100.113.41.119 port 22: Connection timed out
+(ssh exit code: 255)
