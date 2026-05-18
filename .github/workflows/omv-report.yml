@@ -84,9 +84,6 @@ jobs:
             echo
             echo "## tailscale status"
             tailscale status 2>&1
-            echo
-            echo "## ping the Pi over Tailscale"
-            tailscale ping --c 1 "$host" 2>&1
           } >> "$diag"
 
           install -d -m 700 ~/.ssh
