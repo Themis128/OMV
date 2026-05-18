@@ -91,8 +91,30 @@ jobs:
           } >> "$diag"
 
           install -d -m 700 ~/.ssh
-          printf '%s\n' "${OMV_SSH_KEY:-}" > ~/.ssh/omv_key
+          # Strip CR — Windows-style line endings in the secret corrupt
+          # the key and yield "error in libcrypto".
+          printf '%s\n' "${OMV_SSH_KEY:-}" | tr -d '\r' > ~/.ssh/omv_key
           chmod 600 ~/.ssh/omv_key
+          {
+            echo
+            echo "## OMV_SSH_KEY structure (no key material printed)"
+            echo "line count : $(wc -l < ~/.ssh/omv_key)"
+            if head -n1 ~/.ssh/omv_key | grep -q -- '-----BEGIN .*PRIVATE KEY-----'; then
+              echo "header     : BEGIN private-key header OK"
+            else
+              echo "header     : NOT a private-key header — wrong content pasted?"
+            fi
+            if tail -n1 ~/.ssh/omv_key | grep -q -- '-----END .*PRIVATE KEY-----'; then
+              echo "footer     : END private-key footer OK"
+            else
+              echo "footer     : END footer missing — key truncated?"
+            fi
+            if ssh-keygen -y -f ~/.ssh/omv_key >/dev/null 2>&1; then
+              echo "parse test : valid — ssh-keygen loaded the key"
+            else
+              echo "parse test : INVALID — ssh-keygen could not load the key"
+            fi
+          } >> "$diag"
           ssh_opts=(-i "$HOME/.ssh/omv_key"
                     -o StrictHostKeyChecking=accept-new
                     -o BatchMode=yes
