@@ -1,12 +1,12 @@
 name: omv-report
 
-# Capture the OMV host's health check + inventory and publish them to the
-# 'omv-reports' branch. Runs on a GitHub-hosted runner that joins the
-# tailnet via Tailscale and SSHes into the Pi.
+# Capture the health check + inventory of both Pis — omv and omv-ha — and
+# publish them to the 'omv-reports' branch. Runs on a GitHub-hosted runner
+# that joins the tailnet via Tailscale and SSHes into omv; omv-ha (not on
+# the tailnet) is reached via a LAN hop from omv.
 #
-# Self-diagnosing: a diagnostics file (Tailscale status, SSH result, step
-# outcomes) is published to the omv-reports branch on EVERY run, success or
-# failure — so a failed run still produces something readable.
+# Self-diagnosing: a diagnostics file (Tailscale status, SSH results, key
+# checks) is published on EVERY run, success or failure.
 #
 # Required repository secrets
 #   (Settings -> Secrets and variables -> Actions -> New repository secret):
@@ -14,14 +14,17 @@ name: omv-report
 #   TS_AUTHKEY    Tailscale auth key (reusable; ephemeral recommended).
 #                 Tailscale admin -> Settings -> Keys -> Generate auth key.
 #
-#   OMV_SSH_KEY   Private SSH key whose public half is in the Pi's
+#   OMV_SSH_KEY   Private SSH key whose public half is in omv's
 #                 ~/.ssh/authorized_keys for user tbaltzakis:
 #                   ssh-keygen -t ed25519 -N "" -f ~/.ssh/ci_omv
 #                   cat ~/.ssh/ci_omv.pub >> ~/.ssh/authorized_keys
 #                   cat ~/.ssh/ci_omv   # paste this as the secret
 #
-# Optional repository variable:
-#   OMV_SSH_HOST  Pi address on the tailnet (default: 100.113.41.119).
+# Optional repository variables:
+#   OMV_SSH_HOST  omv address on the tailnet (default: 100.113.41.119).
+#   OMV_HA_HOST   omv-ha address, reached via a LAN hop from omv
+#                 (default: 192.168.1.130). omv must have passwordless
+#                 SSH to tbaltzakis@OMV_HA_HOST for omv-ha to be collected.
 
 on:
   workflow_dispatch:
@@ -64,13 +67,17 @@ jobs:
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST }}
         run: |
           # Never abort — diagnostics must be published whatever happens.
           set +e
           host="${OMV_SSH_HOST:-100.113.41.119}"
+          ha_host="${OMV_HA_HOST:-192.168.1.130}"
           diag="$RUNNER_TEMP/diagnostics.txt"
           hc="$RUNNER_TEMP/healthcheck.txt"
           inv="$RUNNER_TEMP/inventory.txt"
+          hc_ha="$RUNNER_TEMP/healthcheck-ha.txt"
+          inv_ha="$RUNNER_TEMP/inventory-ha.txt"
           esc=$(printf '\033')
 
           {
@@ -83,7 +90,8 @@ jobs:
           else
             echo "OMV_SSH_KEY secret     : MISSING (empty)" >> "$diag"
           fi
-          echo "Pi tailnet host        : $host" >> "$diag"
+          echo "omv tailnet host       : $host" >> "$diag"
+          echo "omv-ha LAN host        : $ha_host" >> "$diag"
           {
             echo
             echo "## tailscale status"
@@ -104,11 +112,6 @@ jobs:
             else
               echo "header     : NOT a private-key header — wrong content pasted?"
             fi
-            if tail -n1 ~/.ssh/omv_key | grep -q -- '-----END .*PRIVATE KEY-----'; then
-              echo "footer     : END private-key footer OK"
-            else
-              echo "footer     : END footer missing — key truncated?"
-            fi
             if ssh-keygen -y -f ~/.ssh/omv_key >/dev/null 2>&1; then
               echo "parse test : valid — ssh-keygen loaded the key"
             else
@@ -120,14 +123,15 @@ jobs:
                     -o BatchMode=yes
                     -o ConnectTimeout=20)
 
+          # --- omv (reached directly over the tailnet) ---
           {
             echo
-            echo "## SSH connectivity test (tbaltzakis@$host)"
+            echo "## omv SSH connectivity test (tbaltzakis@$host)"
           } >> "$diag"
           ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'echo SSH-OK on $(hostname)' \
             >> "$diag" 2>&1
           ssh_rc=$?
-          echo "(ssh exit code: $ssh_rc)" >> "$diag"
+          echo "(omv ssh exit code: $ssh_rc)" >> "$diag"
 
           if [ "$ssh_rc" -eq 0 ]; then
             ssh "${ssh_opts[@]}" "tbaltzakis@${host}" 'bash -s' \
@@ -138,9 +142,42 @@ jobs:
               | sed "s/${esc}\[[0-9;]*m//g" > "$inv"
             echo "ssh=ok" >> "$GITHUB_OUTPUT"
           else
-            echo "SSH to the Pi failed — see latest-diagnostics.txt." > "$hc"
+            echo "SSH to omv failed — see latest-diagnostics.txt." > "$hc"
             cp "$hc" "$inv"
             echo "ssh=fail" >> "$GITHUB_OUTPUT"
+          fi
+
+          # --- omv-ha (not on the tailnet — reached via a LAN hop from omv) ---
+          {
+            echo
+            echo "## omv-ha collection (omv -> tbaltzakis@$ha_host)"
+          } >> "$diag"
+          if [ "$ssh_rc" -ne 0 ]; then
+            echo "skipped — omv itself was unreachable" >> "$diag"
+            echo "omv-ha not collected — omv was unreachable." > "$hc_ha"
+            cp "$hc_ha" "$inv_ha"
+          else
+            ha_ssh="ssh -o BatchMode=yes -o ConnectTimeout=20"
+            ha_ssh="$ha_ssh -o StrictHostKeyChecking=accept-new tbaltzakis@${ha_host}"
+            ssh "${ssh_opts[@]}" "tbaltzakis@${host}" "$ha_ssh 'echo HA-SSH-OK'" \
+              >> "$diag" 2>&1
+            ha_rc=$?
+            echo "(omv-ha ssh exit code: $ha_rc)" >> "$diag"
+            if [ "$ha_rc" -eq 0 ]; then
+              ssh "${ssh_opts[@]}" "tbaltzakis@${host}" "$ha_ssh 'bash -s'" \
+                < scripts/omv-healthcheck.sh 2>&1 \
+                | sed "s/${esc}\[[0-9;]*m//g" > "$hc_ha"
+              ssh "${ssh_opts[@]}" "tbaltzakis@${host}" "$ha_ssh 'bash -s'" \
+                < scripts/omv-inventory.sh 2>&1 \
+                | sed "s/${esc}\[[0-9;]*m//g" > "$inv_ha"
+            else
+              {
+                echo "omv-ha unreachable from omv (ssh exit $ha_rc)."
+                echo "omv needs passwordless SSH to tbaltzakis@${ha_host}."
+                echo "See latest-diagnostics.txt."
+              } > "$hc_ha"
+              cp "$hc_ha" "$inv_ha"
+            fi
           fi
           exit 0
 
@@ -162,6 +199,10 @@ jobs:
           cp "$RUNNER_TEMP/healthcheck.txt" reports/latest-healthcheck.txt
           cp "$RUNNER_TEMP/inventory.txt" "reports/inventory-${ts}.txt"
           cp "$RUNNER_TEMP/inventory.txt" reports/latest-inventory.txt
+          cp "$RUNNER_TEMP/healthcheck-ha.txt" "reports/healthcheck-ha-${ts}.txt"
+          cp "$RUNNER_TEMP/healthcheck-ha.txt" reports/latest-healthcheck-ha.txt
+          cp "$RUNNER_TEMP/inventory-ha.txt" "reports/inventory-ha-${ts}.txt"
+          cp "$RUNNER_TEMP/inventory-ha.txt" reports/latest-inventory-ha.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reports
@@ -172,9 +213,9 @@ jobs:
           git commit -m "OMV report ${ts}"
           git push origin omv-reports
 
-      - name: Fail the run if the Pi was unreachable
+      - name: Fail the run if omv was unreachable
         if: always() && steps.collect.outputs.ssh != 'ok'
         run: |
-          echo "The Pi was unreachable — diagnostics were published to the" >&2
+          echo "omv was unreachable — diagnostics were published to the" >&2
           echo "omv-reports branch (reports/latest-diagnostics.txt)." >&2
           exit 1
