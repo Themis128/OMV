@@ -47,7 +47,7 @@ permissions:
 
 jobs:
   report:
-    runs-on: [self-hosted, omv-recovery]
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repo
         uses: actions/checkout@v4

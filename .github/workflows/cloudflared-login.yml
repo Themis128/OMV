@@ -35,7 +35,7 @@ permissions:
 
 jobs:
   login:
-    runs-on: [self-hosted, omv-recovery]
+    runs-on: ubuntu-latest
     # Give the job enough room to wait for the operator click + the auth flow.
     timeout-minutes: 20
     steps:
