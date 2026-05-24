@@ -8,7 +8,7 @@ on:
 jobs:
   yaml:
     name: yamllint + kubeconform
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, omv-recovery]
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +35,7 @@ jobs:
 
   kustomize:
     name: kustomize build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, omv-recovery]
     steps:
       - uses: actions/checkout@v4
       - name: install kustomize
@@ -49,7 +49,7 @@ jobs:
 
   shell:
     name: shellcheck
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, omv-recovery]
     steps:
       - uses: actions/checkout@v4
       - name: shellcheck
@@ -60,7 +60,7 @@ jobs:
 
   js:
     name: node syntax
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, omv-recovery]
     steps:
       - uses: actions/checkout@v4
       # Syntax-only check — catches committed merge-conflict markers and
