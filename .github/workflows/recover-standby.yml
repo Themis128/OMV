@@ -346,11 +346,13 @@ jobs:
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
-          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          cat > /tmp/fix-monit-k3s.sh << 'SCRIPT'
+          #!/usr/bin/env bash
           set -euo pipefail
+
           echo "=== k3s.service status on omv ==="
           systemctl is-active k3s.service || true
-          systemctl status k3s.service --no-pager -l | tail -15 || true
+          systemctl status k3s.service --no-pager | grep -v "^[ └├]" | tail -10 || true
 
           echo ""
           echo "=== Current monit k3s config files ==="
@@ -371,31 +373,28 @@ jobs:
 
           echo ""
           echo "=== Fixing monit k3s check ==="
-          # k3s on omv is the SERVER (k3s.service, not k3s-agent.service).
-          # monit should check the PID via systemd, not a PID file.
-          # Replace any existing k3s check with a clean systemd-based one.
           CONF="${CONF_DIR}/k3s-service"
-          if [ -f "${CONF_DIR}/k3s" ]; then
-            echo "Removing old ${CONF_DIR}/k3s"
-            sudo rm -f "${CONF_DIR}/k3s"
-          fi
-          echo "Writing ${CONF}"
-          sudo tee "${CONF}" > /dev/null << 'MONIT'
-          check process k3s matching "k3s server"
-            start program = "/bin/systemctl start k3s"
-            stop  program = "/bin/systemctl stop k3s"
-            if failed
-              then alert
-            if changed pid
-              then alert
-          MONIT
+          sudo rm -f "${CONF_DIR}/k3s" 2>/dev/null || true
+          printf '%s\n' \
+            'check process k3s matching "k3s server"' \
+            '  start program = "/bin/systemctl start k3s"' \
+            '  stop  program = "/bin/systemctl stop k3s"' \
+            '  if failed then alert' \
+            '  if changed pid then alert' \
+            | sudo tee "${CONF}" > /dev/null
+          echo "Written: ${CONF}"
+          cat "${CONF}"
           echo "Reloading monit..."
           sudo monit reload 2>/dev/null || sudo systemctl reload monit 2>/dev/null || true
           echo ""
           echo "=== monit summary after fix ==="
           monit summary 2>/dev/null || echo "(monit reload takes a few seconds)"
           echo "=== Done ==="
-          EOF
+          SCRIPT
+          chmod +x /tmp/fix-monit-k3s.sh
+          scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+            /tmp/fix-monit-k3s.sh "tbaltzakis@${OMV_SSH_HOST}:/tmp/fix-monit-k3s.sh"
+          ssh "tbaltzakis@${OMV_SSH_HOST}" sudo bash /tmp/fix-monit-k3s.sh
 
       - name: Post result to status board
         if: always()
