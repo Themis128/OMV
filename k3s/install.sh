@@ -10,6 +10,12 @@
 #   - default Traefik ingress, but bound to host ports 18080/18443
 #     (because OMV nginx owns 80+8080 and pihole-FTL owns 443)
 #   - kubeconfig copied to ~tbaltzakis/.kube/config (mode 600)
+#
+# After installing, write the cluster config (etcd S3 credentials etc.):
+#   sudo ETCD_S3_ACCESS_KEY=AKIAxxxxxxxx ETCD_S3_SECRET_KEY=xxxxxxxx \
+#     ./scripts/configure-k3s.sh
+#   sudo systemctl restart k3s
+# See k3s/config.example.yaml for all available fields.
 set -euo pipefail
 
 if [[ ${EUID} -ne 0 ]]; then
