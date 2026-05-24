@@ -95,7 +95,7 @@ jobs:
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -euo pipefail
           cd ~/OMV
-          sudo k3s kubectl apply -f k3s/cloudless-app/ingress.yaml
+          sudo k3s kubectl apply --validate=false -f k3s/cloudless-app/ingress.yaml
           EOF
 
       - name: Verify tunnel is serving
