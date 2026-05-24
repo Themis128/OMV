@@ -44,14 +44,13 @@ jobs:
 
       - name: Run setup-route53-failover.sh
         env:
-          ZONE_ID:    ${{ vars.R53_ZONE_ID  || 'Z079608614L53CC4EAZM3' }}
-          DOMAIN:     ${{ vars.R53_DOMAIN   || 'cloudless.gr' }}
-          PI_WAN_IP:  ${{ inputs.pi_wan_ip != '' && inputs.pi_wan_ip || vars.PI_WAN_IP || '150.228.63.192' }}
+          ZONE_ID: ${{ vars.R53_ZONE_ID || 'Z079608614L53CC4EAZM3' }}
+          DOMAIN: ${{ vars.R53_DOMAIN || 'cloudless.gr' }}
+          PI_WAN_IP: ${{ inputs.pi_wan_ip != '' && inputs.pi_wan_ip || vars.PI_WAN_IP || '150.228.63.192' }}
           # aws-actions/configure-aws-credentials sets the env vars already;
           # override the profile so the script doesn't try to use a named profile.
           AWS_PROFILE: ""
         run: |
-          chmod +x scripts/setup-route53-failover.sh
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             ./scripts/setup-route53-failover.sh --dry-run
           else
