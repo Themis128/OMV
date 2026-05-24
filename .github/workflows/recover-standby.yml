@@ -350,46 +350,25 @@ jobs:
           #!/usr/bin/env bash
           set -euo pipefail
 
-          echo "=== k3s.service status on omv ==="
-          systemctl is-active k3s.service || true
-          systemctl show k3s.service --property=ActiveState,SubState,MainPID,ExecMainStatus 2>/dev/null || true
-
-          echo ""
-          echo "=== Current monit k3s config files ==="
+          K3S_ACTIVE=$(systemctl is-active k3s.service); echo "k3s.service: ${K3S_ACTIVE}"
           CONF_DIR=/etc/monit/conf.d
-          for f in "${CONF_DIR}"/*k3s* "${CONF_DIR}"/*services* 2>/dev/null; do
+          echo "=== monit conf.d ==="
+          ls -la "${CONF_DIR}/" || true
+          for f in "${CONF_DIR}/"*; do
             [ -f "$f" ] || continue
-            echo "--- $f ---"
-            cat "$f"
+            echo "--- $f ---"; cat "$f"
           done
-
-          echo ""
-          echo "=== /etc/monit/monitrc (k3s-related lines) ==="
-          grep -n "k3s" /etc/monit/monitrc 2>/dev/null || echo "(no k3s lines in monitrc)"
-
-          echo ""
+          echo "=== monitrc k3s lines ==="
+          grep -n "k3s" /etc/monit/monitrc || echo "(none)"
           echo "=== monit summary ==="
-          monit summary 2>/dev/null || echo "(monit not available)"
-
-          echo ""
-          echo "=== Fixing monit k3s check ==="
+          monit summary || echo "(unavailable)"
+          echo "=== applying fix ==="
           CONF="${CONF_DIR}/k3s-service"
-          sudo rm -f "${CONF_DIR}/k3s" 2>/dev/null || true
-          printf '%s\n' \
-            'check process k3s matching "k3s server"' \
-            '  start program = "/bin/systemctl start k3s"' \
-            '  stop  program = "/bin/systemctl stop k3s"' \
-            '  if failed then alert' \
-            '  if changed pid then alert' \
-            | sudo tee "${CONF}" > /dev/null
-          echo "Written: ${CONF}"
+          sudo rm -f "${CONF_DIR}/k3s" || true
+          printf 'check process k3s matching "k3s server"\n  start program = "/bin/systemctl start k3s"\n  stop program = "/bin/systemctl stop k3s"\n  if failed then alert\n  if changed pid then alert\n' | sudo tee "${CONF}"
+          sudo monit reload || sudo systemctl reload monit || true
+          echo "=== done; new config ==="
           cat "${CONF}"
-          echo "Reloading monit..."
-          sudo monit reload 2>/dev/null || sudo systemctl reload monit 2>/dev/null || true
-          echo ""
-          echo "=== monit summary after fix ==="
-          monit summary 2>/dev/null || echo "(monit reload takes a few seconds)"
-          echo "=== Done ==="
           SCRIPT
           chmod +x /tmp/fix-monit-k3s.sh
           scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
