@@ -76,13 +76,10 @@ and applies the cheapest fix at each layer:
 ```
 
 **No SSH / no laptop?** The `recover-standby` GitHub Actions workflow runs that
-same script on a self-hosted runner inside the LAN — trigger it from
+same script via Tailscale from a GitHub-hosted runner — trigger it from
 [Actions → recover-standby](https://github.com/Themis128/OMV/actions/workflows/recover-standby.yml)
-in any browser, phone included. It needs a runner labelled `omv-recovery`,
-installed once with `scripts/install-cluster-runner.sh` — run it on `omv`
-(the Pi 5; it has the RAM headroom). Do **not** install on the ~1 GB
-`omv-ha`: a job-spiking runner there can OOM-kill the etcd member it co-hosts.
-See that script's header for the one-time setup.
+in any browser, phone included. Requires `TS_AUTHKEY` and `OMV_SSH_KEY`
+secrets in the repo.
 
 If the script can't even SSH to `omv` (and `omv` is unreachable by Tailscale
 and LAN too), the Pi itself is down — **power-cycle it**; `k3s` and
@@ -93,6 +90,32 @@ when a bad image was deployed.
 
 The primary (`cloudless.gr`, CloudFront + Lambda) is independent of the Pi
 and unaffected by a standby outage; only HA redundancy is lost.
+
+## etcd quorum lost (`omv` loops "pre-candidate", writes blocked)
+
+**Symptom:** `journalctl -u k3s | grep -i "pre-candidate\|handshake failed"` shows
+omv's etcd repeatedly trying to elect itself but failing — the 2-member cluster
+lost quorum because omv-ha is unreachable.
+
+**Recovery** (run on `omv` as root, or via the workflow with `etcd_recover = true`):
+
+```bash
+sudo ~/OMV/scripts/etcd-recover.sh
+# Prompts before each destructive step.
+# Set REJOIN=1 to also re-join omv-ha automatically after reset.
+```
+
+What it does:
+1. Stops k3s on omv-ha (SSH best-effort)
+2. Stops k3s on omv
+3. Snapshots `server/db` to `/var/lib/rancher/k3s-reset-backup-<ts>`
+4. Runs `k3s server --cluster-reset` (rewrites etcd to single-member)
+5. Restarts k3s; waits for node Ready
+6. Optionally re-joins omv-ha as a control-plane server
+
+**From the GitHub UI (no SSH needed):**
+[Actions → recover-standby](https://github.com/Themis128/OMV/actions/workflows/recover-standby.yml)
+→ Run workflow → check **"etcd cluster-reset"** → Run workflow.
 
 ## etcd snapshot restore (catastrophic primary loss)
 
@@ -120,6 +143,24 @@ kubectl get pods -A
 
 After a `--cluster-reset` you'll need to re-join any other servers as fresh
 members; treat it as a clean cluster.
+
+## Rotate the omv-main-cli AWS key (etcd S3 snapshots)
+
+The `omv-main-cli` IAM key is stored in `/etc/rancher/k3s/config.yaml` and
+used by k3s for etcd S3 snapshots.
+
+1. In AWS IAM: create a new access key for `omv-main-cli`, save both values.
+2. On `omv`:
+   ```bash
+   sudo ETCD_S3_ACCESS_KEY=<new-id> ETCD_S3_SECRET_KEY=<new-secret> \
+     ~/OMV/scripts/configure-k3s.sh
+   sudo systemctl restart k3s
+   ```
+3. Verify next snapshot lands in S3:
+   ```bash
+   aws s3 ls s3://cloudless-etcd-snapshots/etcd/ --profile cloudless | tail -3
+   ```
+4. Deactivate then delete the old key in IAM.
 
 ## Rotate ECR pull credentials manually
 
