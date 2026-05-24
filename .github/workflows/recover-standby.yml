@@ -50,6 +50,10 @@ on:
         description: "Remove leftover server files from omv-ha (/tmp scripts, stale k3s server state, ~/OMV clone)."
         type: boolean
         default: false
+      fix_k3s_alias:
+        description: "Install k3s.service alias on omv-ha so OMV monit stops sending 'k3s.service not running' emails (run after demote_ha_to_agent)."
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
@@ -78,6 +82,7 @@ jobs:
             k3s_rejoin=$(jq -r '.inputs.k3s_rejoin // "false"' .github/dispatches/recover-standby.json)
             demote_ha_to_agent=$(jq -r '.inputs.demote_ha_to_agent // "false"' .github/dispatches/recover-standby.json)
             cleanup_ha=$(jq -r '.inputs.cleanup_ha // "false"' .github/dispatches/recover-standby.json)
+            fix_k3s_alias=$(jq -r '.inputs.fix_k3s_alias // "false"' .github/dispatches/recover-standby.json)
           else
             apply="${{ inputs.apply || 'true' }}"
             etcd_recover="${{ inputs.etcd_recover || 'false' }}"
@@ -86,9 +91,10 @@ jobs:
             k3s_rejoin="${{ inputs.k3s_rejoin || 'false' }}"
             demote_ha_to_agent="${{ inputs.demote_ha_to_agent || 'false' }}"
             cleanup_ha="${{ inputs.cleanup_ha || 'false' }}"
+            fix_k3s_alias="${{ inputs.fix_k3s_alias || 'false' }}"
           fi
-          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\ncleanup_ha=%s\n' \
-            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" "$cleanup_ha" >> "$GITHUB_OUTPUT"
+          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\ncleanup_ha=%s\nfix_k3s_alias=%s\n' \
+            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" "$cleanup_ha" "$fix_k3s_alias" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -295,6 +301,24 @@ jobs:
           echo "=== Disk usage after cleanup ==="
           df -h /
           echo "=== Done ==="
+          EOF
+
+      - name: Fix k3s.service alias on omv-ha (stop OMV monit email alerts)
+        if: ${{ always() && steps.inputs.outputs.fix_k3s_alias == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+              tbaltzakis@${OMV_HA_HOST} bash -s" << 'EOF'
+          set -euo pipefail
+          cd ~/OMV 2>/dev/null || { git clone -q https://github.com/Themis128/OMV ~/OMV && cd ~/OMV; }
+          git pull -q origin main
+          sudo ./scripts/omv-ha-fix-k3s-alias.sh
+          echo "=== Service status ==="
+          systemctl is-active k3s.service && echo "k3s.service: active" || echo "k3s.service: INACTIVE"
+          systemctl is-active k3s-agent.service && echo "k3s-agent.service: active" || echo "k3s-agent.service: INACTIVE"
           EOF
 
       - name: Post result to status board
