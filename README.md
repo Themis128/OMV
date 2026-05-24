@@ -2,7 +2,7 @@
 
 This repository holds the infrastructure-as-code and runbooks for the **Pi 5 / OMV** node (and its `omv-ha` peer) that serves [cloudless.gr](https://cloudless.gr) via a 2-node k3s cluster.
 
-External ingress is **Cloudflare Tunnel** (`cloudflared` on omv → Traefik :18443) — outbound-only, no router port-forward, no WAN-IP exposure. TLS is issued by cert-manager using the Cloudflare DNS-01 solver. Intra-cluster HA is keepalived VIP + embedded etcd across both Pis. The AWS serverless app (Lambda + CloudFront, SST-managed in the `cloudless.gr` repo) is a separate concern and is not configured by this repo.
+External ingress is **Cloudflare Tunnel** (`cloudflared` on omv → Traefik :18443) — outbound-only, no router port-forward, no WAN-IP exposure. Public TLS is handled by Cloudflare Universal SSL; the origin leg uses `noTLSVerify`, so no cert-manager / Let's Encrypt / Cloudflare API token is required on the cluster. Intra-cluster HA is keepalived VIP + embedded etcd across both Pis. The AWS serverless app (Lambda + CloudFront, SST-managed in the `cloudless.gr` repo) is a separate concern and is not configured by this repo.
 
 ## Layout
 
@@ -26,9 +26,9 @@ k3s/
 │   ├── service.yaml
 │   ├── ingress.yaml
 │   └── kustomization.yaml
-└── cert-manager/              # Let's Encrypt via Route 53 DNS-01
+└── cert-manager/              # optional — only if you need a real origin cert
     ├── install.sh
-    ├── route53-credentials.example.yaml
+    ├── cloudflare-api-token.example.yaml
     └── cluster-issuer.yaml
 
 docs/
@@ -66,11 +66,11 @@ kubectl -n cloudless create secret generic pi-standby-aws-creds \
 kubectl apply -f k3s/cloudless-app/ecr-cred-refresher.yaml
 kubectl -n cloudless create job --from=cronjob/ecr-cred-refresher ecr-bootstrap
 
-# 3) install cert-manager and the Route 53 ClusterIssuer
-sudo k3s/cert-manager/install.sh
-# populate route53-credentials.yaml from SSM, then:
-kubectl apply -f k3s/cert-manager/route53-credentials.yaml
-kubectl apply -f k3s/cert-manager/cluster-issuer.yaml
+# 3) bring up the Cloudflare Tunnel for cloudless.gr (one OAuth click in browser):
+#    GitHub Actions → cloudflared-login → Run workflow
+#    Click the URL printed in the workflow log → pick cloudless.gr in Cloudflare.
+#    The workflow creates the tunnel, routes DNS, configures cloudflared, and
+#    applies the Ingress. No API token needed.
 
 # 4) populate the app config secret (env vars — see app-config.example.yaml)
 # then deploy the cloudless app:

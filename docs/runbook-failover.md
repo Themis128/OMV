@@ -190,11 +190,14 @@ kubectl -n cloudless create job --from=cronjob/ecr-cred-refresher ecr-refresh-ma
    aws iam delete-access-key --user-name cloudless-pi-standby --access-key-id <OLD> --profile cloudless
    ```
 
-## Re-issue TLS cert (forced)
+## TLS
 
-```bash
-kubectl -n cloudless delete secret cloudless-online-tls
-# cert-manager re-issues automatically; watch:
-kubectl -n cloudless describe certificate cloudless-online-tls
-kubectl -n cert-manager logs deploy/cert-manager --tail=80
-```
+Public TLS for `cloudless.gr` is handled by Cloudflare Universal SSL on the
+edge — nothing to do on the cluster side. The Cloudflare Tunnel uses
+`noTLSVerify: true` to the origin, so Traefik's default self-signed cert is
+fine and cert-manager is not required.
+
+If a future deployment needs a real origin cert (e.g. exposing Traefik
+directly on the LAN with TLS), put back the cert-manager annotation and TLS
+section on the Ingress and apply `k3s/cert-manager/cluster-issuer.yaml`
+together with a populated `cloudflare-api-token` Secret.
