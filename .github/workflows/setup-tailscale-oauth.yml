@@ -1,0 +1,129 @@
+name: setup-tailscale-oauth
+
+# One-shot: create a Tailscale OAuth client and store the credentials as
+# GitHub repo secrets (TS_OAUTH_CLIENT_ID, TS_OAUTH_SECRET), replacing the
+# deprecated TS_AUTHKEY. Run once from the Actions tab.
+#
+# Required input (masked, not stored):
+#   tailscale_api_key  — personal API key from
+#                        https://login.tailscale.com/admin/settings/keys
+#
+# The workflow:
+#   1. Calls the Tailscale API to create an OAuth client with Devices:write scope.
+#   2. Encrypts the client ID and secret using the repo's Actions public key.
+#   3. Stores both as GitHub repo secrets via the GitHub API.
+#   4. Optionally deletes the old TS_AUTHKEY secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tailscale_api_key:
+        description: "Tailscale API key (from https://login.tailscale.com/admin/settings/keys)."
+        type: string
+        required: true
+      tailscale_tailnet:
+        description: "Tailnet name (email or org slug, e.g. user@example.com or example.com)."
+        type: string
+        default: "-"
+      delete_old_authkey:
+        description: "Delete the old TS_AUTHKEY secret after storing the new credentials."
+        type: boolean
+        default: true
+
+permissions:
+  secrets: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install python-nacl (for secret encryption)
+        run: pip install --quiet PyNaCl requests
+
+      - name: Create Tailscale OAuth client + store GitHub secrets
+        env:
+          TS_API_KEY: ${{ inputs.tailscale_api_key }}
+          TAILNET: ${{ inputs.tailscale_tailnet }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          DELETE_OLD: ${{ inputs.delete_old_authkey }}
+        run: |
+          python3 << 'PYEOF'
+          import os, json, base64, requests
+          from nacl import encoding, public
+
+          ts_api_key = os.environ["TS_API_KEY"]
+          tailnet    = os.environ["TAILNET"]
+          gh_token   = os.environ["GH_TOKEN"]
+          repo       = os.environ["REPO"]
+          delete_old = os.environ["DELETE_OLD"].lower() == "true"
+
+          # 1. Create Tailscale OAuth client
+          print("Creating Tailscale OAuth client...")
+          resp = requests.post(
+              f"https://api.tailscale.com/api/v2/oauth/clients",
+              auth=(ts_api_key, ""),
+              json={
+                  "description": "GitHub Actions — OMV workflows",
+                  "scopes": ["devices:write"],
+              },
+          )
+          resp.raise_for_status()
+          data = resp.json()
+          client_id     = data["id"]
+          client_secret = data["secret"]
+          print(f"OAuth client created: {client_id}")
+
+          # 2. Get repo public key for secret encryption
+          gh_api = f"https://api.github.com/repos/{repo}/actions/secrets"
+          headers = {
+              "Authorization": f"Bearer {gh_token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+          pk_resp = requests.get(f"{gh_api}/public-key", headers=headers)
+          pk_resp.raise_for_status()
+          pk_data   = pk_resp.json()
+          key_id    = pk_data["key_id"]
+          pub_key   = public.PublicKey(pk_data["key"].encode(), encoding.Base64Encoder)
+
+          def encrypt_secret(value: str) -> str:
+              box = public.SealedBox(pub_key)
+              encrypted = box.encrypt(value.encode())
+              return base64.b64encode(encrypted).decode()
+
+          # 3. Store TS_OAUTH_CLIENT_ID
+          print("Storing TS_OAUTH_CLIENT_ID...")
+          r = requests.put(
+              f"{gh_api}/TS_OAUTH_CLIENT_ID",
+              headers=headers,
+              json={"encrypted_value": encrypt_secret(client_id), "key_id": key_id},
+          )
+          r.raise_for_status()
+          print(f"  → {r.status_code}")
+
+          # 4. Store TS_OAUTH_SECRET
+          print("Storing TS_OAUTH_SECRET...")
+          r = requests.put(
+              f"{gh_api}/TS_OAUTH_SECRET",
+              headers=headers,
+              json={"encrypted_value": encrypt_secret(client_secret), "key_id": key_id},
+          )
+          r.raise_for_status()
+          print(f"  → {r.status_code}")
+
+          # 5. Optionally delete TS_AUTHKEY
+          if delete_old:
+              print("Deleting old TS_AUTHKEY secret...")
+              r = requests.delete(f"{gh_api}/TS_AUTHKEY", headers=headers)
+              if r.status_code == 404:
+                  print("  → not found (already deleted)")
+              else:
+                  r.raise_for_status()
+                  print(f"  → {r.status_code}")
+
+          print("Done. All workflows now use OAuth client authentication.")
+          PYEOF
