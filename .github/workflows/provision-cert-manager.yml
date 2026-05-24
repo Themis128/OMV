@@ -75,8 +75,9 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
           hostname: omv-provision-cert-manager-ci
-
       - name: Configure SSH
         id: ssh_config
         env:

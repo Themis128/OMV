@@ -50,8 +50,9 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
           hostname: omv-cf-login-ci
-
       - name: Configure SSH
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
