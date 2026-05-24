@@ -52,6 +52,7 @@ jobs:
           echo "skip_issuer=$skip_issuer" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
+        id: tailscale
         uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
@@ -59,6 +60,7 @@ jobs:
           hostname: omv-provision-cert-manager-ci
 
       - name: Configure SSH
+        id: ssh_config
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
@@ -69,7 +71,16 @@ jobs:
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
+      - name: Ensure cert-manager namespace exists
+        id: ns
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "sudo k3s kubectl get ns cert-manager >/dev/null 2>&1 || sudo k3s kubectl create ns cert-manager"
+
       - name: Apply cloudflare-api-token Secret
+        id: apply_secret
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -87,6 +98,7 @@ jobs:
           EOF
 
       - name: Apply ClusterIssuers
+        id: apply_issuers
         if: ${{ steps.inputs.outputs.skip_issuer != 'true' }}
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
@@ -98,6 +110,7 @@ jobs:
           SSHEOF
 
       - name: Verify
+        id: verify
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
@@ -105,13 +118,20 @@ jobs:
           set -euo pipefail
           echo "=== ClusterIssuers ==="
           sudo k3s kubectl get clusterissuer \
-            -o custom-columns='NAME:.metadata.name,READY:.status.conditions[0].status,REASON:.status.conditions[0].reason'
-          echo ""
+            -o custom-columns='NAME:.metadata.name,READY:.status.conditions[0].status,REASON:.status.conditions[0].reason' \
+            2>/dev/null || echo "(no ClusterIssuers yet)"
           echo "=== cloudflare-api-token Secret ==="
           sudo k3s kubectl get secret cloudflare-api-token -n cert-manager \
-            -o custom-columns='NAME:.metadata.name,TYPE:.type,CREATED:.metadata.creationTimestamp'
+            -o custom-columns='NAME:.metadata.name,TYPE:.type,CREATED:.metadata.creationTimestamp' \
+            2>/dev/null || echo "(secret not found)"
           SSHEOF
 
       - name: Post result to status board
         if: always()
         uses: ./.github/actions/post-status
+        with:
+          detail: >-
+            ns=${{ steps.ns.outcome }}
+            secret=${{ steps.apply_secret.outcome }}
+            issuers=${{ steps.apply_issuers.outcome }}
+            verify=${{ steps.verify.outcome }}
