@@ -1,0 +1,80 @@
+name: setup-cloudflare
+
+# Operator-triggered Cloudflare bootstrap for cloudless.gr:
+#   1. ensure the zone exists in Cloudflare (creates it if not)
+#   2. create the "cloudless" Tunnel via API + write credentials JSON on omv
+#   3. print the assigned NS values (you set these at the registrar)
+#   4. optionally wait until NS delegation propagates
+#
+# Required repository secrets:
+#   TS_AUTHKEY    Tailscale auth key.
+#   OMV_SSH_KEY   Private SSH key for tbaltzakis@omv.
+#
+# Pass the Cloudflare API token as a masked workflow input (not stored as a
+# repo secret — one-shot use during the migration).
+
+on:
+  workflow_dispatch:
+    inputs:
+      cf_api_token:
+        description: "Cloudflare API token (Account:CF Tunnel:Edit + Zone:Zone:Edit + Zone:DNS:Edit)."
+        type: string
+        required: true
+      zone:
+        description: "Zone name."
+        type: string
+        default: "cloudless.gr"
+      tunnel_name:
+        description: "Tunnel name."
+        type: string
+        default: "cloudless"
+      wait_for_ns:
+        description: "Block until NS delegation to Cloudflare is observed."
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          hostname: omv-cf-bootstrap-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Run setup-cloudflare-dns-and-tunnel.sh on omv
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          CF_TOKEN: ${{ inputs.cf_api_token }}
+          ZONE: ${{ inputs.zone }}
+          TUNNEL_NAME: ${{ inputs.tunnel_name }}
+          WAIT_NS: ${{ inputs.wait_for_ns == true && '1' || '0' }}
+        run: |
+          TOKEN_B64="$(printf '%s' "${CF_TOKEN}" | base64 -w0)"
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
+          set -euo pipefail
+          TOKEN="\$(printf '%s' '${TOKEN_B64}' | base64 -d)"
+          cd ~/OMV && git pull -q origin main
+          sudo CF_API_TOKEN="\${TOKEN}" \
+               ZONE='${ZONE}' \
+               TUNNEL_NAME='${TUNNEL_NAME}' \
+               WAIT_NS='${WAIT_NS}' \
+               ./scripts/setup-cloudflare-dns-and-tunnel.sh
+          EOF
