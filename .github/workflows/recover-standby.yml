@@ -98,6 +98,9 @@ jobs:
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
       - name: Recover standby
+        # continue-on-error so health-check failure (exit 1 when cloudless.gr isn't 200
+        # yet) doesn't abort the job when other repair steps (k3s_rejoin) are also queued.
+        continue-on-error: true
         env:
           OMV_HOST: "tbaltzakis@${{ vars.OMV_SSH_HOST || '100.113.41.119' }}"
         run: |
