@@ -25,6 +25,10 @@ on:
         description: "Apply fixes (restart services / roll cloudless-app). Off = diagnose only."
         type: boolean
         default: true
+      etcd_recover:
+        description: "Run etcd cluster-reset (use when etcd lost quorum and omv loops 'pre-candidate')."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -66,3 +70,11 @@ jobs:
           else
             ./scripts/recover-standby.sh
           fi
+
+      - name: etcd cluster-reset (quorum lost)
+        if: ${{ inputs.etcd_recover == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            'sudo REJOIN=1 ~/OMV/scripts/etcd-recover.sh'
