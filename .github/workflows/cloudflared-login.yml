@@ -73,3 +73,34 @@ jobs:
                LOGIN_TIMEOUT='${LOGIN_TIMEOUT}' \
                ./scripts/cloudflared-login.sh
           EOF
+
+      - name: Configure and start the tunnel (configure-cloudflared.sh)
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          TUNNEL_NAME: ${{ inputs.tunnel_name }}
+          HOSTNAMES: ${{ inputs.hostnames }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
+          set -euo pipefail
+          cd ~/OMV
+          sudo TUNNEL_NAME='${TUNNEL_NAME}' \
+               HOSTNAMES='${HOSTNAMES}' \
+               ./scripts/configure-cloudflared.sh
+          EOF
+
+      - name: Verify tunnel is serving
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          HOSTNAMES: ${{ inputs.hostnames }}
+        run: |
+          PRIMARY="$(printf '%s' "${HOSTNAMES}" | cut -d, -f1)"
+          ssh "tbaltzakis@${OMV_SSH_HOST}" 'sudo systemctl is-active cloudflared'
+          echo "Probing https://${PRIMARY}/api/health from the runner..."
+          for i in 1 2 3 4 5 6; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://${PRIMARY}/api/health" || echo 000)"
+            echo "  attempt $i: HTTP ${code}"
+            [ "${code}" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "Health probe did not return 200 — check Traefik / cloudflared logs on omv."
+          exit 1
