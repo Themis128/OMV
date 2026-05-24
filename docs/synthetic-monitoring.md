@@ -21,13 +21,22 @@ Filtered noise: 3rd-party widgets (Sentry/HubSpot/Stripe/Facebook/typekit) and b
 |---|---|---|
 | Test suite | [`test/playwright/run.js`](../test/playwright/run.js) | The actual playwright assertions. |
 | Wrapper | [`test/playwright/run-and-mail.sh`](../test/playwright/run-and-mail.sh) | Runs the suite, retries once on failure, emails via SES on persistent failure. |
-| Timer | `~/.config/systemd/user/cloudless-playwright-synthetic.timer` | `OnCalendar=*:0/30`, `Persistent=true`, `RandomizedDelaySec=60`. |
-| Service | `~/.config/systemd/user/cloudless-playwright-synthetic.service` | `Type=oneshot`, `SuccessExitStatus=0 1` (wrapper owns notification). |
+| Timer | [`test/playwright/systemd/cloudless-playwright-synthetic.timer`](../test/playwright/systemd/cloudless-playwright-synthetic.timer) | `OnCalendar=*:0/30`, `Persistent=true`, `RandomizedDelaySec=60`. |
+| Service | [`test/playwright/systemd/cloudless-playwright-synthetic.service`](../test/playwright/systemd/cloudless-playwright-synthetic.service) | `Type=oneshot`, `SuccessExitStatus=0 1` (wrapper owns notification). |
 | Logs | `~/.cache/cloudless-playwright/run-*.log` | Last 50 runs retained; rotation in the wrapper. |
 
 The wrapper retries the suite once after 30s on the first failure — guards against transient `ERR_NETWORK_CHANGED` (Starlink/Tailscale interface flaps) and one-shot 5xx blips. Only escalates if **both** runs fail.
 
 SES creds are pulled at runtime from SSM (`/cloudless/production/mailer/aws-{access-key-id,secret-access-key}`). Nothing on disk. Sender + recipient: `system-info@cloudless.gr`. Subject: `[cloudless-ha] playwright synthetic FAILED`. Body includes the failed assertion lines and the last 80 lines of stdout.
+
+## Install
+
+```bash
+# One-time setup on the Pi (run as tbaltzakis, not root):
+loginctl enable-linger               # timer survives logout/reboot
+npx playwright install chromium      # ~150 MB, first time only
+./test/playwright/systemd/install.sh # copies units, enables timer
+```
 
 ## Operate
 
