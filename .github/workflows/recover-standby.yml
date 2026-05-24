@@ -34,6 +34,9 @@ on:
         description: "Apply memory tunes on omv-ha (zram, OOM-protect k3s, journal cap). Safe to re-run."
         type: boolean
         default: false
+  push:
+    branches: [main]
+    paths: [.github/dispatches/recover-standby.json]
 
 permissions:
   contents: read
@@ -46,6 +49,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ -f .github/dispatches/recover-standby.json ]; then
+            apply=$(jq -r '.inputs.apply // "true"' .github/dispatches/recover-standby.json)
+            etcd_recover=$(jq -r '.inputs.etcd_recover // "false"' .github/dispatches/recover-standby.json)
+            omv_ha_prep=$(jq -r '.inputs.omv_ha_prep // "false"' .github/dispatches/recover-standby.json)
+          else
+            apply="${{ inputs.apply || 'true' }}"
+            etcd_recover="${{ inputs.etcd_recover || 'false' }}"
+            omv_ha_prep="${{ inputs.omv_ha_prep || 'false' }}"
+          fi
+          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\n' "$apply" "$etcd_recover" "$omv_ha_prep" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -69,14 +86,14 @@ jobs:
         env:
           OMV_HOST: "tbaltzakis@${{ vars.OMV_SSH_HOST || '100.113.41.119' }}"
         run: |
-          if [ "${{ inputs.apply }}" = "true" ]; then
+          if [ "${{ steps.inputs.outputs.apply }}" = "true" ]; then
             ./scripts/recover-standby.sh --yes
           else
             ./scripts/recover-standby.sh
           fi
 
       - name: etcd cluster-reset (quorum lost)
-        if: ${{ inputs.etcd_recover == 'true' }}
+        if: ${{ steps.inputs.outputs.etcd_recover == 'true' }}
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
@@ -84,7 +101,7 @@ jobs:
             'sudo REJOIN=1 ~/OMV/scripts/etcd-recover.sh'
 
       - name: omv-ha memory tunes (zram + OOM protection)
-        if: ${{ inputs.omv_ha_prep == 'true' }}
+        if: ${{ steps.inputs.outputs.omv_ha_prep == 'true' }}
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
           OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}

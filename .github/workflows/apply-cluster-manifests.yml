@@ -12,6 +12,9 @@ name: apply-cluster-manifests
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/dispatches/apply-cluster-manifests.json]
 
 permissions:
   contents: read

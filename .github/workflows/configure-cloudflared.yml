@@ -24,6 +24,9 @@ on:
         description: "Cloudflare Tunnel name (matches the credentials file in /etc/cloudflared)."
         type: string
         default: "cloudless"
+  push:
+    branches: [main]
+    paths: [.github/dispatches/configure-cloudflared.json]
 
 permissions:
   contents: read
@@ -36,6 +39,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ -f .github/dispatches/configure-cloudflared.json ]; then
+            hostnames=$(jq -r '.inputs.hostnames // "cloudless.gr,manage.cloudless.gr"' .github/dispatches/configure-cloudflared.json)
+            tunnel_name=$(jq -r '.inputs.tunnel_name // "cloudless"' .github/dispatches/configure-cloudflared.json)
+          else
+            hostnames="${{ inputs.hostnames || 'cloudless.gr,manage.cloudless.gr' }}"
+            tunnel_name="${{ inputs.tunnel_name || 'cloudless' }}"
+          fi
+          printf 'hostnames=%s\ntunnel_name=%s\n' "$hostnames" "$tunnel_name" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -58,8 +73,8 @@ jobs:
       - name: Apply cloudflared config on omv
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-          HOSTNAMES: ${{ inputs.hostnames }}
-          TUNNEL_NAME: ${{ inputs.tunnel_name }}
+          HOSTNAMES: ${{ steps.inputs.outputs.hostnames }}
+          TUNNEL_NAME: ${{ steps.inputs.outputs.tunnel_name }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
           set -euo pipefail
@@ -71,7 +86,7 @@ jobs:
       - name: Verify tunnel is serving
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-          HOSTNAMES: ${{ inputs.hostnames }}
+          HOSTNAMES: ${{ steps.inputs.outputs.hostnames }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             'sudo systemctl is-active cloudflared && sudo journalctl -u cloudflared -n 20 --no-pager'

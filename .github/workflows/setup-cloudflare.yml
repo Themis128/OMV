@@ -33,6 +33,9 @@ on:
         description: "Block until NS delegation to Cloudflare is observed."
         type: boolean
         default: true
+  push:
+    branches: [main]
+    paths: [.github/dispatches/setup-cloudflare.json]
 
 permissions:
   contents: read
@@ -45,6 +48,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ -f .github/dispatches/setup-cloudflare.json ]; then
+            # Sensitive token comes from repo secret when push-triggered
+            cf_api_token="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+            zone=$(jq -r '.inputs.zone // "cloudless.gr"' .github/dispatches/setup-cloudflare.json)
+            tunnel_name=$(jq -r '.inputs.tunnel_name // "cloudless"' .github/dispatches/setup-cloudflare.json)
+            wait_for_ns=$(jq -r '.inputs.wait_for_ns // "true"' .github/dispatches/setup-cloudflare.json)
+          else
+            cf_api_token="${{ inputs.cf_api_token }}"
+            zone="${{ inputs.zone || 'cloudless.gr' }}"
+            tunnel_name="${{ inputs.tunnel_name || 'cloudless' }}"
+            wait_for_ns="${{ inputs.wait_for_ns || 'true' }}"
+          fi
+          echo "::add-mask::$cf_api_token"
+          printf 'zone=%s\ntunnel_name=%s\nwait_for_ns=%s\n' "$zone" "$tunnel_name" "$wait_for_ns" >> "$GITHUB_OUTPUT"
+          echo "cf_api_token=$cf_api_token" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -67,10 +89,10 @@ jobs:
       - name: Run setup-cloudflare-dns-and-tunnel.sh on omv
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-          CF_TOKEN: ${{ inputs.cf_api_token }}
-          ZONE: ${{ inputs.zone }}
-          TUNNEL_NAME: ${{ inputs.tunnel_name }}
-          WAIT_NS: ${{ inputs.wait_for_ns == true && '1' || '0' }}
+          CF_TOKEN: ${{ steps.inputs.outputs.cf_api_token }}
+          ZONE: ${{ steps.inputs.outputs.zone }}
+          TUNNEL_NAME: ${{ steps.inputs.outputs.tunnel_name }}
+          WAIT_NS: ${{ steps.inputs.outputs.wait_for_ns == 'true' && '1' || '0' }}
         run: |
           TOKEN_B64="$(printf '%s' "${CF_TOKEN}" | base64 -w0)"
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF

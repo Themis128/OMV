@@ -1,0 +1,8 @@
+{
+  "triggered_at": "2026-05-24T00:00:00Z",
+  "inputs": {
+    "apply": "true",
+    "etcd_recover": "false",
+    "omv_ha_prep": "false"
+  }
+}

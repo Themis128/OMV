@@ -4,6 +4,29 @@
 
 - When fixing issues: fix, test, and **merge directly to `main`** — do not create pull requests.
 
+## Triggering GitHub Actions workflows
+
+The GitHub MCP server has no `workflow_dispatch` tool. Instead, push an update to the
+corresponding dispatch file under `.github/dispatches/` — the workflow triggers on that push.
+
+To trigger a workflow, update `triggered_at` in the JSON file and push to main:
+
+| Dispatch file | Workflow | Notes |
+|---|---|---|
+| `.github/dispatches/provision-cert-manager.json` | provision-cert-manager | Uses `CLOUDFLARE_API_TOKEN` secret |
+| `.github/dispatches/apply-cluster-manifests.json` | apply-cluster-manifests | No inputs |
+| `.github/dispatches/recover-standby.json` | recover-standby | Set `apply/etcd_recover/omv_ha_prep` |
+| `.github/dispatches/configure-cloudflared.json` | configure-cloudflared | Set `hostnames/tunnel_name` |
+| `.github/dispatches/rotate-k3s-credentials.json` | rotate-k3s-credentials | Uses `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` secrets |
+| `.github/dispatches/setup-cloudflare.json` | setup-cloudflare | Uses `CLOUDFLARE_API_TOKEN` secret |
+| `.github/dispatches/cleanup-branches.json` | cleanup-branches | Set `branches` or leave empty for default list |
+
+Example — trigger `provision-cert-manager`:
+```bash
+# In the dispatch file, update triggered_at to now, then commit and push to main.
+# The workflow will start within seconds of the push landing.
+```
+
 ## Architecture
 
 - **`cloudless.gr` on the Pi k3s cluster**: served via Cloudflare Tunnel (`cloudflared`) → Traefik :18443.

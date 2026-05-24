@@ -24,6 +24,9 @@ on:
         default: "false"
         type: choice
         options: ["false", "true"]
+  push:
+    branches: [main]
+    paths: [.github/dispatches/provision-cert-manager.json]
 
 permissions:
   contents: read
@@ -36,6 +39,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ -f .github/dispatches/provision-cert-manager.json ]; then
+            skip_issuer=$(jq -r '.inputs.skip_issuer // "false"' .github/dispatches/provision-cert-manager.json)
+          else
+            skip_issuer="${{ inputs.skip_issuer || 'false' }}"
+          fi
+          echo "skip_issuer=$skip_issuer" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -73,7 +86,7 @@ jobs:
           EOF
 
       - name: Apply ClusterIssuers
-        if: ${{ github.event.inputs.skip_issuer != 'true' }}
+        if: ${{ steps.inputs.outputs.skip_issuer != 'true' }}
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |

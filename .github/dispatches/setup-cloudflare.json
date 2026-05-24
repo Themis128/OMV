@@ -1,0 +1,8 @@
+{
+  "triggered_at": "2026-05-24T00:00:00Z",
+  "inputs": {
+    "zone": "cloudless.gr",
+    "tunnel_name": "cloudless",
+    "wait_for_ns": "true"
+  }
+}

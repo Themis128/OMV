@@ -24,7 +24,9 @@ on:
         default: ""
   push:
     branches: [main]
-    paths: [.github/workflows/cleanup-branches.yml]
+    paths:
+      - .github/workflows/cleanup-branches.yml
+      - .github/dispatches/cleanup-branches.json
 
 permissions:
   contents: write
