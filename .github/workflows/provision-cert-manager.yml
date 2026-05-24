@@ -55,13 +55,14 @@ jobs:
         id: preflight
         env:
           TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
         run: |
           missing=()
-          [ -z "$TS_OAUTH_CLIENT_ID" ] && missing+=(TS_OAUTH_CLIENT_ID)
-          [ -z "$TS_OAUTH_SECRET" ]    && missing+=(TS_OAUTH_SECRET)
-          [ -z "$OMV_SSH_KEY" ]        && missing+=(OMV_SSH_KEY)
+          if [ -z "$TS_OAUTH_CLIENT_ID" ] && [ -z "$TS_AUTHKEY" ]; then
+            missing+=(TS_OAUTH_CLIENT_ID)
+          fi
+          [ -z "$OMV_SSH_KEY" ] && missing+=(OMV_SSH_KEY)
           if [ ${#missing[@]} -gt 0 ]; then
             echo "ERROR: Missing required secrets: ${missing[*]}"
             echo "Set them in Settings → Secrets and variables → Actions → New repository secret"
