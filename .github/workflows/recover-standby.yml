@@ -309,37 +309,31 @@ jobs:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
           OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
         run: |
-          ssh "tbaltzakis@${OMV_SSH_HOST}" \
-            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-              tbaltzakis@${OMV_HA_HOST} sudo bash -s" << 'SCRIPT'
+          cat > /tmp/k3s-alias.sh << 'SCRIPT'
+          #!/usr/bin/env bash
           set -euo pipefail
           UNIT=/etc/systemd/system/k3s.service
           if systemctl is-active --quiet k3s.service 2>/dev/null; then
             echo "[SKIP] k3s.service already active."
           else
-            echo "[APPLY] Writing k3s.service alias → k3s-agent.service"
-            cat > "${UNIT}" <<'EOF'
-          [Unit]
-          Description=k3s agent (alias for OMV monit compatibility)
-          BindsTo=k3s-agent.service
-          After=k3s-agent.service
-          [Service]
-          Type=oneshot
-          RemainAfterExit=yes
-          ExecStart=/bin/sh -c 'systemctl is-active --quiet k3s-agent.service || systemctl start k3s-agent.service'
-          ExecStop=/bin/sh -c 'true'
-          [Install]
-          WantedBy=multi-user.target
-          EOF
+            echo "[APPLY] Writing k3s.service alias for k3s-agent.service"
+            printf '[Unit]\nDescription=k3s agent (OMV monit alias)\nBindsTo=k3s-agent.service\nAfter=k3s-agent.service\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=/bin/sh -c "systemctl is-active --quiet k3s-agent.service || systemctl start k3s-agent.service"\nExecStop=/bin/sh -c "true"\n\n[Install]\nWantedBy=multi-user.target\n' > "${UNIT}"
             systemctl daemon-reload
             systemctl enable k3s.service
             systemctl start k3s.service
             echo "[OK] k3s.service alias installed."
           fi
-          echo "=== Status ==="
-          systemctl is-active k3s.service       && echo "k3s.service:       active" || echo "k3s.service:       INACTIVE"
-          systemctl is-active k3s-agent.service && echo "k3s-agent.service: active" || echo "k3s-agent.service: INACTIVE"
+          echo "k3s.service:       $(systemctl is-active k3s.service 2>/dev/null || echo inactive)"
+          echo "k3s-agent.service: $(systemctl is-active k3s-agent.service 2>/dev/null || echo inactive)"
           SCRIPT
+          chmod +x /tmp/k3s-alias.sh
+          scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+            /tmp/k3s-alias.sh "tbaltzakis@${OMV_SSH_HOST}:/tmp/k3s-alias.sh"
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+              /tmp/k3s-alias.sh tbaltzakis@${OMV_HA_HOST}:/tmp/k3s-alias.sh && \
+             ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+               tbaltzakis@${OMV_HA_HOST} sudo bash /tmp/k3s-alias.sh"
 
       - name: Post result to status board
         if: always()
