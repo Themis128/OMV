@@ -1,0 +1,77 @@
+name: bootstrap-runner
+
+# One-shot workflow to register the self-hosted actions runner on omv.
+# Run this once whenever the runner is missing (fresh Pi, re-image, service
+# crash).  After it completes the runner shows "Idle" in Settings → Runners
+# and every other workflow in this repo becomes triggerable.
+#
+# Uses ubuntu-latest (GitHub-hosted) so it is not blocked by the missing
+# runner — this is the only workflow in the repo that may use a GitHub-hosted
+# runner for that reason.
+#
+# Required secrets:
+#   TS_AUTHKEY   Tailscale auth key
+#   OMV_SSH_KEY  Private SSH key for tbaltzakis@omv
+#
+# Runner registration tokens expire in ~1 h.  Get one fresh from:
+#   https://github.com/Themis128/OMV/settings/actions/runners/new
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_token:
+        description: "Runner registration token (from Settings → Actions → Runners → New)."
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          hostname: omv-runner-bootstrap-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Install runner on omv
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          RUNNER_TOKEN: ${{ inputs.runner_token }}
+        run: |
+          TOKEN_B64="$(printf '%s' "${RUNNER_TOKEN}" | base64 -w0)"
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
+          set -euo pipefail
+          cd ~/OMV && git pull -q origin main
+          TOKEN="\$(printf '%s' '${TOKEN_B64}' | base64 -d)"
+          sudo RUNNER_TOKEN="\${TOKEN}" ./scripts/install-cluster-runner.sh
+          EOF
+
+      - name: Verify runner is active
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            'sudo systemctl is-active actions.runner.Themis128-OMV.omv-recovery 2>/dev/null || \
+             sudo systemctl list-units --type=service --state=active | grep -i actions-runner'
+          echo "Runner registered and active on omv."
+          echo "All workflows with [self-hosted, omv-recovery] are now unblocked."
+          echo "Next: trigger cloudflared-login from:"
+          echo "  https://github.com/Themis128/OMV/actions/workflows/cloudflared-login.yml"
