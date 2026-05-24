@@ -16,12 +16,16 @@ runs:
         GH_TOKEN: ${{ github.token }}
         STATUS: ${{ job.status }}
         DETAIL: ${{ inputs.detail }}
+        WORKFLOW: ${{ github.workflow }}
+        EVENT: ${{ github.event_name }}
+        REF: ${{ github.ref_name }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |
         if [ "$STATUS" = "success" ]; then icon="✅"; else icon="❌"; fi
-        body="${icon} **${{ github.workflow }}** — ${STATUS}
-Triggered: \`${{ github.event_name }}\` → \`${{ github.ref_name }}\`
-Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-At: $(date -u '+%Y-%m-%d %H:%M UTC')"
-        [ -n "$DETAIL" ] && body="${body}
-${DETAIL}"
+        body="$(printf '%s\nTriggered: `%s` → `%s`\nRun: %s\nAt: %s' \
+          "${icon} **${WORKFLOW}** — ${STATUS}" \
+          "${EVENT}" "${REF}" \
+          "${RUN_URL}" \
+          "$(date -u '+%Y-%m-%d %H:%M UTC')")"
+        [ -n "$DETAIL" ] && body="${body}"$'\n'"${DETAIL}"
         gh api "repos/${{ github.repository }}/issues/66/comments" -f body="$body"
