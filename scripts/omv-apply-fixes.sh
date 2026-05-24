@@ -108,7 +108,7 @@ RandomizedDelaySec=5min"
         return 0
     fi
     if mkdir -p "$dir" && printf '%s\n' "$content" > "$file"; then
-        applied "${timer} deferred to OnBootSec=${boot_delay}"
+        [ "$DRY_RUN" -eq 0 ] && applied "${timer} deferred to OnBootSec=${boot_delay}"
     else
         errored "writing ${file}"
     fi

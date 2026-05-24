@@ -42,7 +42,7 @@ Cluster, image registry, app, ingress, TLS, DNS, and backup integration all gree
 | Check | Result |
 |---|---|
 | Deployment | `cloudless-app` 1/1 Ready, 0 restarts |
-| Pod resources | requests 100 m / 256 Mi, limits 1000 m / 1 Gi |
+| Pod resources | requests 200 m / 384 Mi, limits 1500 m / 1536 Mi *(updated during HPA tuning post-acceptance)* |
 | Probes | readiness + liveness on `/api/health` |
 | Service | ClusterIP `10.43.104.90:80` → containerPort 3000 |
 | Config Secret | `cloudless-app-config`, 68 keys (sourced from SSM `/cloudless/production/*`) |
@@ -61,7 +61,7 @@ Cluster, image registry, app, ingress, TLS, DNS, and backup integration all gree
 
 | Check | Result |
 |---|---|
-| `.online` TLD authoritative NS | the 4 ns-*.awsdns-* records (papaki defaults gone) |
+| `.online` TLD authoritative NS | ~~the 4 ns-*.awsdns-* records~~ **migrated to Cloudflare** — now `fay.ns.cloudflare.com` / `jihoon.ns.cloudflare.com` (verified 2026-05-15; see ha-architecture.md) |
 | `cloudless.online` A | `150.228.63.192` (Pi WAN, TTL 300) |
 | `www.cloudless.online` A | `150.228.63.192` |
 

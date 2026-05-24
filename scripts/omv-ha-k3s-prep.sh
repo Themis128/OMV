@@ -2,7 +2,7 @@
 #
 # omv-ha-k3s-prep.sh — keep omv-ha a lean, stable k3s control-plane node.
 #
-# omv-ha is a 1 GB Raspberry Pi 3 running k3s + an embedded etcd member.
+# omv-ha is a 1 GB Raspberry Pi 4 running k3s + an embedded etcd member.
 # This script supports that role WITHOUT installing OpenMediaVault: it
 # reports the things that matter for a constrained k3s node and applies a
 # couple of safe, idempotent, reversible tunes.
