@@ -64,7 +64,7 @@ SES_DRY_RUN=1 ~/OMV/test/playwright/run-and-mail.sh
 
 ```bash
 # Temporarily point the suite at an invalid host, then dry-run.
-sed -i.bak 's|cloudless\.gr|cloudless.gr.invalid|; s|cloudless\.online|cloudless.online.invalid|' \
+sed -i.bak 's|cloudless\.gr|cloudless.gr.invalid|' \
   ~/OMV/test/playwright/run.js
 SES_DRY_RUN=1 ~/OMV/test/playwright/run-and-mail.sh
 mv ~/OMV/test/playwright/run.js.bak ~/OMV/test/playwright/run.js
