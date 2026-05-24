@@ -1,13 +1,23 @@
 name: recover-standby
 
-# Operator-triggered cluster recovery. Runs scripts/recover-standby.sh on a
-# self-hosted runner inside the LAN (installed via
-# scripts/install-cluster-runner.sh), so the cloudless.online standby can be
-# recovered straight from the GitHub UI — phone included — with no SSH,
-# laptop, or Tailscale.
+# Operator-triggered cluster recovery. Joins the Tailscale tailnet from a
+# GitHub-hosted runner, then SSHes into omv and runs
+# scripts/recover-standby.sh — so the cloudless.online standby can be
+# recovered straight from the GitHub UI (phone included) with no local
+# SSH access, laptop, or pre-installed self-hosted runner.
 #
-# Requires a self-hosted runner labelled `omv-recovery`. With no such runner
-# registered, a dispatch here just queues until one appears — harmless.
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#
+#   TS_AUTHKEY    Tailscale auth key (reusable; ephemeral recommended).
+#                 Tailscale admin → Settings → Keys → Generate auth key.
+#
+#   OMV_SSH_KEY   Private SSH key whose public half is in omv's
+#                 ~/.ssh/authorized_keys for user tbaltzakis.
+#                 Same key used by the omv-report workflow.
+#
+# Optional repository variables:
+#   OMV_SSH_HOST  omv's Tailscale IP (default: 100.113.41.119).
+
 on:
   workflow_dispatch:
     inputs:
@@ -16,16 +26,40 @@ on:
         type: boolean
         default: true
 
-# No GITHUB_TOKEN write scope needed — the script only probes + SSHes to omv.
 permissions:
   contents: read
 
 jobs:
   recover:
-    runs-on: [self-hosted, omv-recovery]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: recover standby
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          hostname: omv-recovery-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          cat >> ~/.ssh/config <<EOF
+          Host ${OMV_SSH_HOST}
+            IdentityFile ~/.ssh/omv_key
+            StrictHostKeyChecking accept-new
+            BatchMode yes
+            ConnectTimeout 20
+          EOF
+
+      - name: Recover standby
+        env:
+          OMV_HOST: "tbaltzakis@${{ vars.OMV_SSH_HOST || '100.113.41.119' }}"
         run: |
           if [ "${{ inputs.apply }}" = "true" ]; then
             ./scripts/recover-standby.sh --yes
