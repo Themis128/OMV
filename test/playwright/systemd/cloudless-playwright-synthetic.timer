@@ -1,0 +1,11 @@
+[Unit]
+Description=cloudless HA playwright synthetic monitor (every 30 min)
+Requires=cloudless-playwright-synthetic.service
+
+[Timer]
+OnCalendar=*:0/30
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target

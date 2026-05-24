@@ -1,0 +1,13 @@
+[Unit]
+Description=cloudless HA playwright synthetic monitor
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Exit 1 means "failed assertions" — the wrapper owns SES notification.
+SuccessExitStatus=0 1
+ExecStart=%h/OMV/test/playwright/run-and-mail.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cloudless-playwright
