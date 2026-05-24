@@ -46,7 +46,9 @@ SUDO=""
 [ "$(id -u)" -ne 0 ] && SUDO="sudo"
 
 KUBECTL="${SUDO} kubectl"
-APPLY="${KUBECTL} apply -f -"
+# --validate=false skips OpenAPI schema download which can fail on k3s agent
+# nodes or when the API server is temporarily unable to serve the schema.
+APPLY="${KUBECTL} apply --validate=false -f -"
 [ "$DRY_RUN" -eq 1 ] && APPLY="cat"
 
 # --- Cloudflare API token Secret -------------------------------------------
@@ -146,10 +148,10 @@ echo ""
 echo "[cert-manager] current ClusterIssuer status:"
 ${KUBECTL} get clusterissuer letsencrypt-route53 letsencrypt-route53-staging \
     -o custom-columns='NAME:.metadata.name,READY:.status.conditions[0].status,REASON:.status.conditions[0].reason' \
-    2>/dev/null || true
+    2>/dev/null || echo "  (could not list ClusterIssuers — try: sudo kubectl get clusterissuer)"
 
 echo ""
 echo "[cert-manager] cloudflare-api-token Secret:"
 ${KUBECTL} get secret cloudflare-api-token -n cert-manager \
     -o custom-columns='NAME:.metadata.name,TYPE:.type,CREATED:.metadata.creationTimestamp' \
-    2>/dev/null || true
+    2>/dev/null || echo "  (could not list Secret — try: sudo kubectl get secret cloudflare-api-token -n cert-manager)"
