@@ -3,7 +3,7 @@
 #
 # keepalived holds a virtual IP (VIP) shared by both Pis. When the MASTER
 # goes down the VIP moves to the BACKUP within seconds, so user traffic to
-# cloudless.online keeps serving without a manual DNS change.
+# cloudless.gr keeps serving without a manual DNS change.
 #
 # Topology
 #   omv    (Pi 5, 192.168.1.128) — MASTER, priority 101

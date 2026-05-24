@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Recover the cloudless.online standby when it returns 5xx / Cloudflare 530.
+# Recover the cloudless.gr standby when it returns 5xx / Cloudflare 530.
 #
 # Walks the ingress stack from the outside in — node reachability, host
 # services (k3s / cloudflared / tailscaled), then the k3s workloads
@@ -17,11 +17,11 @@
 #
 # Env (with defaults):
 #   OMV_HOST      tbaltzakis@omv
-#   STANDBY_URL   https://cloudless.online/api/health
+#   STANDBY_URL   https://cloudless.gr/api/health
 set -euo pipefail
 
 OMV_HOST="${OMV_HOST:-tbaltzakis@omv}"
-STANDBY_URL="${STANDBY_URL:-https://cloudless.online/api/health}"
+STANDBY_URL="${STANDBY_URL:-https://cloudless.gr/api/health}"
 APPLY=0
 [[ "${1:-}" == "--yes" ]] && APPLY=1
 

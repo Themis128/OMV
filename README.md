@@ -1,8 +1,8 @@
-# OMV — HA standby for cloudless.gr
+# OMV — k3s cluster for cloudless.gr
 
-This repository holds the infrastructure-as-code and runbooks for the **Pi 5 / OMV** node that serves as the HA standby for [cloudless.gr](https://cloudless.gr) at the domain `cloudless.online`.
+This repository holds the infrastructure-as-code and runbooks for the **Pi 5 / OMV** node (and its `omv-ha` peer) that serves [cloudless.gr](https://cloudless.gr) via a 2-node k3s cluster.
 
-The primary site (`cloudless.gr`) runs on AWS Lambda + CloudFront. The standby is a single-node **k3s** cluster on an OMV-managed Raspberry Pi 5. Route 53 health checks flip DNS to the Pi when the primary is unhealthy.
+External ingress is **Cloudflare Tunnel** (`cloudflared` on omv → Traefik :18443) — outbound-only, no router port-forward, no WAN-IP exposure. TLS is issued by cert-manager using the Cloudflare DNS-01 solver. Intra-cluster HA is keepalived VIP + embedded etcd across both Pis. The AWS serverless app (Lambda + CloudFront, SST-managed in the `cloudless.gr` repo) is a separate concern and is not configured by this repo.
 
 ## Layout
 

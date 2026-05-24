@@ -10,8 +10,8 @@ metadata:
 type: Opaque
 stringData:
   # -- Required env vars (populate from SSM) --
-  # NEXT_PUBLIC_SITE_URL: "https://cloudless.online"
-  # NEXTAUTH_URL: "https://cloudless.online"
+  # NEXT_PUBLIC_SITE_URL: "https://cloudless.gr"
+  # NEXTAUTH_URL: "https://cloudless.gr"
   # NEXTAUTH_SECRET: "from /cloudless/production/auth/secret"
   # COGNITO_USER_POOL_ID: "us-east-1_JQWwFbO9a"
   # COGNITO_CLIENT_ID: "from /cloudless/production/cognito/client-id"

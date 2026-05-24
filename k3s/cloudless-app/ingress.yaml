@@ -1,6 +1,6 @@
-# Traefik (k3s default) Ingress for cloudless.online.
-# TLS is issued by cert-manager via the letsencrypt-route53 ClusterIssuer
-# (Let's Encrypt DNS-01; cloudless.online uses the Cloudflare solver — see
+# Traefik (k3s default) Ingress for cloudless.gr.
+# TLS is issued by cert-manager via the letsencrypt-cloudflare ClusterIssuer
+# (Let's Encrypt DNS-01 with the Cloudflare solver — see
 # k3s/cert-manager/cluster-issuer.yaml).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -8,7 +8,7 @@ metadata:
   name: cloudless-app
   namespace: cloudless
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-route53
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
     # Shed excess load gracefully (429) when failover takes the Pi to its limit.
@@ -18,10 +18,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - cloudless.online
-      secretName: cloudless-online-tls
+        - cloudless.gr
+      secretName: cloudless-gr-tls
   rules:
-    - host: cloudless.online
+    - host: cloudless.gr
       http:
         paths:
           - path: /

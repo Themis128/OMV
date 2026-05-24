@@ -8,7 +8,7 @@ covers user-traffic failover (Route 53) and routine recovery.
 
 ```bash
 # from anywhere
-curl -fsS https://cloudless.online/api/health
+curl -fsS https://cloudless.gr/api/health
 
 # from the Pi
 kubectl -n cloudless get pods -l app.kubernetes.io/name=cloudless-app
@@ -39,7 +39,7 @@ Reverse the change afterwards.
 
 keepalived holds a VIP at `192.168.1.200` shared by both Pis. When `omv` goes
 down, the VIP moves to `omv-ha` within seconds (BACKUP → MASTER) and user
-traffic to `cloudless.online` / `manage.cloudless.online` keeps serving.
+traffic to `cloudless.gr` / `manage.cloudless.gr` keeps serving.
 
 The kubectl API goes read-only during the outage — that is expected with
 2-member etcd (quorum is lost when one node is down). Verify and operate from
@@ -56,12 +56,12 @@ When `omv` returns, the VIP migrates back to it automatically. See the
 [ha-control-plane-promotion.md](ha-control-plane-promotion.md) for what this
 buys you and what it doesn't.
 
-## Standby returns 5xx / Cloudflare 530 (`cloudless.online` down)
+## Standby returns 5xx / Cloudflare 530 (`cloudless.gr` down)
 
-`cloudless.online` is fronted by Cloudflare. A `502` means Cloudflare reached
+`cloudless.gr` is fronted by Cloudflare. A `502` means Cloudflare reached
 the Pi origin but it answered badly; a `530` means the tunnel has **no origin
 connection at all** — both mean "something on the Pi is down". If
-`manage.cloudless.online` is also affected, it's the whole Pi ingress, not
+`manage.cloudless.gr` is also affected, it's the whole Pi ingress, not
 just `cloudless-app`.
 
 `scripts/recover-standby.sh` walks the stack outside-in (SSH reachability →
@@ -72,7 +72,7 @@ and applies the cheapest fix at each layer:
 ./scripts/recover-standby.sh          # diagnose only, change nothing
 ./scripts/recover-standby.sh --yes    # diagnose AND restart / roll back
 
-# defaults: OMV_HOST=tbaltzakis@omv  STANDBY_URL=https://cloudless.online/api/health
+# defaults: OMV_HOST=tbaltzakis@omv  STANDBY_URL=https://cloudless.gr/api/health
 ```
 
 **No SSH / no laptop?** The `recover-standby` GitHub Actions workflow runs that
