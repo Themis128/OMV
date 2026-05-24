@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Install cert-manager into the k3s cluster, ready for the Route 53 DNS-01
-# ClusterIssuer.  Idempotent.
+# Install cert-manager into the k3s cluster, ready for the DNS-01 ClusterIssuers.
+# Solvers: Cloudflare for cloudless.online, Route 53 for cloudless.gr.
+# Idempotent.
 set -euo pipefail
 
 VERSION="${CERT_MANAGER_VERSION:-v1.16.2}"
@@ -15,4 +16,4 @@ kubectl -n cert-manager rollout status deploy/cert-manager --timeout=180s
 kubectl -n cert-manager rollout status deploy/cert-manager-webhook --timeout=180s
 kubectl -n cert-manager rollout status deploy/cert-manager-cainjector --timeout=180s
 
-echo "[cert-manager] done. Next: create the Route 53 credentials Secret and apply cluster-issuer.yaml"
+echo "[cert-manager] done. Next: create the Route 53 + Cloudflare credentials Secrets and apply cluster-issuer.yaml"

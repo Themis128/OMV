@@ -1,0 +1,18 @@
+# Template — copy to cloudflare-api-token.yaml (gitignored), populate, and apply.
+#
+# Used by the ClusterIssuer Cloudflare DNS-01 solver for cloudless.online.
+# cloudless.online migrated from Route 53 to Cloudflare DNS on 2026-05-15;
+# cert-manager must use the Cloudflare API to complete ACME DNS-01 challenges.
+#
+# Required Cloudflare API token permissions (least-privilege):
+#   Zone → DNS → Edit   (scoped to the cloudless.online zone only)
+#
+# Create at: Cloudflare dashboard → My Profile → API Tokens → Create Token
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token
+  namespace: cert-manager
+type: Opaque
+stringData:
+  api-token: "PUT-CLOUDFLARE-API-TOKEN-HERE"

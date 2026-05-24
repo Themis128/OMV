@@ -9,14 +9,25 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-route53-account
     solvers:
+      # cloudless.online is authoritative on Cloudflare DNS — must use the
+      # Cloudflare solver.  Prerequisite: cloudflare-api-token Secret
+      # (see cloudflare-api-token.example.yaml).
       - selector:
           dnsZones:
             - cloudless.online
         dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+      # cloudless.gr remains on Route 53 (SST-managed zone Z079608614L53CC4EAZM3).
+      - selector:
+          dnsZones:
+            - cloudless.gr
+        dns01:
           route53:
             region: us-east-1
-            hostedZoneID: Z04620301I2V4SU2RF1RV
-            # accessKeyID is referenced from the route53-credentials Secret
+            hostedZoneID: Z079608614L53CC4EAZM3
             accessKeyIDSecretRef:
               name: route53-credentials
               key: access-key-id
@@ -40,9 +51,17 @@ spec:
           dnsZones:
             - cloudless.online
         dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+      - selector:
+          dnsZones:
+            - cloudless.gr
+        dns01:
           route53:
             region: us-east-1
-            hostedZoneID: Z04620301I2V4SU2RF1RV
+            hostedZoneID: Z079608614L53CC4EAZM3
             accessKeyIDSecretRef:
               name: route53-credentials
               key: access-key-id
