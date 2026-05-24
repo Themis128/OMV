@@ -11,7 +11,8 @@ name: cloudflared-login
 # /etc/cloudflared/config.yml and start the daemon.
 #
 # Required repository secrets:
-#   TS_AUTHKEY    Tailscale auth key.
+#   TS_OAUTH_CLIENT_ID  Tailscale OAuth client ID (from https://login.tailscale.com/admin/settings/oauth).
+#   TS_OAUTH_SECRET    Tailscale OAuth client secret.
 #   OMV_SSH_KEY   Private SSH key for tbaltzakis@omv.
 
 on:
@@ -47,7 +48,8 @@ jobs:
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
         with:
-          authkey: ${{ secrets.TS_AUTHKEY }}
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           hostname: omv-cf-login-ci
 
       - name: Configure SSH

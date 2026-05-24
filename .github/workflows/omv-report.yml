@@ -11,7 +11,8 @@ name: omv-report
 # Required repository secrets
 #   (Settings -> Secrets and variables -> Actions -> New repository secret):
 #
-#   TS_AUTHKEY    Tailscale auth key (reusable; ephemeral recommended).
+#   TS_OAUTH_CLIENT_ID  Tailscale OAuth client ID (from https://login.tailscale.com/admin/settings/oauth).
+#   TS_OAUTH_SECRET    Tailscale OAuth client secret.
 #                 Tailscale admin -> Settings -> Keys -> Generate auth key.
 #
 #   OMV_SSH_KEY   Private SSH key whose public half is in omv's
@@ -61,7 +62,8 @@ jobs:
         id: tailscale
         uses: tailscale/github-action@v4
         with:
-          authkey: ${{ secrets.TS_AUTHKEY }}
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           hostname: omv-report-ci
 
       - name: Collect reports and diagnostics
