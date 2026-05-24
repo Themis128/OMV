@@ -38,7 +38,11 @@ AWS_PROFILE="${AWS_PROFILE:-cloudless}"
 DRY_RUN=0
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=1
 
-export AWS_DEFAULT_PROFILE="${AWS_PROFILE}"
+# When running in CI with env-var credentials, AWS_PROFILE="" disables profile
+# lookup so the script uses AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY directly.
+if [[ -n "${AWS_PROFILE}" ]]; then
+  export AWS_DEFAULT_PROFILE="${AWS_PROFILE}"
+fi
 
 log()  { printf '\033[1;36m[r53-failover]\033[0m %s\n' "$*"; }
 ok()   { printf '\033[1;32m[r53-failover] ✓\033[0m %s\n' "$*"; }
