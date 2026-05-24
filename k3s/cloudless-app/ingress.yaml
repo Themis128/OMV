@@ -1,25 +1,25 @@
-# Traefik (k3s default) Ingress for cloudless.gr.
-# TLS is issued by cert-manager via the letsencrypt-cloudflare ClusterIssuer
-# (Let's Encrypt DNS-01 with the Cloudflare solver — see
-# k3s/cert-manager/cluster-issuer.yaml).
+# Traefik Ingress for cloudless.gr.
+#
+# TLS layout:
+#   * Public (browser ↔ Cloudflare) — Cloudflare Universal SSL, automatic.
+#   * Origin (cloudflared ↔ Traefik) — Traefik's default self-signed cert;
+#     the tunnel uses `noTLSVerify: true` so a real cert is not required.
+#
+# No cert-manager, no Let's Encrypt, no Cloudflare API token needed on the
+# cluster. If you ever bypass the tunnel (direct LAN TLS to Traefik), add a
+# real cert here and re-enable the cert-manager annotation.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: cloudless-app
   namespace: cloudless
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
-    # Shed excess load gracefully (429) when failover takes the Pi to its limit.
-    # See middleware-ratelimit.yaml. Middleware names are namespace-prefixed.
+    # Shed excess load gracefully (429) when the Pi hits its limit.
     traefik.ingress.kubernetes.io/router.middlewares: cloudless-cloudless-app-ratelimit@kubernetescrd,cloudless-cloudless-app-inflight@kubernetescrd
 spec:
   ingressClassName: traefik
-  tls:
-    - hosts:
-        - cloudless.gr
-      secretName: cloudless-gr-tls
   rules:
     - host: cloudless.gr
       http:

@@ -88,6 +88,16 @@ jobs:
                ./scripts/configure-cloudflared.sh
           EOF
 
+      - name: Apply cloudless-app Ingress
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          cd ~/OMV
+          sudo k3s kubectl apply -f k3s/cloudless-app/ingress.yaml
+          EOF
+
       - name: Verify tunnel is serving
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
