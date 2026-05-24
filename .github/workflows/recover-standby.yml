@@ -34,6 +34,10 @@ on:
         description: "Apply memory tunes on omv-ha (zram, OOM-protect k3s, journal cap). Safe to re-run."
         type: boolean
         default: false
+      node_cleanup:
+        description: "Run omv-apply-fixes on omv + prune evicted pods and completed jobs on the cluster."
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
@@ -58,12 +62,15 @@ jobs:
             apply=$(jq -r '.inputs.apply // "true"' .github/dispatches/recover-standby.json)
             etcd_recover=$(jq -r '.inputs.etcd_recover // "false"' .github/dispatches/recover-standby.json)
             omv_ha_prep=$(jq -r '.inputs.omv_ha_prep // "false"' .github/dispatches/recover-standby.json)
+            node_cleanup=$(jq -r '.inputs.node_cleanup // "false"' .github/dispatches/recover-standby.json)
           else
             apply="${{ inputs.apply || 'true' }}"
             etcd_recover="${{ inputs.etcd_recover || 'false' }}"
             omv_ha_prep="${{ inputs.omv_ha_prep || 'false' }}"
+            node_cleanup="${{ inputs.node_cleanup || 'false' }}"
           fi
-          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\n' "$apply" "$etcd_recover" "$omv_ha_prep" >> "$GITHUB_OUTPUT"
+          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\n' \
+            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -113,6 +120,33 @@ jobs:
             "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
               tbaltzakis@${OMV_HA_HOST} \
               '[ -d ~/OMV ] || git clone -q https://github.com/Themis128/OMV ~/OMV; cd ~/OMV && git pull -q origin main && sudo ./scripts/omv-ha-k3s-prep.sh --apply'"
+
+      - name: Node cleanup (omv-apply-fixes + kubectl prune)
+        if: ${{ steps.inputs.outputs.node_cleanup == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          # Host maintenance fixes on omv
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          cd ~/OMV && git pull -q origin main
+          echo "=== omv-apply-fixes ==="
+          sudo ./scripts/omv-apply-fixes.sh
+          echo "=== kubectl prune: evicted pods ==="
+          sudo k3s kubectl get pods -A --field-selector=status.phase=Failed \
+            -o jsonpath='{range .items[*]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' \
+            | while read -r ns name; do
+                sudo k3s kubectl delete pod -n "$ns" "$name" --ignore-not-found
+              done
+          echo "=== kubectl prune: completed jobs ==="
+          sudo k3s kubectl get jobs -A \
+            -o jsonpath='{range .items[?(@.status.completionTime)]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' \
+            | grep -v "ecr-cred-refresher\|image-sync\|config-sync" \
+            | while read -r ns name; do
+                sudo k3s kubectl delete job -n "$ns" "$name" --ignore-not-found
+              done
+          echo "=== done ==="
+          EOF
 
       - name: Post result to status board
         if: always()
