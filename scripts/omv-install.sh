@@ -5,7 +5,7 @@
 # omv (the Raspberry Pi 5, 8 GB) is the NAS host — OpenMediaVault belongs
 # there. This script (re)installs it.
 #
-# DO NOT run this on omv-ha: that node is a 1 GB Raspberry Pi 3 running the
+# DO NOT run this on omv-ha: that node is a 1 GB Raspberry Pi 4 running the
 # k3s control plane and an etcd member; OMV would OOM-kill etcd. The script
 # refuses to run on a host that looks like the HA node or that has too
 # little RAM.
@@ -20,7 +20,7 @@
 # this host holds 80), set the OMV web UI to a free port:
 #   sudo omv-firstaid   ->  "Configure the web control panel"
 
-set -u
+set -euo pipefail
 
 APPLY=0
 [ "${1:-}" = "--apply" ] && APPLY=1

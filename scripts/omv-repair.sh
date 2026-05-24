@@ -18,7 +18,7 @@
 # If the engine still will not start, use the official interactive tool:
 #   sudo omv-firstaid
 
-set -u
+set -euo pipefail
 
 APPLY=0
 [ "${1:-}" = "--apply" ] && APPLY=1

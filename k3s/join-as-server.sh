@@ -78,7 +78,7 @@ curl -sfL https://get.k3s.io \
     K3S_TOKEN="${K3S_TOKEN}" \
     sh -s - server \
         --server "${K3S_URL}" \
-        --write-kubeconfig-mode=644 \
+        --write-kubeconfig-mode=600 \
         "${extra_flags[@]}"
 
 echo "[join] waiting for local node Ready"

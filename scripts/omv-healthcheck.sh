@@ -11,7 +11,7 @@
 #
 # Exit code: 0 if no failures, 1 if any check failed.
 
-set -u
+set -uo pipefail
 
 QUIET=0
 [ "${1:-}" = "--quiet" ] && QUIET=1

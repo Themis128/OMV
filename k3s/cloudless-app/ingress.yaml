@@ -1,6 +1,7 @@
 # Traefik (k3s default) Ingress for cloudless.online.
-# TLS is issued by cert-manager via the cluster-issuer-route53 ClusterIssuer
-# (Let's Encrypt DNS-01 over Route 53).
+# TLS is issued by cert-manager via the letsencrypt-route53 ClusterIssuer
+# (Let's Encrypt DNS-01; cloudless.online uses the Cloudflare solver — see
+# k3s/cert-manager/cluster-issuer.yaml).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
