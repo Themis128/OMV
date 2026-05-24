@@ -352,7 +352,7 @@ jobs:
 
           echo "=== k3s.service status on omv ==="
           systemctl is-active k3s.service || true
-          systemctl status k3s.service --no-pager | grep -v "^[ └├]" | tail -10 || true
+          systemctl show k3s.service --property=ActiveState,SubState,MainPID,ExecMainStatus 2>/dev/null || true
 
           echo ""
           echo "=== Current monit k3s config files ==="
