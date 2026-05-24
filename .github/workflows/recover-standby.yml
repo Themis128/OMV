@@ -311,15 +311,35 @@ jobs:
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-              tbaltzakis@${OMV_HA_HOST} bash -s" << 'EOF'
+              tbaltzakis@${OMV_HA_HOST} sudo bash -s" << 'SCRIPT'
           set -euo pipefail
-          cd ~/OMV 2>/dev/null || { git clone -q https://github.com/Themis128/OMV ~/OMV && cd ~/OMV; }
-          git pull -q origin main
-          sudo ./scripts/omv-ha-fix-k3s-alias.sh
-          echo "=== Service status ==="
-          systemctl is-active k3s.service && echo "k3s.service: active" || echo "k3s.service: INACTIVE"
-          systemctl is-active k3s-agent.service && echo "k3s-agent.service: active" || echo "k3s-agent.service: INACTIVE"
+          UNIT=/etc/systemd/system/k3s.service
+          if systemctl is-active --quiet k3s.service 2>/dev/null; then
+            echo "[SKIP] k3s.service already active."
+          else
+            echo "[APPLY] Writing k3s.service alias → k3s-agent.service"
+            cat > "${UNIT}" <<'EOF'
+          [Unit]
+          Description=k3s agent (alias for OMV monit compatibility)
+          BindsTo=k3s-agent.service
+          After=k3s-agent.service
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart=/bin/sh -c 'systemctl is-active --quiet k3s-agent.service || systemctl start k3s-agent.service'
+          ExecStop=/bin/sh -c 'true'
+          [Install]
+          WantedBy=multi-user.target
           EOF
+            systemctl daemon-reload
+            systemctl enable k3s.service
+            systemctl start k3s.service
+            echo "[OK] k3s.service alias installed."
+          fi
+          echo "=== Status ==="
+          systemctl is-active k3s.service       && echo "k3s.service:       active" || echo "k3s.service:       INACTIVE"
+          systemctl is-active k3s-agent.service && echo "k3s-agent.service: active" || echo "k3s-agent.service: INACTIVE"
+          SCRIPT
 
       - name: Post result to status board
         if: always()
