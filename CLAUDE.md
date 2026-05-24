@@ -15,13 +15,14 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 |---|---|---|
 | `.github/dispatches/provision-cert-manager.json` | provision-cert-manager | Uses `CLOUDFLARE_API_TOKEN` secret |
 | `.github/dispatches/apply-cluster-manifests.json` | apply-cluster-manifests | No inputs |
-| `.github/dispatches/recover-standby.json` | recover-standby | Set `apply/etcd_recover/omv_ha_prep/node_cleanup` |
+| `.github/dispatches/recover-standby.json` | recover-standby | Set `apply/etcd_recover/omv_ha_prep/node_cleanup/k3s_rejoin/demote_ha_to_agent` |
 | `.github/dispatches/configure-cloudflared.json` | configure-cloudflared | Set `hostnames/tunnel_name` |
 | `.github/dispatches/rotate-k3s-credentials.json` | rotate-k3s-credentials | Uses `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` secrets |
 | `.github/dispatches/setup-cloudflare.json` | setup-cloudflare | Uses `CLOUDFLARE_API_TOKEN` secret |
 | `.github/dispatches/cleanup-branches.json` | cleanup-branches | Set `branches` or leave empty for default list |
 | `.github/dispatches/authorize-ssh-key.json` | authorize-ssh-key | Set `public_key` to full pub key string |
 | `.github/dispatches/setup-tailscale-oauth.json` | setup-tailscale-oauth | Requires `TS_API_KEY` repo secret (Tailscale personal API key) |
+| `.github/dispatches/deploy-cloudflare-worker.json` | deploy-cloudflare-worker | Requires `CLOUDFLARE_API_TOKEN` secret + `CLOUDFLARE_ACCOUNT_ID` + `AWS_CLOUDFRONT_HOST` variables |
 
 **Custom slash commands** (`.claude/commands/`):
 - `/trigger <workflow>` — update the dispatch file and push to trigger a workflow
@@ -34,7 +35,15 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
   Public TLS is handled by Cloudflare Universal SSL automatically; the origin leg uses
   `noTLSVerify: true`, so Traefik's default self-signed cert is fine and **cert-manager is
   not required**. No port forwarding, no Route 53 DNS-based failover, no direct WAN IP
-  exposure. HA is intra-cluster: keepalived VIP + 2-node embedded etcd.
+  exposure. HA is intra-cluster: keepalived VIP + k3s agent on omv-ha.
 - **AWS serverless app (cloudless.gr CloudFront + Lambda, SST-managed)**: stays as it is — out of
   scope for this repo. The Pi cluster is the active origin for `cloudless.gr`; the AWS
-  serverless stack is the user's separate concern and is not touched by changes in this repo.
+  serverless stack is the failover origin via the Cloudflare Worker.
+- **Cloudflare Worker failover** (`cloudflare/worker-failover.js`): deployed at `cloudless.gr/*`.
+  Proxies to Pi cluster via `pi-origin.cloudless.gr` (CF Tunnel backend). On 5xx/timeout falls
+  back to `AWS_FALLBACK_HOST` (CloudFront). Worker is NOT yet live — needs `CLOUDFLARE_ACCOUNT_ID`
+  and `AWS_CLOUDFRONT_HOST` repo variables set first, then trigger `deploy-cloudflare-worker`.
+- **k3s cluster topology**: omv (Pi 5, 8GB) = server + worker. omv-ha (Pi 4, 1GB) = agent only
+  (demoted from server 2026-05-24 — fixes 2-node etcd quorum problem). NFS-backed workloads
+  (ntfy, alertmanager) stay pinned to omv-ha via `nodeSelector: kubernetes.io/hostname: omv-ha`
+  (Pi 5 kernel 6.12 has broken NFS RPC; Pi 4 kernel works fine).

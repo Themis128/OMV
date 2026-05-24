@@ -1,10 +1,11 @@
 {
-  "triggered_at": "2026-05-24T13:30:00Z",
+  "triggered_at": "2026-05-24T14:00:00Z",
   "inputs": {
     "apply": "true",
     "etcd_recover": "false",
     "omv_ha_prep": "false",
     "node_cleanup": "false",
-    "k3s_rejoin": "true"
+    "k3s_rejoin": "false",
+    "demote_ha_to_agent": "true"
   }
 }

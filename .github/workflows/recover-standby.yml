@@ -42,6 +42,10 @@ on:
         description: "Fix omv-ha k3s cluster join: reads token from omv, adds it to omv-ha config, clears stale state, restarts k3s."
         type: boolean
         default: false
+      demote_ha_to_agent:
+        description: "Demote omv-ha from k3s server (etcd) to agent worker. Fixes 2-node etcd quorum problem, frees ~300Mi RAM."
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
@@ -68,15 +72,17 @@ jobs:
             omv_ha_prep=$(jq -r '.inputs.omv_ha_prep // "false"' .github/dispatches/recover-standby.json)
             node_cleanup=$(jq -r '.inputs.node_cleanup // "false"' .github/dispatches/recover-standby.json)
             k3s_rejoin=$(jq -r '.inputs.k3s_rejoin // "false"' .github/dispatches/recover-standby.json)
+            demote_ha_to_agent=$(jq -r '.inputs.demote_ha_to_agent // "false"' .github/dispatches/recover-standby.json)
           else
             apply="${{ inputs.apply || 'true' }}"
             etcd_recover="${{ inputs.etcd_recover || 'false' }}"
             omv_ha_prep="${{ inputs.omv_ha_prep || 'false' }}"
             node_cleanup="${{ inputs.node_cleanup || 'false' }}"
             k3s_rejoin="${{ inputs.k3s_rejoin || 'false' }}"
+            demote_ha_to_agent="${{ inputs.demote_ha_to_agent || 'false' }}"
           fi
-          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\n' \
-            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" >> "$GITHUB_OUTPUT"
+          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\n' \
+            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -98,8 +104,6 @@ jobs:
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
       - name: Recover standby
-        # continue-on-error so health-check failure (exit 1 when cloudless.gr isn't 200
-        # yet) doesn't abort the job when other repair steps (k3s_rejoin) are also queued.
         continue-on-error: true
         env:
           OMV_HOST: "tbaltzakis@${{ vars.OMV_SSH_HOST || '100.113.41.119' }}"
@@ -124,7 +128,6 @@ jobs:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
           OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
         run: |
-          # Hop through omv (on tailnet) → omv-ha (LAN only)
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
               tbaltzakis@${OMV_HA_HOST} \
@@ -135,7 +138,6 @@ jobs:
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
-          # Host maintenance fixes on omv
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -euo pipefail
           cd ~/OMV && git pull -q origin main
@@ -162,9 +164,6 @@ jobs:
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
-          # Read token from omv's node-token file at runtime — nothing sensitive committed.
-          # Write a fix script to /tmp on omv (with token embedded via unquoted SCRIPT heredoc),
-          # scp it to omv-ha, then run it.
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash << 'OUTER'
           set -euo pipefail
           K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
@@ -216,6 +215,59 @@ jobs:
           echo "=== Verifying cluster from omv-main ==="
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             "sudo k3s kubectl get nodes && echo '---' && sudo k3s kubectl get pods -n cloudless -o wide"
+
+      - name: Demote omv-ha from server to agent
+        if: ${{ always() && steps.inputs.outputs.demote_ha_to_agent == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash << 'OUTER'
+          set -euo pipefail
+          K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
+          echo "=== Token ready (first 8 chars): ${K3S_TOKEN:0:8}... ==="
+          echo "=== Draining omv-ha node ==="
+          sudo k3s kubectl drain omv-ha --ignore-daemonsets --delete-emptydir-data \
+            --timeout=60s 2>/dev/null || echo "(drain skipped — node may already be unreachable)"
+          cat > /tmp/demote-to-agent.sh << SCRIPT
+          #!/usr/bin/env bash
+          set -euo pipefail
+          echo "=== Stopping k3s server ==="
+          sudo systemctl stop k3s || true
+          echo "=== Uninstalling k3s server (removes etcd state) ==="
+          [ -f /usr/local/bin/k3s-uninstall.sh ] && sudo /usr/local/bin/k3s-uninstall.sh || true
+          echo "=== Installing k3s agent ==="
+          curl -sfL https://get.k3s.io | \
+            K3S_URL=https://192.168.1.128:6443 \
+            K3S_TOKEN="${K3S_TOKEN}" \
+            sh -s - agent
+          echo "=== Waiting up to 60s for k3s-agent to become active ==="
+          for i in \$(seq 1 6); do
+            sleep 10
+            state=\$(sudo systemctl is-active k3s-agent 2>/dev/null || true)
+            echo "  [\${i}0s] k3s-agent: \${state}"
+            if [ "\${state}" = "active" ]; then echo "k3s-agent RUNNING"; break; fi
+            if [ "\${i}" = "6" ]; then
+              echo "k3s-agent FAILED after 60s"
+              sudo journalctl -u k3s-agent -n 30 --no-pager
+              exit 1
+            fi
+          done
+          SCRIPT
+          chmod +x /tmp/demote-to-agent.sh
+          echo "=== Copying script to omv-ha ==="
+          scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+            /tmp/demote-to-agent.sh tbaltzakis@192.168.1.130:/tmp/demote-to-agent.sh
+          echo "=== Running demote on omv-ha ==="
+          ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+            tbaltzakis@192.168.1.130 bash /tmp/demote-to-agent.sh
+          echo "=== Removing old server node record from cluster ==="
+          sudo k3s kubectl delete node omv-ha --ignore-not-found
+          OUTER
+          echo "=== Waiting 30s for agent node to register ==="
+          sleep 30
+          echo "=== Verifying cluster ==="
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "sudo k3s kubectl get nodes -o wide && echo '---' && sudo k3s kubectl get pods -A -o wide | head -30"
 
       - name: Post result to status board
         if: always()
