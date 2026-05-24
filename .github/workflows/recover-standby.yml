@@ -46,6 +46,10 @@ on:
         description: "Demote omv-ha from k3s server (etcd) to agent worker. Fixes 2-node etcd quorum problem, frees ~300Mi RAM."
         type: boolean
         default: false
+      cleanup_ha:
+        description: "Remove leftover server files from omv-ha (/tmp scripts, stale k3s server state, ~/OMV clone)."
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
@@ -73,6 +77,7 @@ jobs:
             node_cleanup=$(jq -r '.inputs.node_cleanup // "false"' .github/dispatches/recover-standby.json)
             k3s_rejoin=$(jq -r '.inputs.k3s_rejoin // "false"' .github/dispatches/recover-standby.json)
             demote_ha_to_agent=$(jq -r '.inputs.demote_ha_to_agent // "false"' .github/dispatches/recover-standby.json)
+            cleanup_ha=$(jq -r '.inputs.cleanup_ha // "false"' .github/dispatches/recover-standby.json)
           else
             apply="${{ inputs.apply || 'true' }}"
             etcd_recover="${{ inputs.etcd_recover || 'false' }}"
@@ -80,9 +85,10 @@ jobs:
             node_cleanup="${{ inputs.node_cleanup || 'false' }}"
             k3s_rejoin="${{ inputs.k3s_rejoin || 'false' }}"
             demote_ha_to_agent="${{ inputs.demote_ha_to_agent || 'false' }}"
+            cleanup_ha="${{ inputs.cleanup_ha || 'false' }}"
           fi
-          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\n' \
-            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" >> "$GITHUB_OUTPUT"
+          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\ncleanup_ha=%s\n' \
+            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" "$cleanup_ha" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -268,6 +274,28 @@ jobs:
           echo "=== Verifying cluster ==="
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             "sudo k3s kubectl get nodes -o wide && echo '---' && sudo k3s kubectl get pods -A -o wide | head -30"
+
+      - name: Clean up leftover files on omv-ha
+        if: ${{ always() && steps.inputs.outputs.cleanup_ha == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+              tbaltzakis@192.168.1.130 bash -s" << 'EOF'
+          set -euo pipefail
+          echo "=== Cleaning /tmp scripts ==="
+          rm -f /tmp/k3s-rejoin.sh /tmp/demote-to-agent.sh /tmp/k3s-fix.sh
+          echo "=== Removing stale k3s server state (if uninstall missed it) ==="
+          sudo rm -rf /etc/rancher/k3s /var/lib/rancher/k3s 2>/dev/null || true
+          echo "=== Removing ~/OMV git clone (not needed on agent) ==="
+          rm -rf ~/OMV
+          echo "=== Cleaning apt cache ==="
+          sudo apt-get clean -y 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h /
+          echo "=== Done ==="
+          EOF
 
       - name: Post result to status board
         if: always()
