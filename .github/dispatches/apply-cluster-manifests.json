@@ -1,3 +1,1 @@
-{
-  "triggered_at": "2026-05-24T00:00:00Z"
-}
+{"triggered":"2026-05-24T10:36:49Z","by":"claude","reason":"apply ingress after cloudflared-login succeeded"}
