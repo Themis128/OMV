@@ -58,6 +58,10 @@ on:
         description: "Diagnose and fix the monit k3s.service check on omv (main node) — stops false-alarm alert emails when k3s is actually running."
         type: boolean
         default: false
+      fix_omv_alert_template:
+        description: "Remove the literal '$(journalctl ...)' shell substitution from the OMV-managed monit alert mail template on omv."
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
@@ -88,6 +92,7 @@ jobs:
             cleanup_ha=$(jq -r '.inputs.cleanup_ha // "false"' .github/dispatches/recover-standby.json)
             fix_k3s_alias=$(jq -r '.inputs.fix_k3s_alias // "false"' .github/dispatches/recover-standby.json)
             fix_monit_k3s_omv=$(jq -r '.inputs.fix_monit_k3s_omv // "false"' .github/dispatches/recover-standby.json)
+            fix_omv_alert_template=$(jq -r '.inputs.fix_omv_alert_template // "false"' .github/dispatches/recover-standby.json)
           else
             apply="${{ inputs.apply || 'true' }}"
             etcd_recover="${{ inputs.etcd_recover || 'false' }}"
@@ -98,9 +103,10 @@ jobs:
             cleanup_ha="${{ inputs.cleanup_ha || 'false' }}"
             fix_k3s_alias="${{ inputs.fix_k3s_alias || 'false' }}"
             fix_monit_k3s_omv="${{ inputs.fix_monit_k3s_omv || 'false' }}"
+            fix_omv_alert_template="${{ inputs.fix_omv_alert_template || 'false' }}"
           fi
-          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\ncleanup_ha=%s\nfix_k3s_alias=%s\nfix_monit_k3s_omv=%s\n' \
-            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" "$cleanup_ha" "$fix_k3s_alias" "$fix_monit_k3s_omv" >> "$GITHUB_OUTPUT"
+          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\ncleanup_ha=%s\nfix_k3s_alias=%s\nfix_monit_k3s_omv=%s\nfix_omv_alert_template=%s\n' \
+            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" "$cleanup_ha" "$fix_k3s_alias" "$fix_monit_k3s_omv" "$fix_omv_alert_template" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -354,6 +360,27 @@ jobs:
           echo "=== monit installed? ===" && $SSH "which monit && monit --version" || echo "(monit not found)"
           echo "=== applying fix ==="
           $SSH "sudo rm -f /etc/monit/conf.d/k3s 2>/dev/null; printf 'check process k3s matching \"k3s server\"\n  start program = \"/bin/systemctl start k3s\"\n  stop program = \"/bin/systemctl stop k3s\"\n  if failed then alert\n  if changed pid then alert\n' | sudo tee /etc/monit/conf.d/k3s-service; sudo monit reload 2>/dev/null || sudo systemctl reload monit 2>/dev/null; echo done"
+
+      - name: Fix OMV monit alert template (remove literal shell substitution)
+        if: ${{ always() && steps.inputs.outputs.fix_omv_alert_template == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          SSH="ssh -i ~/.ssh/omv_key -o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new tbaltzakis@${OMV_SSH_HOST}"
+          echo "=== Locating OMV monit mail template ==="
+          $SSH "sudo grep -rl 'journalctl' /etc/monit/ /etc/openmediavault/ /usr/share/openmediavault/ 2>/dev/null | head -20" || echo "(not found)"
+          echo "=== OMV monit config in DB ==="
+          $SSH "sudo omv-confdbadm read conf.service.monit 2>/dev/null | python3 -m json.tool 2>/dev/null | grep -A5 -B5 'journal\|mail\|alert\|message'" || echo "(no DB entry or no matches)"
+          echo "=== /etc/monit/monitrc mail section ==="
+          $SSH "sudo grep -n 'mail\|alert\|message\|journal' /etc/monit/monitrc 2>/dev/null | head -30" || echo "(none)"
+          echo "=== Applying fix: strip journalctl line from monitrc mail format ==="
+          $SSH "sudo sed -i '/journalctl/d' /etc/monit/monitrc 2>/dev/null && echo 'removed from monitrc' || echo 'not found in monitrc'"
+          echo "=== Checking OMV Jinja templates for monit ==="
+          $SSH "sudo find /usr/share/openmediavault/ -name '*.j2' -o -name '*.jinja2' 2>/dev/null | xargs grep -l 'journalctl' 2>/dev/null | head -10" || echo "(none)"
+          echo "=== Patching OMV Jinja template if found ==="
+          $SSH "sudo find /usr/share/openmediavault/ -name '*.j2' -o -name '*.jinja2' 2>/dev/null | xargs grep -l 'journalctl' 2>/dev/null | while read f; do echo \"Patching \$f\"; sudo sed -i '/journalctl/d' \"\$f\"; done" || true
+          echo "=== Reloading monit ==="
+          $SSH "sudo monit reload 2>/dev/null; echo done"
 
       - name: Post result to status board
         if: always()
