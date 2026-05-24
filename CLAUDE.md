@@ -20,12 +20,12 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/rotate-k3s-credentials.json` | rotate-k3s-credentials | Uses `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` secrets |
 | `.github/dispatches/setup-cloudflare.json` | setup-cloudflare | Uses `CLOUDFLARE_API_TOKEN` secret |
 | `.github/dispatches/cleanup-branches.json` | cleanup-branches | Set `branches` or leave empty for default list |
+| `.github/dispatches/authorize-ssh-key.json` | authorize-ssh-key | Set `public_key` to full pub key string |
 
-Example — trigger `provision-cert-manager`:
-```bash
-# In the dispatch file, update triggered_at to now, then commit and push to main.
-# The workflow will start within seconds of the push landing.
-```
+**Custom slash commands** (`.claude/commands/`):
+- `/trigger <workflow>` — update the dispatch file and push to trigger a workflow
+- `/ssh-setup` — walk through adding a local public key to omv's authorized_keys
+- `/workflow-status` — how to check a workflow run result and re-trigger after a fix
 
 ## Architecture
 

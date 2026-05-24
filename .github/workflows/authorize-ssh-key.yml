@@ -1,0 +1,88 @@
+name: authorize-ssh-key
+
+# Add a public SSH key to tbaltzakis@omv's authorized_keys via the existing
+# GHA SSH connection (OMV_SSH_KEY). Run this once to authorize a new key
+# so local SSH sessions work without a password ("Server refused our key").
+#
+# Required repository secrets:
+#   TS_OAUTH_CLIENT_ID   Tailscale OAuth client ID
+#   TS_OAUTH_SECRET      Tailscale OAuth client secret
+#   OMV_SSH_KEY          Private key already authorized on omv (used to connect)
+#
+# Required repository variable or input:
+#   NEW_SSH_PUBKEY       The public key to authorize (e.g. contents of ~/.ssh/id_ed25519.pub)
+
+on:
+  workflow_dispatch:
+    inputs:
+      public_key:
+        description: "Public key to add (paste contents of ~/.ssh/id_*.pub)"
+        type: string
+        required: true
+  push:
+    branches: [main]
+    paths: [.github/dispatches/authorize-ssh-key.json]
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ -f .github/dispatches/authorize-ssh-key.json ]; then
+            pubkey=$(jq -r '.inputs.public_key // ""' .github/dispatches/authorize-ssh-key.json)
+          else
+            pubkey="${{ inputs.public_key }}"
+          fi
+          if [ -z "$pubkey" ]; then
+            echo "ERROR: public_key is required" >&2; exit 1
+          fi
+          echo "public_key=$pubkey" >> "$GITHUB_OUTPUT"
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          hostname: omv-authorize-ssh-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Add public key to authorized_keys
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          PUBKEY: ${{ steps.inputs.outputs.public_key }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          touch ~/.ssh/authorized_keys
+          chmod 600 ~/.ssh/authorized_keys
+          key="${PUBKEY}"
+          if grep -qF "\$key" ~/.ssh/authorized_keys 2>/dev/null; then
+            echo "Key already present in authorized_keys — nothing to do."
+          else
+            printf '%s\n' "\$key" >> ~/.ssh/authorized_keys
+            echo "Key added to ~/.ssh/authorized_keys"
+          fi
+          echo "Current authorized keys:"
+          cat ~/.ssh/authorized_keys
+          EOF
