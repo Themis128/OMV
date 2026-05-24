@@ -189,10 +189,21 @@ jobs:
           sudo rm -rf /var/lib/rancher/k3s/server/db /var/lib/rancher/k3s/server/tls
           echo "=== Starting k3s ==="
           sudo systemctl start k3s
-          echo "=== Waiting 30s for node to join... ==="
-          sleep 30
-          sudo systemctl is-active k3s && echo "k3s is RUNNING" || \
-            { echo "k3s FAILED TO START"; sudo journalctl -u k3s -n 30 --no-pager; exit 1; }
+          echo "=== Waiting up to 120s for k3s to become active... ==="
+          for i in \$(seq 1 12); do
+            sleep 10
+            state=\$(sudo systemctl is-active k3s 2>/dev/null || true)
+            echo "  [\${i}0s] k3s state: \${state}"
+            if [ "\${state}" = "active" ]; then
+              echo "k3s is RUNNING"
+              break
+            fi
+            if [ "\${i}" = "12" ]; then
+              echo "k3s FAILED TO START after 120s"
+              sudo journalctl -u k3s -n 50 --no-pager
+              exit 1
+            fi
+          done
           SCRIPT
           chmod +x /tmp/k3s-rejoin.sh
           echo "=== Copying script to omv-ha (192.168.1.130) ==="
