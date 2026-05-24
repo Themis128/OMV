@@ -32,7 +32,7 @@ permissions:
 jobs:
   delete-merged-pr-head:
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
-    runs-on: [self-hosted, omv-recovery]
+    runs-on: ubuntu-latest
     steps:
       - name: Delete head branch of merged PR
         if: github.event.pull_request.head.repo.full_name == github.repository
@@ -54,7 +54,7 @@ jobs:
 
   bulk-cleanup:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    runs-on: [self-hosted, omv-recovery]
+    runs-on: ubuntu-latest
     steps:
       - name: Delete listed branches
         env:
