@@ -371,9 +371,10 @@ jobs:
           cat "${CONF}"
           SCRIPT
           chmod +x /tmp/fix-monit-k3s.sh
-          scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+          scp -i ~/.ssh/omv_key -o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new \
             /tmp/fix-monit-k3s.sh "tbaltzakis@${OMV_SSH_HOST}:/tmp/fix-monit-k3s.sh"
-          ssh "tbaltzakis@${OMV_SSH_HOST}" sudo bash /tmp/fix-monit-k3s.sh
+          ssh -i ~/.ssh/omv_key -o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new \
+            "tbaltzakis@${OMV_SSH_HOST}" sudo bash /tmp/fix-monit-k3s.sh
 
       - name: Post result to status board
         if: always()
