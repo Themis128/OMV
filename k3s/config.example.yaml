@@ -1,0 +1,45 @@
+# /etc/rancher/k3s/config.yaml — reference template
+#
+# Copy to /etc/rancher/k3s/config.yaml and fill in the <REPLACE_ME> values,
+# OR use scripts/configure-k3s.sh to generate it from environment variables
+# (recommended — keeps credentials out of files).
+#
+# NEVER commit the populated config.yaml — it contains AWS credentials.
+
+cluster-init: true
+secrets-encryption: true
+flannel-backend: wireguard-native
+
+tls-san:
+  - "192.168.1.200"   # keepalived VIP
+  - "192.168.1.128"   # omv LAN IP
+
+kube-apiserver-arg:
+  - "service-node-port-range=1000-32767"
+
+# etcd S3 snapshots — every 6h, 3 retained, IAM user omv-main-cli
+# Rotate credentials: AWS IAM → omv-main-cli → Security credentials
+etcd-snapshot-schedule-cron: "0 */6 * * *"
+etcd-snapshot-retention: 3
+etcd-s3: true
+etcd-s3-bucket: cloudless-etcd-snapshots
+etcd-s3-region: us-east-1
+etcd-s3-folder: etcd
+etcd-s3-access-key: <REPLACE_ME>       # AWS access key ID (AKIA…)
+etcd-s3-secret-key: <REPLACE_ME>       # AWS secret access key
+etcd-s3-insecure: false
+
+etcd-arg:
+  - heartbeat-interval=300
+  - election-timeout=3000
+  - quota-backend-bytes=2147483648      # 2 GiB
+  - auto-compaction-retention=1h
+  - auto-compaction-mode=periodic
+
+kubelet-arg:
+  - max-pods=110
+  - eviction-hard=memory.available<200Mi
+  - image-gc-high-threshold=80
+  - image-gc-low-threshold=70
+  - system-reserved=cpu=200m,memory=200Mi
+  - kube-reserved=cpu=200m,memory=300Mi
