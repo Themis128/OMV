@@ -29,6 +29,10 @@ on:
         description: "Run etcd cluster-reset (use when etcd lost quorum and omv loops 'pre-candidate')."
         type: boolean
         default: false
+      omv_ha_prep:
+        description: "Apply memory tunes on omv-ha (zram, OOM-protect k3s, journal cap). Safe to re-run."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -78,3 +82,15 @@ jobs:
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             'sudo REJOIN=1 ~/OMV/scripts/etcd-recover.sh'
+
+      - name: omv-ha memory tunes (zram + OOM protection)
+        if: ${{ inputs.omv_ha_prep == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
+        run: |
+          # Hop through omv (on tailnet) → omv-ha (LAN only)
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+              tbaltzakis@${OMV_HA_HOST} \
+              'cd ~/OMV && git pull -q origin main && sudo ./scripts/omv-ha-k3s-prep.sh --apply'"
