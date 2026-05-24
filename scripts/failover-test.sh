@@ -19,7 +19,7 @@ set -euo pipefail
 
 PRIMARY_HOST="${PRIMARY_HOST:-tbaltzakis@192.168.1.128}"
 SECONDARY_API="${SECONDARY_API:-https://192.168.1.130:6443}"
-APP_URL="${APP_URL:-https://cloudless.online/api/health}"
+APP_URL="${APP_URL:-https://cloudless.gr/api/health}"
 PRIMARY_NODE="${PRIMARY_NODE:-omv}"
 SECONDARY_NODE="${SECONDARY_NODE:-omv-ha}"
 

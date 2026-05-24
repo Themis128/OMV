@@ -1,8 +1,8 @@
 # Synthetic monitoring (playwright)
 
-End-to-end checks against both the AWS main (`cloudless.gr`) and the Pi
-standby (`cloudless.online`). Runs every 30 minutes on the Pi via a user
-systemd timer. Silent on success; pages by SES email on failure.
+End-to-end checks against `cloudless.gr` served by the Pi k3s cluster via
+Cloudflare Tunnel. Runs every 30 minutes on the Pi via a user systemd
+timer. Silent on success; pages by SES email on failure.
 
 ## What it covers
 
@@ -78,7 +78,7 @@ To send a real test email, drop `SES_DRY_RUN=1`. The SES sender (`system-info@cl
 | Symptom | Cause | Response |
 |---|---|---|
 | Email: `health reachable: ENOTFOUND` for both targets | DNS / Starlink down | Check Pi WAN; verify Tailscale (`tailscale status`). |
-| Email: `health reachable` for **standby only** | Cloudflare/origin path broken, or Pi k3s app crashed | `curl -I https://cloudless.online/api/health`, `kubectl -n cloudless get pods,ing`, check `cloudflared` on `omv` if used. See [runbook-failover.md](runbook-failover.md). |
+| Email: `health reachable` failure | Cloudflare tunnel down or Pi k3s app crashed | `curl -I https://cloudless.gr/api/health`, `kubectl -n cloudless get pods,ing`, check `cloudflared` on `omv` (`systemctl status cloudflared`). See [runbook-failover.md](runbook-failover.md). |
 | Email: `health reachable` for **main only** | AWS Lambda / CloudFront issue | Check AWS console; HA failover may already be active. |
 | Email: HA parity (version mismatch) | Pi standby out of date — image-sync stuck | `kubectl -n cloudless get cronjob image-sync`, `kubectl -n cloudless logs job/$(kubectl -n cloudless get jobs ... )` |
 | Email: HA parity (title mismatch) | One side serving a different build/branch | Same as above; check sync-webhook + last config-sync run. |

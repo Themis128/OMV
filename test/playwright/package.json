@@ -2,7 +2,7 @@
   "name": "cloudless-ha-playwright",
   "private": true,
   "version": "0.0.0",
-  "description": "End-to-end smoke + HA parity tests for cloudless.gr (main) and cloudless.online (Pi standby).",
+  "description": "End-to-end smoke tests for cloudless.gr (Pi k3s cluster via Cloudflare Tunnel).",
   "scripts": {
     "test": "node run.js"
   },

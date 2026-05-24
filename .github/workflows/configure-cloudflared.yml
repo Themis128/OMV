@@ -1,0 +1,82 @@
+name: configure-cloudflared
+
+# Operator-triggered cloudflared (Cloudflare Tunnel) reconfiguration on omv.
+# Pushes /etc/cloudflared/config.yml that routes cloudless.gr (and any extra
+# hostnames you pass) → Traefik :18443 via the existing tunnel, then
+# restarts cloudflared. No router port-forward needed.
+#
+# Required repository secrets:
+#   TS_AUTHKEY    Tailscale auth key.
+#   OMV_SSH_KEY   Private SSH key for tbaltzakis@omv (Tailscale IP).
+#
+# Optional repository variables:
+#   OMV_SSH_HOST  omv's Tailscale IP (default: 100.113.41.119)
+
+on:
+  workflow_dispatch:
+    inputs:
+      hostnames:
+        description: "Comma-separated hostnames the tunnel should serve."
+        type: string
+        default: "cloudless.gr,manage.cloudless.gr"
+      tunnel_name:
+        description: "Cloudflare Tunnel name (matches the credentials file in /etc/cloudflared)."
+        type: string
+        default: "cloudless"
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          hostname: omv-cloudflared-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Apply cloudflared config on omv
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          HOSTNAMES: ${{ inputs.hostnames }}
+          TUNNEL_NAME: ${{ inputs.tunnel_name }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
+          set -euo pipefail
+          cd ~/OMV && git pull -q origin main
+          sudo HOSTNAMES='${HOSTNAMES}' TUNNEL_NAME='${TUNNEL_NAME}' \
+            ./scripts/configure-cloudflared.sh
+          EOF
+
+      - name: Verify tunnel is serving
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          HOSTNAMES: ${{ inputs.hostnames }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            'sudo systemctl is-active cloudflared && sudo journalctl -u cloudflared -n 20 --no-pager'
+          PRIMARY="$(printf '%s' "${HOSTNAMES}" | cut -d, -f1)"
+          echo "Probing https://${PRIMARY}/api/health from the runner..."
+          for i in 1 2 3 4 5; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://${PRIMARY}/api/health" || echo 000)"
+            echo "  attempt $i: HTTP ${code}"
+            [ "${code}" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "Health probe did not return 200 — check DNS delegation and tunnel logs."
+          exit 1

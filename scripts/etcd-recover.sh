@@ -131,4 +131,4 @@ else
 fi
 
 ok "recovery complete"
-log "next: verify cloudless-app is serving: curl -fsS https://cloudless.online/api/health"
+log "next: verify cloudless-app is serving: curl -fsS https://cloudless.gr/api/health"
