@@ -142,7 +142,6 @@ metadata:
   namespace: cloudless
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
     - match: PathPrefix(`/_sync/`)

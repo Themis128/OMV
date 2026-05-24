@@ -111,7 +111,7 @@ spec:
 
                   # --- 1. fetch SSM depth-1 params ---------------------------
                   TMP=$(mktemp -d)
-                  trap "rm -rf $TMP" EXIT
+                  trap 'rm -rf "$TMP"' EXIT
 
                   aws ssm get-parameters-by-path \
                     --path "$SSM_PREFIX" \

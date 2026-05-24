@@ -8,6 +8,11 @@ spec:
   accessModes: [ReadWriteOnce]
   persistentVolumeReclaimPolicy: Retain
   storageClassName: ""
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: ha-config-pvc
+    namespace: home-assistant
   hostPath:
     path: /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7/homeassistant/config
     type: DirectoryOrCreate

@@ -1,5 +1,5 @@
 # Compares ECR :latest digest vs the running cloudless-app pod's digest every
-# 15 minutes; on drift, runs `kubectl rollout restart deploy/cloudless-app` to
+# minute; on drift, runs `kubectl rollout restart deploy/cloudless-app` to
 # pull and roll. Idempotent — no-op when in sync.
 #
 # Why this exists: the standby's image build pipeline (build-pi-image GHA in

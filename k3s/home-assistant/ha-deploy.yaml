@@ -19,6 +19,8 @@ spec:
         kubernetes.io/hostname: omv
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      securityContext:
+        runAsNonRoot: false
       containers:
       - name: home-assistant
         image: ghcr.io/home-assistant/home-assistant:stable
@@ -31,6 +33,20 @@ spec:
         resources:
           requests: {cpu: 200m, memory: 512Mi}
           limits: {cpu: 1500m, memory: 1536Mi}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8123
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8123
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
       volumes:
       - name: config
         persistentVolumeClaim:

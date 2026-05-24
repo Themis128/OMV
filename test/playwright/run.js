@@ -1,6 +1,8 @@
 const { chromium, request } = require('playwright');
 const fs = require('fs');
 
+fs.mkdirSync('/tmp/playwright-test', { recursive: true });
+
 const TARGETS = [
   { name: 'main',     url: 'https://cloudless.gr',     label: 'AWS Lambda + CloudFront' },
   { name: 'standby',  url: 'https://cloudless.online', label: 'Pi k3s + Cloudflare' },

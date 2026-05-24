@@ -56,6 +56,11 @@ if [ -z "$AKID" ] || [ -z "$SAK" ]; then
   exit "$RC"
 fi
 
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "python3 not found; cannot build SES message; suite RC=$RC; log=$OUT" >&2
+  exit "$RC"
+fi
+
 # Extract failed assertion lines.
 FAILS="$(grep -E '^\s*\[FAIL\]' "$OUT" || true)"
 [ -z "$FAILS" ] && FAILS="(no [FAIL] lines captured; suite exit=$RC; see full log)"

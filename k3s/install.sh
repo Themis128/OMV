@@ -27,7 +27,7 @@ if ! command -v k3s >/dev/null 2>&1; then
   curl -sfL https://get.k3s.io \
     | INSTALL_K3S_CHANNEL=stable sh -s - server \
         --data-dir "${DATA_DIR}" \
-        --write-kubeconfig-mode=644
+        --write-kubeconfig-mode=600
 else
   echo "[install] k3s already installed — skipping installer"
 fi

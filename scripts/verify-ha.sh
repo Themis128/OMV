@@ -26,7 +26,7 @@ else
 fi
 
 not_ready="$(kubectl get nodes --no-headers \
-  | awk '$2 !~ /Ready/ {print $1}')"
+  | awk '$2 != "Ready" {print $1}')"
 if [[ -n "${not_ready}" ]]; then
   bad "nodes not Ready: ${not_ready}"
   fail=1

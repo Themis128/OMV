@@ -22,7 +22,7 @@
 # Power, RAM-hungry processes, package upgrades and moving etcd off the SD
 # card are reported as recommendations — never changed automatically.
 
-set -u
+set -euo pipefail
 
 APPLY=0
 [ "${1:-}" = "--apply" ] && APPLY=1

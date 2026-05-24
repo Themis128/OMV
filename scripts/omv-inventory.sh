@@ -125,7 +125,7 @@ section "Services"
 sub "File-sharing and NAS services"
 for svc in smbd nmbd nfs-server rpcbind proftpd vsftpd \
            openmediavault-engined nginx php8.4-fpm \
-           fail2ban monit postfix rrdcached rrdcached \
+           fail2ban monit postfix rrdcached \
            ssh docker containerd tailscaled; do
     if systemctl list-unit-files "${svc}.service" >/dev/null 2>&1 \
        && systemctl cat "${svc}.service" >/dev/null 2>&1; then

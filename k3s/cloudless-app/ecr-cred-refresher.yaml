@@ -21,7 +21,7 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     resourceNames: ["regcred-ecr"]
-    verbs: ["get", "patch", "update", "delete"]
+    verbs: ["get", "patch", "update"]
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["create"]
@@ -75,8 +75,9 @@ spec:
                   cat > /tmp/dockercfg.json <<EOF
                   {"auths":{"278585680617.dkr.ecr.us-east-1.amazonaws.com":{"username":"AWS","password":"$PASS","auth":"$AUTH"}}}
                   EOF
-                  kubectl -n cloudless delete secret regcred-ecr --ignore-not-found
                   kubectl -n cloudless create secret generic regcred-ecr \
                     --type=kubernetes.io/dockerconfigjson \
-                    --from-file=.dockerconfigjson=/tmp/dockercfg.json
+                    --from-file=.dockerconfigjson=/tmp/dockercfg.json \
+                    --dry-run=client -o yaml \
+                    | kubectl apply -f -
                   echo "regcred-ecr refreshed at $(date -u +%FT%TZ)"
