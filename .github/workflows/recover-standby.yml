@@ -112,7 +112,7 @@ jobs:
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
               tbaltzakis@${OMV_HA_HOST} \
-              'cd ~/OMV && git pull -q origin main && sudo ./scripts/omv-ha-k3s-prep.sh --apply'"
+              '[ -d ~/OMV ] || git clone -q https://github.com/Themis128/OMV ~/OMV; cd ~/OMV && git pull -q origin main && sudo ./scripts/omv-ha-k3s-prep.sh --apply'"
 
       - name: Post result to status board
         if: always()
