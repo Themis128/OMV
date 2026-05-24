@@ -50,8 +50,33 @@ scripts/
 ├── omv-apply-fixes.sh         # idempotent OMV host maintenance fixes
 ├── omv-repair.sh              # diagnose/repair a broken OMV control plane
 ├── omv-install.sh             # install OpenMediaVault on the omv NAS node
-└── omv-ha-k3s-prep.sh         # keep omv-ha a lean, stable k3s node
+├── omv-ha-k3s-prep.sh         # keep omv-ha a lean, stable k3s node
+├── cloudflared-login.sh       # cloudflared OAuth login + tunnel creation
+├── configure-cloudflared.sh   # write /etc/cloudflared/config.yml + restart daemon
+├── configure-k3s.sh           # write k3s config from env vars (etcd S3 snapshots)
+├── install-keepalived.sh      # keepalived VIP setup on both Pis
+├── etcd-recover.sh            # single-member etcd cluster-reset + optional rejoin
+└── setup-cloudflare-dns-and-tunnel.sh  # API-token based Cloudflare bootstrap
 ```
+
+## GitHub Actions workflows
+
+All workflows run on **GitHub-hosted runners** (`ubuntu-latest`) — free because the
+repo is public. They SSH to `omv` via **Tailscale** using the `TS_AUTHKEY` and
+`OMV_SSH_KEY` repository secrets. Trigger any of them from the
+[Actions tab](https://github.com/Themis128/OMV/actions).
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `cloudflared-login` | manual | OAuth login → create tunnel → configure cloudflared → apply Ingress → verify |
+| `recover-standby` | manual | Diagnose/restart omv services; optionally etcd cluster-reset |
+| `configure-cloudflared` | manual | Write config.yml + restart cloudflared (tunnel already exists) |
+| `apply-cluster-manifests` | manual | `kubectl apply -f` the Ingress on the cluster |
+| `rotate-k3s-credentials` | manual | Update etcd S3 AWS key in k3s config |
+| `setup-cloudflare` | manual | API-token Cloudflare bootstrap (zone + tunnel, no OAuth click) |
+| `omv-report` | manual / schedule | Push health + inventory report to `omv-reports` branch |
+| `lint` | push / PR | yamllint, kubeconform, shellcheck, JS syntax |
+| `cleanup-branches` | schedule | Delete merged branches older than 7 days |
 
 ## Quick start (on a fresh OMV Pi)
 
