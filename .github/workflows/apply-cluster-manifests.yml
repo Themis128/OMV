@@ -1,0 +1,109 @@
+name: apply-cluster-manifests
+
+# Operator-triggered apply of the cluster-side manifests needed after the
+# cloudless.gr Cloudflare Tunnel switch:
+#   1. (optional) install/rotate the cloudflare-api-token Secret
+#   2. kubectl apply the cluster-issuer (Cloudflare DNS-01 solver)
+#   3. kubectl apply the cloudless-app ingress (cloudless.gr / cloudless-gr-tls)
+#   4. wait for the Certificate to be Ready
+#
+# Runs on omv via Tailscale + SSH. No laptop / no local kubeconfig needed.
+#
+# Required repository secrets:
+#   TS_AUTHKEY    Tailscale auth key.
+#   OMV_SSH_KEY   Private SSH key for tbaltzakis@omv (Tailscale IP).
+#
+# Optional repository variables:
+#   OMV_SSH_HOST  omv's Tailscale IP (default: 100.113.41.119)
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloudflare_api_token:
+        description: "Cloudflare API token (Zone:DNS:Edit on cloudless.gr). Leave blank to skip Secret update."
+        type: string
+        required: false
+        default: ""
+      wait_for_cert:
+        description: "Wait for the cloudless-gr-tls Certificate to be Ready (up to 5 min)."
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          hostname: omv-apply-manifests-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Pull latest repo on omv
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            'cd ~/OMV && git pull -q origin main'
+
+      - name: Install / rotate cloudflare-api-token Secret
+        if: ${{ inputs.cloudflare_api_token != '' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          CF_TOKEN: ${{ inputs.cloudflare_api_token }}
+        run: |
+          TOKEN_B64="$(printf '%s' "${CF_TOKEN}" | base64 -w0)"
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
+          set -euo pipefail
+          TOKEN="\$(printf '%s' '${TOKEN_B64}' | base64 -d)"
+          sudo k3s kubectl -n cert-manager create secret generic cloudflare-api-token \
+            --from-literal=api-token="\${TOKEN}" \
+            --dry-run=client -o yaml | sudo k3s kubectl apply -f -
+          EOF
+
+      - name: Apply ClusterIssuer and Ingress
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          cd ~/OMV
+          sudo k3s kubectl apply -f k3s/cert-manager/cluster-issuer.yaml
+          sudo k3s kubectl apply -f k3s/cloudless-app/ingress.yaml
+          EOF
+
+      - name: Wait for Certificate to be Ready
+        if: ${{ inputs.wait_for_cert == true }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          echo "Waiting up to 5 min for Certificate cloudless-gr-tls to be Ready..."
+          sudo k3s kubectl -n cloudless wait --for=condition=Ready \
+            certificate/cloudless-gr-tls --timeout=300s || {
+            echo "--- Certificate status ---"
+            sudo k3s kubectl -n cloudless describe certificate cloudless-gr-tls || true
+            echo "--- cert-manager logs (tail) ---"
+            sudo k3s kubectl -n cert-manager logs deploy/cert-manager --tail=60 || true
+            exit 1
+          }
+          echo "Certificate is Ready."
+          sudo k3s kubectl -n cloudless get ingress,certificate
+          EOF
