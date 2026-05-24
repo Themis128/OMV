@@ -1,0 +1,99 @@
+name: provision-cert-manager
+
+# Provision the cert-manager credentials and ClusterIssuers on the cluster:
+#   • cloudflare-api-token Secret  (Cloudflare DNS-01 solver for cloudless.online)
+#   • letsencrypt-route53 ClusterIssuer  (Cloudflare solver for .online, Route53 for .gr)
+#   • letsencrypt-route53-staging ClusterIssuer
+#
+# Uses Tailscale + SSH to reach omv, then runs `sudo k3s kubectl` so the
+# k3s kubeconfig is used — plain `kubectl` on the tbaltzakis user requires
+# a separate kubeconfig and fails OpenAPI validation.
+#
+# Required repository secrets:
+#   TS_OAUTH_CLIENT_ID      Tailscale OAuth client ID
+#   TS_OAUTH_SECRET         Tailscale OAuth client secret
+#   OMV_SSH_KEY             Private SSH key for tbaltzakis@omv
+#   CLOUDFLARE_API_TOKEN    Cloudflare token with Zone→DNS→Edit on cloudless.online
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_issuer:
+        description: "Apply Secret only, skip ClusterIssuer update"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          hostname: omv-provision-cert-manager-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Apply cloudflare-api-token Secret
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "sudo k3s kubectl apply --validate=false -f - -n cert-manager" <<EOF
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: cloudflare-api-token
+            namespace: cert-manager
+          type: Opaque
+          stringData:
+            api-token: "${CLOUDFLARE_API_TOKEN}"
+          EOF
+
+      - name: Apply ClusterIssuers
+        if: ${{ github.event.inputs.skip_issuer != 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'SSHEOF'
+          set -euo pipefail
+          cd ~/OMV && git pull -q origin main
+          sudo k3s kubectl apply --validate=false -f k3s/cert-manager/cluster-issuer.yaml
+          SSHEOF
+
+      - name: Verify
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'SSHEOF'
+          set -euo pipefail
+          echo "=== ClusterIssuers ==="
+          sudo k3s kubectl get clusterissuer \
+            -o custom-columns='NAME:.metadata.name,READY:.status.conditions[0].status,REASON:.status.conditions[0].reason'
+          echo ""
+          echo "=== cloudflare-api-token Secret ==="
+          sudo k3s kubectl get secret cloudflare-api-token -n cert-manager \
+            -o custom-columns='NAME:.metadata.name,TYPE:.type,CREATED:.metadata.creationTimestamp'
+          SSHEOF
