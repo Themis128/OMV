@@ -1,0 +1,75 @@
+name: cloudflared-login
+
+# Run `cloudflared tunnel login` on omv via Tailscale + SSH. The login URL
+# is surfaced in the workflow log — click it from any browser, sign in to
+# Cloudflare, pick the cloudless.gr zone, and the workflow finishes the rest:
+# creates the tunnel, writes credentials to /etc/cloudflared/, and routes DNS
+# CNAMEs in Cloudflare for each hostname.
+#
+# Use this when you do NOT have (or do not want to paste) a Cloudflare API
+# token. After this workflow succeeds, run `configure-cloudflared` to write
+# /etc/cloudflared/config.yml and start the daemon.
+#
+# Required repository secrets:
+#   TS_AUTHKEY    Tailscale auth key.
+#   OMV_SSH_KEY   Private SSH key for tbaltzakis@omv.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tunnel_name:
+        description: "Tunnel name to create / reuse."
+        type: string
+        default: "cloudless"
+      hostnames:
+        description: "Comma-separated hostnames to route through the tunnel."
+        type: string
+        default: "cloudless.gr,manage.cloudless.gr"
+      login_timeout:
+        description: "Seconds to wait for the OAuth click (after the URL appears)."
+        type: string
+        default: "600"
+
+permissions:
+  contents: read
+
+jobs:
+  login:
+    runs-on: ubuntu-latest
+    # Give the job enough room to wait for the operator click + the auth flow.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          hostname: omv-cf-login-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n  ServerAliveInterval 30\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Run cloudflared-login.sh on omv
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          TUNNEL_NAME: ${{ inputs.tunnel_name }}
+          HOSTNAMES: ${{ inputs.hostnames }}
+          LOGIN_TIMEOUT: ${{ inputs.login_timeout }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
+          set -euo pipefail
+          cd ~/OMV && git pull -q origin main
+          sudo TUNNEL_NAME='${TUNNEL_NAME}' \
+               HOSTNAMES='${HOSTNAMES}' \
+               LOGIN_TIMEOUT='${LOGIN_TIMEOUT}' \
+               ./scripts/cloudflared-login.sh
+          EOF
