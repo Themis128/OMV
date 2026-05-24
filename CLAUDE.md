@@ -21,6 +21,7 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/setup-cloudflare.json` | setup-cloudflare | Uses `CLOUDFLARE_API_TOKEN` secret |
 | `.github/dispatches/cleanup-branches.json` | cleanup-branches | Set `branches` or leave empty for default list |
 | `.github/dispatches/authorize-ssh-key.json` | authorize-ssh-key | Set `public_key` to full pub key string |
+| `.github/dispatches/setup-tailscale-oauth.json` | setup-tailscale-oauth | Requires `TS_API_KEY` repo secret (Tailscale personal API key) |
 
 **Custom slash commands** (`.claude/commands/`):
 - `/trigger <workflow>` — update the dispatch file and push to trigger a workflow

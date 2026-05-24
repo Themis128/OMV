@@ -2,14 +2,14 @@ name: setup-tailscale-oauth
 
 # Store Tailscale OAuth credentials as GitHub repo secrets.
 #
-# Two modes (select via 'mode' input):
-#   existing  — paste your existing OAuth client ID + secret directly
-#               (use this if you already have credentials from another repo)
-#   create    — provide a Tailscale API key and the workflow creates a new
-#               OAuth client automatically
+# Modes (auto-selected based on what's available):
+#   1. TS_API_KEY repo secret exists → creates a new OAuth client automatically
+#      (add it once at Settings → Secrets, then trigger via dispatch file)
+#   2. workflow_dispatch with mode=existing → paste client ID + secret directly
+#   3. workflow_dispatch with mode=create + tailscale_api_key input → create new client
 #
-# After storing, all workflows in this repo use OAuth instead of the
-# deprecated authkey. Optionally deletes the old TS_AUTHKEY secret.
+# After storing, all workflows use OAuth instead of the deprecated TS_AUTHKEY.
+# Triggered automatically via .github/dispatches/setup-tailscale-oauth.json push.
 
 on:
   workflow_dispatch:
@@ -28,13 +28,16 @@ on:
         type: string
         required: false
       tailscale_api_key:
-        description: "[create] Tailscale API key (https://login.tailscale.com/admin/settings/keys)."
+        description: "[create] Tailscale API key — leave blank to use TS_API_KEY secret."
         type: string
         required: false
       delete_old_authkey:
         description: "Delete the old TS_AUTHKEY secret."
         type: boolean
         default: true
+  push:
+    branches: [main]
+    paths: [.github/dispatches/setup-tailscale-oauth.json]
 
 permissions:
   secrets: write
@@ -51,33 +54,39 @@ jobs:
 
       - name: Store Tailscale OAuth secrets
         env:
-          MODE: ${{ inputs.mode }}
+          MODE: ${{ inputs.mode || 'create' }}
           OAUTH_CLIENT_ID: ${{ inputs.oauth_client_id }}
           OAUTH_SECRET: ${{ inputs.oauth_secret }}
-          TS_API_KEY: ${{ inputs.tailscale_api_key }}
+          TS_API_KEY_INPUT: ${{ inputs.tailscale_api_key }}
+          TS_API_KEY_SECRET: ${{ secrets.TS_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          DELETE_OLD: ${{ inputs.delete_old_authkey }}
+          DELETE_OLD: ${{ inputs.delete_old_authkey || 'true' }}
         run: |
           python3 << 'PYEOF'
           import os, base64, requests
           from nacl import encoding, public
 
-          mode          = os.environ["MODE"]
-          gh_token      = os.environ["GH_TOKEN"]
-          repo          = os.environ["REPO"]
-          delete_old    = os.environ["DELETE_OLD"].lower() == "true"
+          mode       = os.environ["MODE"]
+          gh_token   = os.environ["GH_TOKEN"]
+          repo       = os.environ["REPO"]
+          delete_old = os.environ["DELETE_OLD"].lower() == "true"
 
           if mode == "existing":
               client_id     = os.environ["OAUTH_CLIENT_ID"].strip()
               client_secret = os.environ["OAUTH_SECRET"].strip()
               if not client_id or not client_secret:
-                  raise SystemExit("ERROR: oauth_client_id and oauth_secret are required in 'existing' mode.")
+                  raise SystemExit("ERROR: oauth_client_id and oauth_secret required in 'existing' mode.")
               print(f"Using existing OAuth client: {client_id[:8]}…")
           else:
-              ts_api_key = os.environ["TS_API_KEY"].strip()
+              # prefer explicit input, fall back to TS_API_KEY repo secret
+              ts_api_key = (os.environ.get("TS_API_KEY_INPUT") or "").strip() or \
+                           (os.environ.get("TS_API_KEY_SECRET") or "").strip()
               if not ts_api_key:
-                  raise SystemExit("ERROR: tailscale_api_key is required in 'create' mode.")
+                  raise SystemExit(
+                      "ERROR: no Tailscale API key found.\n"
+                      "Add TS_API_KEY as a repo secret, or pass tailscale_api_key as a workflow input."
+                  )
               print("Creating new Tailscale OAuth client…")
               resp = requests.post(
                   "https://api.tailscale.com/api/v2/oauth/clients",
@@ -128,5 +137,5 @@ jobs:
                   r.raise_for_status()
                   print(f"Deleted TS_AUTHKEY ({r.status_code})")
 
-          print("Done.")
+          print("Done. Workflows will now use OAuth authentication.")
           PYEOF
