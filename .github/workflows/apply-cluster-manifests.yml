@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   apply:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, omv-recovery]
     steps:
       - uses: actions/checkout@v4
 
