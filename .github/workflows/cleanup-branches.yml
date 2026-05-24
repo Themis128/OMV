@@ -73,7 +73,7 @@ jobs:
           # Default = stale branches that accumulated before this workflow
           # existed. Edit this list when more orphans show up and a push to
           # main will re-run the cleanup automatically.
-          DEFAULT="claude/fix-k3s-agent-service-GLkS9,claude/run-system-check-j3X21,claude/image-sync-cronjob,claude/sync-tune-cadence,claude/sync-webhook,claude/fix-playwright-parity,claude/docs-backport-notion-ha-facts,claude/affectionate-goodall-XMRT5"
+          DEFAULT="claude/fix-k3s-agent-service-GLkS9,claude/run-system-check-j3X21,claude/image-sync-cronjob,claude/sync-tune-cadence,claude/sync-webhook,claude/fix-playwright-parity,claude/docs-backport-notion-ha-facts"
           BRANCHES="${INPUT_BRANCHES:-}"
           [ -z "$BRANCHES" ] && BRANCHES="$DEFAULT"
           deleted=0; skipped=0; gone=0
