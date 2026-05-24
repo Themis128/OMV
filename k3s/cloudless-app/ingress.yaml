@@ -5,9 +5,9 @@
 #   * Origin (cloudflared ↔ Traefik) — Traefik's default self-signed cert;
 #     the tunnel uses `noTLSVerify: true` so a real cert is not required.
 #
-# No cert-manager, no Let's Encrypt, no Cloudflare API token needed on the
-# cluster. If you ever bypass the tunnel (direct LAN TLS to Traefik), add a
-# real cert here and re-enable the cert-manager annotation.
+# pi-origin.cloudless.gr is the tunnel backend hostname used by the Cloudflare
+# Worker failover proxy — requests arrive with that Host header and need to
+# route to the same backend as cloudless.gr.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -16,12 +16,21 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
-    # Shed excess load gracefully (429) when the Pi hits its limit.
     traefik.ingress.kubernetes.io/router.middlewares: cloudless-cloudless-app-ratelimit@kubernetescrd,cloudless-cloudless-app-inflight@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
     - host: cloudless.gr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cloudless-app
+                port:
+                  name: http
+    - host: pi-origin.cloudless.gr
       http:
         paths:
           - path: /

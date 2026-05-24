@@ -1,0 +1,14 @@
+name = "cloudless-failover"
+main = "worker-failover.js"
+compatibility_date = "2024-09-23"
+
+# account_id is injected via CLOUDFLARE_ACCOUNT_ID env var in CI — not committed here.
+
+[[routes]]
+pattern = "cloudless.gr/*"
+zone_name = "cloudless.gr"
+
+[vars]
+# Override at deploy time via --var or Cloudflare dashboard.
+# Set AWS_CLOUDFRONT_HOST repo variable before deploying.
+AWS_FALLBACK_HOST = "PLACEHOLDER_SET_AWS_CLOUDFRONT_HOST_REPO_VAR"

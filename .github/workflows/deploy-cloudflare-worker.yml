@@ -1,0 +1,70 @@
+name: deploy-cloudflare-worker
+
+# Deploys the cloudless-failover Worker to cloudless.gr/*.
+# Worker proxies to Pi cluster (via Cloudflare Tunnel backend pi-origin.cloudless.gr)
+# and falls back to AWS CloudFront on 5xx / timeout.
+#
+# Required secrets:
+#   CLOUDFLARE_API_TOKEN  Workers:Edit + Zone:DNS Read permissions
+#
+# Required variables:
+#   CLOUDFLARE_ACCOUNT_ID  Your Cloudflare account ID (from dash.cloudflare.com)
+#   AWS_CLOUDFRONT_HOST    e.g. d1234abcd.cloudfront.net (your SST CloudFront domain)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/dispatches/deploy-cloudflare-worker.json]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preflight — check required vars
+        run: |
+          missing=()
+          [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] && missing+=(CLOUDFLARE_API_TOKEN)
+          [ -z "${{ vars.CLOUDFLARE_ACCOUNT_ID }}" ]   && missing+=(CLOUDFLARE_ACCOUNT_ID)
+          [ -z "${{ vars.AWS_CLOUDFRONT_HOST }}" ]      && missing+=(AWS_CLOUDFRONT_HOST)
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ERROR: Missing required secrets/variables: ${missing[*]}"
+            echo "Set them in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          echo "All required configuration is present."
+
+      - name: Deploy Worker via Wrangler
+        working-directory: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@latest deploy \
+            --var AWS_FALLBACK_HOST:"${{ vars.AWS_CLOUDFRONT_HOST }}"
+
+      - name: Smoke test — Worker at cloudless.gr/api/health
+        run: |
+          echo "Waiting 10s for Worker to propagate..."
+          sleep 10
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 https://cloudless.gr/api/health || echo 000)
+            echo "  attempt $i: HTTP ${code}"
+            [ "${code}" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "Smoke test did not return 200 — check Worker logs in Cloudflare dashboard."
+          exit 1
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
