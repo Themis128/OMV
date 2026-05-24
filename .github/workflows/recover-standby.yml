@@ -38,6 +38,10 @@ on:
         description: "Run omv-apply-fixes on omv + prune evicted pods and completed jobs on the cluster."
         type: boolean
         default: false
+      k3s_rejoin:
+        description: "Fix omv-ha k3s cluster join: reads token from omv, adds it to omv-ha config, clears stale state, restarts k3s."
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
@@ -63,14 +67,16 @@ jobs:
             etcd_recover=$(jq -r '.inputs.etcd_recover // "false"' .github/dispatches/recover-standby.json)
             omv_ha_prep=$(jq -r '.inputs.omv_ha_prep // "false"' .github/dispatches/recover-standby.json)
             node_cleanup=$(jq -r '.inputs.node_cleanup // "false"' .github/dispatches/recover-standby.json)
+            k3s_rejoin=$(jq -r '.inputs.k3s_rejoin // "false"' .github/dispatches/recover-standby.json)
           else
             apply="${{ inputs.apply || 'true' }}"
             etcd_recover="${{ inputs.etcd_recover || 'false' }}"
             omv_ha_prep="${{ inputs.omv_ha_prep || 'false' }}"
             node_cleanup="${{ inputs.node_cleanup || 'false' }}"
+            k3s_rejoin="${{ inputs.k3s_rejoin || 'false' }}"
           fi
-          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\n' \
-            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" >> "$GITHUB_OUTPUT"
+          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\n' \
+            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -147,6 +153,46 @@ jobs:
               done
           echo "=== done ==="
           EOF
+
+      - name: Fix omv-ha k3s cluster join (add missing token + clear stale state)
+        if: ${{ steps.inputs.outputs.k3s_rejoin == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
+        run: |
+          # Read token from omv (which has it), inject into omv-ha config, then rejoin
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash << 'OUTER'
+          set -euo pipefail
+          K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
+          echo "=== Token read from omv (masked) ==="
+          echo "${K3S_TOKEN:0:8}...(masked)"
+          ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+            tbaltzakis@192.168.1.130 "K3S_TOKEN='${K3S_TOKEN}' bash -s" << 'INNER'
+          set -euo pipefail
+          echo "=== Stopping k3s on omv-ha ==="
+          sudo systemctl stop k3s || true
+          echo "=== Checking /etc/rancher/k3s/config.yaml ==="
+          cat /etc/rancher/k3s/config.yaml || echo "(no config)"
+          if sudo grep -q '^token:' /etc/rancher/k3s/config.yaml 2>/dev/null; then
+            echo "Token already present — updating it"
+            sudo sed -i "s|^token:.*|token: ${K3S_TOKEN}|" /etc/rancher/k3s/config.yaml
+          else
+            echo "Token missing — prepending to config"
+            sudo sed -i "1s|^|token: ${K3S_TOKEN}\n|" /etc/rancher/k3s/config.yaml
+          fi
+          echo "=== Clearing stale server state ==="
+          sudo rm -rf /var/lib/rancher/k3s/server/db /var/lib/rancher/k3s/server/tls
+          echo "=== Starting k3s ==="
+          sudo systemctl start k3s
+          echo "=== Waiting 30s for node join... ==="
+          sleep 30
+          sudo systemctl is-active k3s && echo "k3s is RUNNING" \
+            || { echo "k3s FAILED TO START"; sudo journalctl -u k3s -n 30 --no-pager; exit 1; }
+          INNER
+          OUTER
+          echo "=== Verifying from omv-main ==="
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "sudo k3s kubectl get nodes && echo '---' && sudo k3s kubectl get pods -n cloudless -o wide"
 
       - name: Post result to status board
         if: always()
