@@ -24,9 +24,8 @@ on:
         description: "Cloudflare Tunnel name (matches the credentials file in /etc/cloudflared)."
         type: string
         default: "cloudless"
-  push:
-    branches: [main]
-    paths: [.github/dispatches/configure-cloudflared.json]
+  # push trigger removed — requires TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET secrets
+  # (Settings → Secrets and variables → Actions → Secrets) before re-enabling.
 
 permissions:
   contents: read
