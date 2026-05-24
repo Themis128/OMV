@@ -54,6 +54,10 @@ on:
         description: "Install k3s.service alias on omv-ha so OMV monit stops sending 'k3s.service not running' emails (run after demote_ha_to_agent)."
         type: boolean
         default: false
+      fix_monit_k3s_omv:
+        description: "Diagnose and fix the monit k3s.service check on omv (main node) — stops false-alarm alert emails when k3s is actually running."
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
@@ -83,6 +87,7 @@ jobs:
             demote_ha_to_agent=$(jq -r '.inputs.demote_ha_to_agent // "false"' .github/dispatches/recover-standby.json)
             cleanup_ha=$(jq -r '.inputs.cleanup_ha // "false"' .github/dispatches/recover-standby.json)
             fix_k3s_alias=$(jq -r '.inputs.fix_k3s_alias // "false"' .github/dispatches/recover-standby.json)
+            fix_monit_k3s_omv=$(jq -r '.inputs.fix_monit_k3s_omv // "false"' .github/dispatches/recover-standby.json)
           else
             apply="${{ inputs.apply || 'true' }}"
             etcd_recover="${{ inputs.etcd_recover || 'false' }}"
@@ -92,9 +97,10 @@ jobs:
             demote_ha_to_agent="${{ inputs.demote_ha_to_agent || 'false' }}"
             cleanup_ha="${{ inputs.cleanup_ha || 'false' }}"
             fix_k3s_alias="${{ inputs.fix_k3s_alias || 'false' }}"
+            fix_monit_k3s_omv="${{ inputs.fix_monit_k3s_omv || 'false' }}"
           fi
-          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\ncleanup_ha=%s\nfix_k3s_alias=%s\n' \
-            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" "$cleanup_ha" "$fix_k3s_alias" >> "$GITHUB_OUTPUT"
+          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\ncleanup_ha=%s\nfix_k3s_alias=%s\nfix_monit_k3s_omv=%s\n' \
+            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" "$cleanup_ha" "$fix_k3s_alias" "$fix_monit_k3s_omv" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -334,6 +340,62 @@ jobs:
               /tmp/k3s-alias.sh tbaltzakis@${OMV_HA_HOST}:/tmp/k3s-alias.sh && \
              ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
                tbaltzakis@${OMV_HA_HOST} sudo bash /tmp/k3s-alias.sh"
+
+      - name: Fix monit k3s check on omv (stop false-alarm emails)
+        if: ${{ always() && steps.inputs.outputs.fix_monit_k3s_omv == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          echo "=== k3s.service status on omv ==="
+          systemctl is-active k3s.service || true
+          systemctl status k3s.service --no-pager -l | tail -15 || true
+
+          echo ""
+          echo "=== Current monit k3s config files ==="
+          CONF_DIR=/etc/monit/conf.d
+          for f in "${CONF_DIR}"/*k3s* "${CONF_DIR}"/*services* 2>/dev/null; do
+            [ -f "$f" ] || continue
+            echo "--- $f ---"
+            cat "$f"
+          done
+
+          echo ""
+          echo "=== /etc/monit/monitrc (k3s-related lines) ==="
+          grep -n "k3s" /etc/monit/monitrc 2>/dev/null || echo "(no k3s lines in monitrc)"
+
+          echo ""
+          echo "=== monit summary ==="
+          monit summary 2>/dev/null || echo "(monit not available)"
+
+          echo ""
+          echo "=== Fixing monit k3s check ==="
+          # k3s on omv is the SERVER (k3s.service, not k3s-agent.service).
+          # monit should check the PID via systemd, not a PID file.
+          # Replace any existing k3s check with a clean systemd-based one.
+          CONF="${CONF_DIR}/k3s-service"
+          if [ -f "${CONF_DIR}/k3s" ]; then
+            echo "Removing old ${CONF_DIR}/k3s"
+            sudo rm -f "${CONF_DIR}/k3s"
+          fi
+          echo "Writing ${CONF}"
+          sudo tee "${CONF}" > /dev/null << 'MONIT'
+          check process k3s matching "k3s server"
+            start program = "/bin/systemctl start k3s"
+            stop  program = "/bin/systemctl stop k3s"
+            if failed
+              then alert
+            if changed pid
+              then alert
+          MONIT
+          echo "Reloading monit..."
+          sudo monit reload 2>/dev/null || sudo systemctl reload monit 2>/dev/null || true
+          echo ""
+          echo "=== monit summary after fix ==="
+          monit summary 2>/dev/null || echo "(monit reload takes a few seconds)"
+          echo "=== Done ==="
+          EOF
 
       - name: Post result to status board
         if: always()
