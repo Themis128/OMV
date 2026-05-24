@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -56,3 +57,7 @@ jobs:
           sudo k3s kubectl apply --validate=false -f k3s/cloudless-app/ingress.yaml
           sudo k3s kubectl -n cloudless get ingress
           EOF
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status

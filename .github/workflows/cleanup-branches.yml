@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   delete-merged-pr-head:
@@ -53,6 +54,10 @@ jobs:
             echo "could not delete $BRANCH:"
             cat err.log
           fi
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
 
   bulk-cleanup:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
@@ -89,3 +94,7 @@ jobs:
           done
           echo
           echo "Summary: deleted=$deleted skipped=$skipped not-deleted=$gone"
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status

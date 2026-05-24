@@ -25,6 +25,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -86,3 +87,7 @@ jobs:
           echo "Current authorized keys:"
           cat ~/.ssh/authorized_keys
           EOF
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status

@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -110,3 +111,7 @@ jobs:
           sudo k3s kubectl get secret cloudflare-api-token -n cert-manager \
             -o custom-columns='NAME:.metadata.name,TYPE:.type,CREATED:.metadata.creationTimestamp'
           SSHEOF
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status

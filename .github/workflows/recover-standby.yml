@@ -40,6 +40,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -111,3 +112,7 @@ jobs:
             "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
               tbaltzakis@${OMV_HA_HOST} \
               'cd ~/OMV && git pull -q origin main && sudo ./scripts/omv-ha-k3s-prep.sh --apply'"
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status

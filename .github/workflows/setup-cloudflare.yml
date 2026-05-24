@@ -39,6 +39,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -105,3 +106,7 @@ jobs:
                WAIT_NS='${WAIT_NS}' \
                ./scripts/setup-cloudflare-dns-and-tunnel.sh
           EOF
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status

@@ -1,16 +1,21 @@
-Check the status of a recent GitHub Actions workflow run.
+Check the result of recent GitHub Actions workflow runs by reading the status board issue.
 
-The GitHub MCP server does not have a workflow-runs API tool, so status cannot be
-fetched programmatically. Guide the user to check directly:
+Every workflow posts a pass/fail comment to issue #66 after each run.
 
-1. Open: https://github.com/themis128/omv/actions
-2. Find the workflow by name in the left sidebar.
-3. Click the most recent run to see logs.
+Steps:
+1. Call mcp__github__issue_read with:
+   - owner: themis128
+   - repo: omv
+   - issue_number: 66
+   - method: get_comments
+   - perPage: 10  (most recent 10 results)
 
-If the user pastes a failure log, diagnose and fix the issue:
-- SSH connection refused → run /ssh-setup to authorize the key
-- kubectl error → check if cert-manager namespace exists: sudo k3s kubectl get ns
-- Tailscale timeout → check TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET secrets are set
-- Secret not found → verify the secret name in Settings → Secrets → Actions
+2. Show the user the most recent comments, newest first (reverse the list).
 
-To re-trigger a workflow after fixing an issue, use /trigger <workflow-name>.
+3. If a workflow failed, diagnose from the comment and offer to fix:
+   - SSH error → run /ssh-setup
+   - kubectl / cert-manager error → re-trigger after fixing the root cause
+   - Tailscale timeout → check TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET secrets
+   - Secret not found → check Settings → Secrets → Actions
+
+4. To re-trigger a fixed workflow, use /trigger <workflow-name>.

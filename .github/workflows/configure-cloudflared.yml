@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -100,3 +101,7 @@ jobs:
           done
           echo "Health probe did not return 200 — check DNS delegation and tunnel logs."
           exit 1
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status

@@ -1,0 +1,27 @@
+name: Post to Workflow Status Board
+description: Posts a pass/fail comment to the status board issue (issue #66).
+
+inputs:
+  detail:
+    description: "Optional extra line appended to the comment body."
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Post comment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        STATUS: ${{ job.status }}
+        DETAIL: ${{ inputs.detail }}
+      run: |
+        if [ "$STATUS" = "success" ]; then icon="✅"; else icon="❌"; fi
+        body="${icon} **${{ github.workflow }}** — ${STATUS}
+Triggered: \`${{ github.event_name }}\` → \`${{ github.ref_name }}\`
+Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+At: $(date -u '+%Y-%m-%d %H:%M UTC')"
+        [ -n "$DETAIL" ] && body="${body}
+${DETAIL}"
+        gh api "repos/${{ github.repository }}/issues/66/comments" -f body="$body"
