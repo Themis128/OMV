@@ -211,7 +211,20 @@ jobs:
             exit 0
           fi
           git commit -m "OMV report ${ts}"
-          git push origin omv-reports
+          # Retry push up to 3 times with a rebase to handle races with the
+          # Pi cron job (omv-report-to-github.sh) writing to the same branch.
+          push_ok=0
+          for attempt in 1 2 3; do
+            if git push origin omv-reports; then
+              push_ok=1
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Push attempt $attempt failed — rebasing and retrying..."
+              git pull --rebase origin omv-reports || true
+            fi
+          done
+          [ "$push_ok" -eq 1 ] || { echo "Push failed after 3 attempts" >&2; exit 1; }
 
       - name: Fail the run if omv was unreachable
         if: always() && steps.collect.outputs.ssh != 'ok'

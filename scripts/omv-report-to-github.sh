@@ -34,7 +34,7 @@
 #
 # Exit code: 0 on success, non-zero on failure.
 
-set -u
+set -euo pipefail
 
 BRANCH="${OMV_REPORT_BRANCH:-omv-reports}"
 TS="$(date +%Y%m%d-%H%M%S)"
@@ -102,8 +102,21 @@ fi
 git -c user.name="omv-reporter" -c user.email="omv-reporter@${HOST}" \
     commit --quiet -m "OMV report ${TS} from ${HOST}"
 
-if ! git push --quiet origin "$BRANCH"; then
-    echo "ERROR: push to origin/$BRANCH failed — check the Pi's write access." >&2
+# Retry push up to 3 times with a rebase to handle races with the GHA workflow
+# writing to the same branch concurrently (both paths share omv-reports).
+push_ok=0
+for attempt in 1 2 3; do
+    if git push --quiet origin "$BRANCH"; then
+        push_ok=1
+        break
+    fi
+    if [ "$attempt" -lt 3 ]; then
+        echo "Push attempt $attempt failed — rebasing and retrying..."
+        git pull --rebase --quiet origin "$BRANCH" || true
+    fi
+done
+if [ "$push_ok" -eq 0 ]; then
+    echo "ERROR: push to origin/$BRANCH failed after 3 attempts — check write access." >&2
     exit 1
 fi
 
