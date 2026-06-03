@@ -40,6 +40,7 @@ k3s/cert-manager/route53-credentials.yaml
 # Downloaded binaries
 kustomize
 kubeconform
+actionlint
 
 # Playwright runtime artefacts
 test/playwright/screenshots/
