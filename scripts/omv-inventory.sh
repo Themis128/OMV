@@ -99,6 +99,24 @@ else
     echo "(LVM not installed)"
 fi
 
+sub "Disk usage — top directories (du)"
+for mount_point in \
+    /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 \
+    /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 \
+    /var/lib/rancher/k3s \
+    /var/lib/kubelet/pods; do
+    [ -d "$mount_point" ] || continue
+    printf '\n  %s:\n' "$mount_point"
+    $SUDO du -sh "$mount_point"/*/  2>/dev/null | sort -rh | head -20 \
+        || $SUDO du -sh "$mount_point" 2>/dev/null
+done
+printf '\n  k3s images:\n'
+$SUDO du -sh /var/lib/rancher/k3s/agent/containerd/io.containerd.snapshotter.v1.overlayfs/ 2>/dev/null || true
+$SUDO du -sh /var/lib/rancher/k3s/agent/containerd/ 2>/dev/null || true
+printf '\n  etcd snapshots:\n'
+$SUDO find /var/lib/rancher/k3s/server/db/snapshots/ -name '*.zip' -printf '%k KB\t%f\n' 2>/dev/null | sort -rn | head -10 || true
+$SUDO du -sh /var/lib/rancher/k3s/server/db/ 2>/dev/null || true
+
 sub "SMART health"
 if have smartctl; then
     for dev in /dev/sd? /dev/nvme?n? /dev/hd?; do
