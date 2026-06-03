@@ -75,10 +75,26 @@ jobs:
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -euo pipefail
-          echo "=== Docker system prune (containers, images, networks, build cache) ==="
+
+          echo "=== Stop + remove all buildx BuildKit containers (blocking image prune) ==="
+          buildx_ids=$(sudo docker ps -aq --filter name=buildx_buildkit) || true
+          if [ -n "$buildx_ids" ]; then
+            echo "Stopping: $buildx_ids"
+            sudo docker stop $buildx_ids
+            sudo docker rm $buildx_ids
+          else
+            echo "(no buildx builders running)"
+          fi
+
+          echo "=== Remove all other stopped containers ==="
+          sudo docker container prune -f
+
+          echo "=== Docker system prune (images, networks, build cache) ==="
           sudo docker system prune -af
+
           echo "=== Docker builder prune (BuildKit cache) ==="
           sudo docker builder prune -af || true
+
           echo "=== Docker disk usage after ==="
           sudo docker system df
           EOF
@@ -131,10 +147,12 @@ jobs:
           sudo systemctl reset-failed logrotate.service 2>/dev/null || true
           sudo systemctl --failed --no-pager --no-legend || echo "(no failed units)"
 
-          # Clear runner-work tmp on USB drive
+          # Clear runner-work tmp on USB drive (contents only, keep dir)
           echo "=== Clearing runner-work tmp ==="
           RWORK=/srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7/runner-work
-          [ -d "$RWORK" ] && sudo rm -rf "${RWORK:?}"/* && echo "Cleared $RWORK" || true
+          if [ -d "$RWORK" ]; then
+            sudo find "${RWORK}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + && echo "Cleared $RWORK"
+          fi
           EOF
 
       - name: omv-ha — cleanup images + reset failed units
