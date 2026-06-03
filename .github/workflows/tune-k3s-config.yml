@@ -1,0 +1,136 @@
+name: tune-k3s-config
+
+# Apply recommended k3s kubelet GC, log rotation, eviction, and etcd retention
+# settings to /etc/rancher/k3s/config.yaml, then restart k3s.
+# Idempotent — re-running overwrites previous values with current recommendations.
+#
+# Settings applied:
+#   image-gc-high-threshold: 75  (default 85 — trigger GC earlier)
+#   image-gc-low-threshold:  65  (default 80)
+#   container-log-max-size:  10Mi
+#   container-log-max-files: 3
+#   eviction-hard:  nodefs.available<15%,imagefs.available<15%
+#   eviction-minimum-reclaim: nodefs.available=500Mi
+#   etcd-snapshot-retention: 3   (default 5)
+#   etcd-snapshot-schedule-cron: "0 2 * * *"  (daily 02:00 instead of 00:00+12:00)
+#
+# Required secrets: TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET (or TS_AUTHKEY), OMV_SSH_KEY
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/dispatches/tune-k3s-config.json]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  tune:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        id: tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
+          hostname: omv-tune-k3s-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Apply k3s config tuning
+        id: tune
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          CONFIG=/etc/rancher/k3s/config.yaml
+
+          echo "=== config BEFORE ==="
+          sudo cat "$CONFIG" 2>/dev/null || echo "(none)"
+
+          # Write Python script line-by-line so it arrives at column 0
+          printf 'import yaml, os, shutil\n' > /tmp/tune-k3s.py
+          printf 'p = "/etc/rancher/k3s/config.yaml"\n' >> /tmp/tune-k3s.py
+          printf 'cfg = (yaml.safe_load(open(p)) or {}) if os.path.exists(p) else {}\n' >> /tmp/tune-k3s.py
+          printf 'na = [\n' >> /tmp/tune-k3s.py
+          printf '    "image-gc-high-threshold=75",\n' >> /tmp/tune-k3s.py
+          printf '    "image-gc-low-threshold=65",\n' >> /tmp/tune-k3s.py
+          printf '    "container-log-max-size=10Mi",\n' >> /tmp/tune-k3s.py
+          printf '    "container-log-max-files=3",\n' >> /tmp/tune-k3s.py
+          printf '    "eviction-hard=nodefs.available<15%%,imagefs.available<15%%",\n' >> /tmp/tune-k3s.py
+          printf '    "eviction-minimum-reclaim=nodefs.available=500Mi",\n' >> /tmp/tune-k3s.py
+          printf ']\n' >> /tmp/tune-k3s.py
+          printf 'px = {a.split("=")[0] for a in na}\n' >> /tmp/tune-k3s.py
+          printf 'kept = [a for a in cfg.get("kubelet-arg", []) if a.split("=")[0] not in px]\n' >> /tmp/tune-k3s.py
+          printf 'cfg["kubelet-arg"] = kept + na\n' >> /tmp/tune-k3s.py
+          printf 'cfg["etcd-snapshot-retention"] = 3\n' >> /tmp/tune-k3s.py
+          printf 'cfg["etcd-snapshot-schedule-cron"] = "0 2 * * *"\n' >> /tmp/tune-k3s.py
+          printf 'os.path.exists(p) and shutil.copy2(p, p + ".bak")\n' >> /tmp/tune-k3s.py
+          printf 'yaml.dump(cfg, open(p, "w"), default_flow_style=False, sort_keys=False)\n' >> /tmp/tune-k3s.py
+          printf 'print("Updated", p)\n' >> /tmp/tune-k3s.py
+
+          sudo python3 /tmp/tune-k3s.py
+          rm -f /tmp/tune-k3s.py
+
+          echo "=== config AFTER ==="
+          sudo cat "$CONFIG"
+          EOF
+
+      - name: Restart k3s and verify
+        id: restart
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          echo "=== Restarting k3s ==="
+          sudo systemctl restart k3s
+          echo "=== Waiting up to 120s for k3s to become active ==="
+          for i in $(seq 1 12); do
+            sleep 10
+            state=$(sudo systemctl is-active k3s 2>/dev/null || true)
+            echo "  [${i}0s] k3s: ${state}"
+            if [ "${state}" = "active" ]; then
+              echo "k3s is running"
+              break
+            fi
+            if [ "${i}" = "12" ]; then
+              echo "k3s failed to start after 120s"
+              sudo journalctl -u k3s -n 30 --no-pager
+              exit 1
+            fi
+          done
+          echo "=== Node status ==="
+          sudo k3s kubectl get nodes
+          echo "=== etcd snapshot config ==="
+          sudo k3s etcd-snapshot ls 2>/dev/null | tail -6 || true
+          EOF
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
+        with:
+          detail: >-
+            tailscale=${{ steps.tailscale.outcome }}
+            tune=${{ steps.tune.outcome }}
+            restart=${{ steps.restart.outcome }}

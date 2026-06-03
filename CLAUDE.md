@@ -24,6 +24,7 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/setup-tailscale-oauth.json` | setup-tailscale-oauth | Requires `TS_API_KEY` repo secret (Tailscale personal API key) |
 | `.github/dispatches/deploy-cloudflare-worker.json` | deploy-cloudflare-worker | Requires `CLOUDFLARE_API_TOKEN` secret + `CLOUDFLARE_ACCOUNT_ID` + `AWS_CLOUDFRONT_HOST` variables |
 | `.github/dispatches/cleanup-disk.json` | cleanup-disk | Docker prune + logrotate fix + reset failed units on omv |
+| `.github/dispatches/tune-k3s-config.json` | tune-k3s-config | Apply kubelet GC, log rotation, eviction, etcd retention to k3s config |
 
 **Custom slash commands** (`.claude/commands/`):
 - `/trigger <workflow>` — update the dispatch file and push to trigger a workflow
