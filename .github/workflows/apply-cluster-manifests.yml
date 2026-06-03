@@ -3,6 +3,7 @@ name: apply-cluster-manifests
 # Apply all cluster manifests via kustomize:
 #   - k3s/cloudless-app/  (deployment, HPA, PDB, ingress, CronJobs, middlewares)
 #   - k3s/home-assistant/ (deployment, PV/PVC, service)
+#   - k3s/monitoring/     (PrometheusRules — disk-pressure alert)
 # cert-manager / Cloudflare API token are not required — the Cloudflare Tunnel
 # handles all public TLS (noTLSVerify to origin). Runs on omv via Tailscale+SSH.
 #
@@ -77,7 +78,8 @@ jobs:
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -euo pipefail
-          # Wait for k3s API — retry up to 10 times (30s apart) in case of transient flap
+
+          # Wait for k3s API — retry up to 10 times (30s apart)
           for attempt in 1 2 3 4 5 6 7 8 9 10; do
             if sudo k3s kubectl get ns 2>/dev/null; then
               break
@@ -85,14 +87,32 @@ jobs:
             echo "k3s API not ready (attempt $attempt/10) — waiting 30s..."
             [ "$attempt" -lt 10 ] && sleep 30 || { echo "k3s API unavailable after 10 attempts"; exit 1; }
           done
+
+          # Retry helper — re-waits for API and retries kubectl apply up to 5x
+          kubectl_apply() {
+            local dir="$1"
+            for attempt in 1 2 3 4 5; do
+              if sudo k3s kubectl apply --validate=false -k "$dir"; then
+                return 0
+              fi
+              echo "apply $dir failed (attempt $attempt/5) — waiting 30s for API to recover..."
+              sleep 30
+            done
+            echo "apply $dir failed after 5 attempts"
+            return 1
+          }
+
           cd ~/OMV && git pull -q origin main
           echo "=== cloudless-app ==="
-          sudo k3s kubectl apply --validate=false -k k3s/cloudless-app/
+          kubectl_apply k3s/cloudless-app/
           echo "=== home-assistant ==="
-          sudo k3s kubectl apply --validate=false -k k3s/home-assistant/
+          kubectl_apply k3s/home-assistant/
+          echo "=== monitoring ==="
+          kubectl_apply k3s/monitoring/ || echo "monitoring apply skipped (namespace or CRD may not exist)"
           echo "=== verify ==="
           sudo k3s kubectl -n cloudless get ingress,deployment,hpa,svc,cronjob
           sudo k3s kubectl -n home-assistant get deployment,svc
+          sudo k3s kubectl get prometheusrule -A 2>/dev/null || true
           EOF
 
       - name: Post result to status board
