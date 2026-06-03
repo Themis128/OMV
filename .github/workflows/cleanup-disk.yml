@@ -1,12 +1,18 @@
 name: cleanup-disk
 
-# Free disk space on omv via SSH:
-#   • docker system prune -af  (removes stopped containers, unused images, build cache)
-#   • docker builder prune -af (clears BuildKit cache)
-#   • Install docker-image-prune.timer (hourly dangling-image prune, idempotent)
-#   • Fix logrotate rsyslog duplicate-entry error
-#   • Reset stale failed systemd units (service-failure-alert, logrotate)
-#   • Clear runner-work tmp dir on the USB drive
+# Free disk space on omv + omv-ha via SSH:
+#   omv:
+#     • docker system prune -af  (removes stopped containers, unused images, build cache)
+#     • docker builder prune -af (clears BuildKit cache)
+#     • Install docker-image-prune.timer (hourly dangling-image prune, idempotent)
+#     • Fix logrotate rsyslog duplicate-entry error
+#     • Reset stale failed systemd units (service-failure-alert, logrotate)
+#     • Clear runner-work tmp dir on the USB drive
+#   omv-ha (via ProxyJump through omv):
+#     • k3s crictl rmi --prune (unused containerd images)
+#     • docker prune if installed
+#     • Reset failed units
+#     • Install k3s-image-prune.timer (hourly containerd image prune, idempotent)
 #
 # Safe: does NOT remove running containers, named volumes, or k3s data.
 #
@@ -45,12 +51,17 @@ jobs:
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST || '192.168.1.130' }}
         run: |
           install -d -m 700 ~/.ssh
           printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
           chmod 600 ~/.ssh/omv_key
+          # omv (via Tailscale)
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
+          # omv-ha (via omv as jump host — local LAN only)
+          printf 'Host omv-ha\n  HostName %s\n  User tbaltzakis\n  ProxyJump tbaltzakis@%s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_HA_SSH_HOST}" "${OMV_SSH_HOST}" >> ~/.ssh/config
 
       - name: Disk usage before
         id: before
@@ -130,6 +141,49 @@ jobs:
           [ -d "$RWORK" ] && sudo rm -rf "${RWORK:?}"/* && echo "Cleared $RWORK" || true
           EOF
 
+      - name: omv-ha — cleanup images + reset failed units
+        id: ha_cleanup
+        run: |
+          ssh omv-ha bash -s << 'EOF'
+          set -euo pipefail
+
+          echo "=== k3s crictl image prune (unused containerd images) ==="
+          sudo k3s crictl rmi --prune 2>/dev/null || true
+
+          echo "=== Docker prune (if installed) ==="
+          if command -v docker >/dev/null 2>&1; then
+            sudo docker system prune -af || true
+            sudo docker builder prune -af || true
+          else
+            echo "(docker not installed on omv-ha — skipped)"
+          fi
+
+          echo "=== Resetting failed units ==="
+          sudo systemctl reset-failed 2>/dev/null || true
+          sudo systemctl --failed --no-pager --no-legend || echo "(no failed units)"
+
+          echo "=== Disk usage ==="
+          df -h / /var/lib/rancher/k3s 2>/dev/null || df -h /
+          EOF
+
+      - name: omv-ha — install hourly k3s-image-prune timer
+        id: ha_timer
+        run: |
+          ssh omv-ha bash -s << 'EOF'
+          set -euo pipefail
+
+          printf '[Unit]\nDescription=Prune unused k3s containerd images\n\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/k3s crictl rmi --prune\nStandardOutput=journal\n' \
+            | sudo tee /etc/systemd/system/k3s-image-prune.service > /dev/null
+
+          printf '[Unit]\nDescription=Hourly k3s image prune\nAfter=k3s-agent.service\n\n[Timer]\nOnCalendar=hourly\nPersistent=true\n\n[Install]\nWantedBy=timers.target\n' \
+            | sudo tee /etc/systemd/system/k3s-image-prune.timer > /dev/null
+
+          sudo systemctl daemon-reload
+          sudo systemctl enable --now k3s-image-prune.timer
+          echo "=== Timer status ==="
+          sudo systemctl list-timers k3s-image-prune.timer --no-pager
+          EOF
+
       - name: Disk usage after
         id: after
         env:
@@ -148,3 +202,5 @@ jobs:
             docker=${{ steps.docker.outcome }}
             timer=${{ steps.timer.outcome }}
             fixes=${{ steps.fixes.outcome }}
+            ha_cleanup=${{ steps.ha_cleanup.outcome }}
+            ha_timer=${{ steps.ha_timer.outcome }}
