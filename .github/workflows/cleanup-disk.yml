@@ -8,7 +8,7 @@ name: cleanup-disk
 #     • Fix logrotate rsyslog duplicate-entry error
 #     • Reset stale failed systemd units (service-failure-alert, logrotate)
 #     • Clear runner-work tmp dir on the USB drive
-#   omv-ha (via ProxyJump through omv):
+#   omv-ha (two-hop: runner→omv→omv-ha using omv's local tbaltzakis key):
 #     • k3s crictl rmi --prune (unused containerd images)
 #     • docker prune if installed
 #     • Reset failed units
@@ -51,17 +51,13 @@ jobs:
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-          OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST || '192.168.1.130' }}
         run: |
           install -d -m 700 ~/.ssh
           printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
           chmod 600 ~/.ssh/omv_key
-          # omv (via Tailscale)
+          # omv (via Tailscale) — omv-ha is reached two-hop: runner→omv→omv-ha
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
-          # omv-ha (via omv as jump host — local LAN only)
-          printf 'Host omv-ha\n  HostName %s\n  User tbaltzakis\n  ProxyJump tbaltzakis@%s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
-            "${OMV_HA_SSH_HOST}" "${OMV_SSH_HOST}" >> ~/.ssh/config
 
       - name: Disk usage before
         id: before
@@ -143,8 +139,13 @@ jobs:
 
       - name: omv-ha — cleanup images + reset failed units
         id: ha_cleanup
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
         run: |
-          ssh omv-ha bash -s << 'EOF'
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+              tbaltzakis@${OMV_HA_HOST} bash -s" << 'EOF'
           set -euo pipefail
 
           echo "=== k3s crictl image prune (unused containerd images) ==="
@@ -168,8 +169,13 @@ jobs:
 
       - name: omv-ha — install hourly k3s-image-prune timer
         id: ha_timer
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
         run: |
-          ssh omv-ha bash -s << 'EOF'
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+              tbaltzakis@${OMV_HA_HOST} bash -s" << 'EOF'
           set -euo pipefail
 
           printf '[Unit]\nDescription=Prune unused k3s containerd images\n\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/k3s crictl rmi --prune\nStandardOutput=journal\n' \
