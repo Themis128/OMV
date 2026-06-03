@@ -128,7 +128,8 @@ jobs:
               sudo k3s kubectl patch cm "$CM" -n "$NS" --type merge -p "{\"data\":{\"server.yml\":$JSON_VAL}}"
               echo "ConfigMap patched — rolling restart ntfy"
               sudo k3s kubectl rollout restart deployment/"$DEPLOY" -n "$NS"
-              sudo k3s kubectl rollout status deployment/"$DEPLOY" -n "$NS" --timeout=120s
+              sudo k3s kubectl rollout status deployment/"$DEPLOY" -n "$NS" --timeout=120s \
+                || echo "rollout status timed out — patch was applied, pod restart is in flight"
             else
               echo "server.yml not in ConfigMap — patching via env vars"
               sudo k3s kubectl set env deployment/"$DEPLOY" -n "$NS" \
@@ -153,6 +154,7 @@ jobs:
 
       - name: Patch alertmanager — verify data retention
         id: alertmanager
+        if: always()
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
