@@ -8,8 +8,7 @@ name: recover-standby
 #
 # Required repository secrets (Settings → Secrets and variables → Actions):
 #
-#   TS_OAUTH_CLIENT_ID  Tailscale OAuth client ID (from https://login.tailscale.com/admin/settings/oauth).
-#   TS_OAUTH_SECRET    Tailscale OAuth client secret.
+#   TS_AUTHKEY    Tailscale auth key (reusable; ephemeral recommended).
 #                 Tailscale admin → Settings → Keys → Generate auth key.
 #
 #   OMV_SSH_KEY   Private SSH key whose public half is in omv's
@@ -34,88 +33,25 @@ on:
         description: "Apply memory tunes on omv-ha (zram, OOM-protect k3s, journal cap). Safe to re-run."
         type: boolean
         default: false
-      node_cleanup:
-        description: "Run omv-apply-fixes on omv + prune evicted pods and completed jobs on the cluster."
-        type: boolean
-        default: false
-      k3s_rejoin:
-        description: "Fix omv-ha k3s cluster join: reads token from omv, adds it to omv-ha config, clears stale state, restarts k3s."
-        type: boolean
-        default: false
-      demote_ha_to_agent:
-        description: "Demote omv-ha from k3s server (etcd) to agent worker. Fixes 2-node etcd quorum problem, frees ~300Mi RAM."
-        type: boolean
-        default: false
-      cleanup_ha:
-        description: "Remove leftover server files from omv-ha (/tmp scripts, stale k3s server state, ~/OMV clone)."
-        type: boolean
-        default: false
-      fix_k3s_alias:
-        description: "Install k3s.service alias on omv-ha so OMV monit stops sending 'k3s.service not running' emails (run after demote_ha_to_agent)."
-        type: boolean
-        default: false
-      fix_monit_k3s_omv:
-        description: "Diagnose and fix the monit k3s.service check on omv (main node) — stops false-alarm alert emails when k3s is actually running."
-        type: boolean
-        default: false
-      fix_omv_alert_template:
-        description: "Remove the literal '$(journalctl ...)' shell substitution from the OMV-managed monit alert mail template on omv."
-        type: boolean
-        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
 
 permissions:
   contents: read
-  issues: write
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   recover:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, omv-recovery]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Resolve inputs
-        id: inputs
-        run: |
-          if [ "${{ github.event_name }}" = "push" ] && [ -f .github/dispatches/recover-standby.json ]; then
-            apply=$(jq -r '.inputs.apply // "true"' .github/dispatches/recover-standby.json)
-            etcd_recover=$(jq -r '.inputs.etcd_recover // "false"' .github/dispatches/recover-standby.json)
-            omv_ha_prep=$(jq -r '.inputs.omv_ha_prep // "false"' .github/dispatches/recover-standby.json)
-            node_cleanup=$(jq -r '.inputs.node_cleanup // "false"' .github/dispatches/recover-standby.json)
-            k3s_rejoin=$(jq -r '.inputs.k3s_rejoin // "false"' .github/dispatches/recover-standby.json)
-            demote_ha_to_agent=$(jq -r '.inputs.demote_ha_to_agent // "false"' .github/dispatches/recover-standby.json)
-            cleanup_ha=$(jq -r '.inputs.cleanup_ha // "false"' .github/dispatches/recover-standby.json)
-            fix_k3s_alias=$(jq -r '.inputs.fix_k3s_alias // "false"' .github/dispatches/recover-standby.json)
-            fix_monit_k3s_omv=$(jq -r '.inputs.fix_monit_k3s_omv // "false"' .github/dispatches/recover-standby.json)
-            fix_omv_alert_template=$(jq -r '.inputs.fix_omv_alert_template // "false"' .github/dispatches/recover-standby.json)
-          else
-            apply="${{ inputs.apply || 'true' }}"
-            etcd_recover="${{ inputs.etcd_recover || 'false' }}"
-            omv_ha_prep="${{ inputs.omv_ha_prep || 'false' }}"
-            node_cleanup="${{ inputs.node_cleanup || 'false' }}"
-            k3s_rejoin="${{ inputs.k3s_rejoin || 'false' }}"
-            demote_ha_to_agent="${{ inputs.demote_ha_to_agent || 'false' }}"
-            cleanup_ha="${{ inputs.cleanup_ha || 'false' }}"
-            fix_k3s_alias="${{ inputs.fix_k3s_alias || 'false' }}"
-            fix_monit_k3s_omv="${{ inputs.fix_monit_k3s_omv || 'false' }}"
-            fix_omv_alert_template="${{ inputs.fix_omv_alert_template || 'false' }}"
-          fi
-          printf 'apply=%s\netcd_recover=%s\nomv_ha_prep=%s\nnode_cleanup=%s\nk3s_rejoin=%s\ndemote_ha_to_agent=%s\ncleanup_ha=%s\nfix_k3s_alias=%s\nfix_monit_k3s_omv=%s\nfix_omv_alert_template=%s\n' \
-            "$apply" "$etcd_recover" "$omv_ha_prep" "$node_cleanup" "$k3s_rejoin" "$demote_ha_to_agent" "$cleanup_ha" "$fix_k3s_alias" "$fix_monit_k3s_omv" "$fix_omv_alert_template" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           authkey: ${{ secrets.TS_AUTHKEY }}
-          tags: tag:ci
           hostname: omv-recovery-ci
+
       - name: Configure SSH
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
@@ -128,18 +64,17 @@ jobs:
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
       - name: Recover standby
-        continue-on-error: true
         env:
           OMV_HOST: "tbaltzakis@${{ vars.OMV_SSH_HOST || '100.113.41.119' }}"
         run: |
-          if [ "${{ steps.inputs.outputs.apply }}" = "true" ]; then
+          if [ "${{ inputs.apply }}" = "true" ]; then
             ./scripts/recover-standby.sh --yes
           else
             ./scripts/recover-standby.sh
           fi
 
       - name: etcd cluster-reset (quorum lost)
-        if: ${{ steps.inputs.outputs.etcd_recover == 'true' }}
+        if: ${{ inputs.etcd_recover == 'true' }}
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
@@ -147,241 +82,14 @@ jobs:
             'sudo REJOIN=1 ~/OMV/scripts/etcd-recover.sh'
 
       - name: omv-ha memory tunes (zram + OOM protection)
-        if: ${{ steps.inputs.outputs.omv_ha_prep == 'true' }}
+        if: ${{ inputs.omv_ha_prep == 'true' }}
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
           OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
         run: |
+          # shellcheck disable=SC2029  # OMV_HA_HOST intentionally expands client-side for two-hop SSH
+          # Hop through omv (on tailnet) → omv-ha (LAN only)
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
               tbaltzakis@${OMV_HA_HOST} \
-              '[ -d ~/OMV ] || git clone -q https://github.com/Themis128/OMV ~/OMV; cd ~/OMV && git pull -q origin main && sudo ./scripts/omv-ha-k3s-prep.sh --apply'"
-
-      - name: Node cleanup (omv-apply-fixes + kubectl prune)
-        if: ${{ steps.inputs.outputs.node_cleanup == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-        run: |
-          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
-          set -euo pipefail
-          cd ~/OMV && git pull -q origin main
-          echo "=== omv-apply-fixes ==="
-          sudo ./scripts/omv-apply-fixes.sh
-          echo "=== kubectl prune: evicted pods ==="
-          sudo k3s kubectl get pods -A --field-selector=status.phase=Failed \
-            -o jsonpath='{range .items[*]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' \
-            | while read -r ns name; do
-                sudo k3s kubectl delete pod -n "$ns" "$name" --ignore-not-found
-              done
-          echo "=== kubectl prune: completed jobs ==="
-          sudo k3s kubectl get jobs -A \
-            -o jsonpath='{range .items[?(@.status.completionTime)]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' \
-            | grep -v "ecr-cred-refresher\|image-sync\|config-sync" \
-            | while read -r ns name; do
-                sudo k3s kubectl delete job -n "$ns" "$name" --ignore-not-found
-              done
-          echo "=== done ==="
-          EOF
-
-      - name: Fix omv-ha k3s cluster join (add missing token + clear stale state)
-        if: ${{ always() && steps.inputs.outputs.k3s_rejoin == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-        run: |
-          ssh "tbaltzakis@${OMV_SSH_HOST}" bash << 'OUTER'
-          set -euo pipefail
-          K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
-          echo "=== Token read from omv (first 8 chars): ${K3S_TOKEN:0:8}... ==="
-          cat > /tmp/k3s-rejoin.sh << SCRIPT
-          #!/usr/bin/env bash
-          set -euo pipefail
-          echo "=== Stopping k3s on omv-ha ==="
-          sudo systemctl stop k3s || true
-          echo "=== Current /etc/rancher/k3s/config.yaml ==="
-          cat /etc/rancher/k3s/config.yaml 2>/dev/null || echo "(no config)"
-          if sudo grep -q '^token:' /etc/rancher/k3s/config.yaml 2>/dev/null; then
-            echo "Updating existing token..."
-            sudo sed -i "s|^token:.*|token: ${K3S_TOKEN}|" /etc/rancher/k3s/config.yaml
-          else
-            echo "Adding missing token..."
-            printf 'token: %s\n' "${K3S_TOKEN}" | sudo tee -a /etc/rancher/k3s/config.yaml
-          fi
-          echo "=== Updated config.yaml ==="
-          cat /etc/rancher/k3s/config.yaml
-          echo "=== Clearing stale server state ==="
-          sudo rm -rf /var/lib/rancher/k3s/server/db /var/lib/rancher/k3s/server/tls
-          echo "=== Starting k3s ==="
-          sudo systemctl start k3s
-          echo "=== Waiting up to 120s for k3s to become active... ==="
-          for i in \$(seq 1 12); do
-            sleep 10
-            state=\$(sudo systemctl is-active k3s 2>/dev/null || true)
-            echo "  [\${i}0s] k3s state: \${state}"
-            if [ "\${state}" = "active" ]; then
-              echo "k3s is RUNNING"
-              break
-            fi
-            if [ "\${i}" = "12" ]; then
-              echo "k3s FAILED TO START after 120s"
-              sudo journalctl -u k3s -n 50 --no-pager
-              exit 1
-            fi
-          done
-          SCRIPT
-          chmod +x /tmp/k3s-rejoin.sh
-          echo "=== Copying script to omv-ha (192.168.1.130) ==="
-          scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-            /tmp/k3s-rejoin.sh tbaltzakis@192.168.1.130:/tmp/k3s-rejoin.sh
-          echo "=== Running fix on omv-ha ==="
-          ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-            tbaltzakis@192.168.1.130 bash /tmp/k3s-rejoin.sh
-          OUTER
-          echo "=== Verifying cluster from omv-main ==="
-          ssh "tbaltzakis@${OMV_SSH_HOST}" \
-            "sudo k3s kubectl get nodes && echo '---' && sudo k3s kubectl get pods -n cloudless -o wide"
-
-      - name: Demote omv-ha from server to agent
-        if: ${{ always() && steps.inputs.outputs.demote_ha_to_agent == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-        run: |
-          ssh "tbaltzakis@${OMV_SSH_HOST}" bash << 'OUTER'
-          set -euo pipefail
-          K3S_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
-          echo "=== Token ready (first 8 chars): ${K3S_TOKEN:0:8}... ==="
-          echo "=== Draining omv-ha node ==="
-          sudo k3s kubectl drain omv-ha --ignore-daemonsets --delete-emptydir-data \
-            --timeout=60s 2>/dev/null || echo "(drain skipped — node may already be unreachable)"
-          cat > /tmp/demote-to-agent.sh << SCRIPT
-          #!/usr/bin/env bash
-          set -euo pipefail
-          echo "=== Stopping k3s server ==="
-          sudo systemctl stop k3s || true
-          echo "=== Uninstalling k3s server (removes etcd state) ==="
-          [ -f /usr/local/bin/k3s-uninstall.sh ] && sudo /usr/local/bin/k3s-uninstall.sh || true
-          echo "=== Installing k3s agent ==="
-          curl -sfL https://get.k3s.io | \
-            K3S_URL=https://192.168.1.128:6443 \
-            K3S_TOKEN="${K3S_TOKEN}" \
-            sh -s - agent
-          echo "=== Waiting up to 60s for k3s-agent to become active ==="
-          for i in \$(seq 1 6); do
-            sleep 10
-            state=\$(sudo systemctl is-active k3s-agent 2>/dev/null || true)
-            echo "  [\${i}0s] k3s-agent: \${state}"
-            if [ "\${state}" = "active" ]; then echo "k3s-agent RUNNING"; break; fi
-            if [ "\${i}" = "6" ]; then
-              echo "k3s-agent FAILED after 60s"
-              sudo journalctl -u k3s-agent -n 30 --no-pager
-              exit 1
-            fi
-          done
-          SCRIPT
-          chmod +x /tmp/demote-to-agent.sh
-          echo "=== Copying script to omv-ha ==="
-          scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-            /tmp/demote-to-agent.sh tbaltzakis@192.168.1.130:/tmp/demote-to-agent.sh
-          echo "=== Running demote on omv-ha ==="
-          ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-            tbaltzakis@192.168.1.130 bash /tmp/demote-to-agent.sh
-          echo "=== Removing old server node record from cluster ==="
-          sudo k3s kubectl delete node omv-ha --ignore-not-found
-          OUTER
-          echo "=== Waiting 30s for agent node to register ==="
-          sleep 30
-          echo "=== Verifying cluster ==="
-          ssh "tbaltzakis@${OMV_SSH_HOST}" \
-            "sudo k3s kubectl get nodes -o wide && echo '---' && sudo k3s kubectl get pods -A -o wide | head -30"
-
-      - name: Clean up leftover files on omv-ha
-        if: ${{ always() && steps.inputs.outputs.cleanup_ha == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-        run: |
-          ssh "tbaltzakis@${OMV_SSH_HOST}" \
-            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-              tbaltzakis@192.168.1.130 bash -s" << 'EOF'
-          set -euo pipefail
-          echo "=== Cleaning /tmp scripts ==="
-          rm -f /tmp/k3s-rejoin.sh /tmp/demote-to-agent.sh /tmp/k3s-fix.sh
-          echo "=== Removing stale k3s server state (if uninstall missed it) ==="
-          sudo rm -rf /etc/rancher/k3s /var/lib/rancher/k3s 2>/dev/null || true
-          echo "=== Removing ~/OMV git clone (not needed on agent) ==="
-          rm -rf ~/OMV
-          echo "=== Cleaning apt cache ==="
-          sudo apt-get clean -y 2>/dev/null || true
-          echo "=== Disk usage after cleanup ==="
-          df -h /
-          echo "=== Done ==="
-          EOF
-
-      - name: Fix k3s.service alias on omv-ha (stop OMV monit email alerts)
-        if: ${{ always() && steps.inputs.outputs.fix_k3s_alias == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
-        run: |
-          cat > /tmp/k3s-alias.sh << 'SCRIPT'
-          #!/usr/bin/env bash
-          set -euo pipefail
-          UNIT=/etc/systemd/system/k3s.service
-          if systemctl is-active --quiet k3s.service 2>/dev/null; then
-            echo "[SKIP] k3s.service already active."
-          else
-            echo "[APPLY] Writing k3s.service alias for k3s-agent.service"
-            printf '[Unit]\nDescription=k3s agent (OMV monit alias)\nBindsTo=k3s-agent.service\nAfter=k3s-agent.service\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=/bin/sh -c "systemctl is-active --quiet k3s-agent.service || systemctl start k3s-agent.service"\nExecStop=/bin/sh -c "true"\n\n[Install]\nWantedBy=multi-user.target\n' > "${UNIT}"
-            systemctl daemon-reload
-            systemctl enable k3s.service
-            systemctl start k3s.service
-            echo "[OK] k3s.service alias installed."
-          fi
-          echo "k3s.service:       $(systemctl is-active k3s.service 2>/dev/null || echo inactive)"
-          echo "k3s-agent.service: $(systemctl is-active k3s-agent.service 2>/dev/null || echo inactive)"
-          SCRIPT
-          chmod +x /tmp/k3s-alias.sh
-          scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-            /tmp/k3s-alias.sh "tbaltzakis@${OMV_SSH_HOST}:/tmp/k3s-alias.sh"
-          ssh "tbaltzakis@${OMV_SSH_HOST}" \
-            "scp -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-              /tmp/k3s-alias.sh tbaltzakis@${OMV_HA_HOST}:/tmp/k3s-alias.sh && \
-             ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
-               tbaltzakis@${OMV_HA_HOST} sudo bash /tmp/k3s-alias.sh"
-
-      - name: Fix monit k3s check on omv (stop false-alarm emails)
-        if: ${{ always() && steps.inputs.outputs.fix_monit_k3s_omv == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-        run: |
-          SSH="ssh -i ~/.ssh/omv_key -o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new tbaltzakis@${OMV_SSH_HOST}"
-          echo "=== k3s status ===" && $SSH systemctl is-active k3s.service || true
-          echo "=== monit conf.d ===" && $SSH ls /etc/monit/conf.d/ 2>/dev/null || echo "(no conf.d)"
-          echo "=== monit k3s configs ===" && $SSH "grep -rl k3s /etc/monit/ 2>/dev/null | xargs -I{} sh -c 'echo \"--- {} ---\"; cat {}'" || echo "(none)"
-          echo "=== monitrc k3s lines ===" && $SSH "grep -n k3s /etc/monit/monitrc 2>/dev/null" || echo "(none)"
-          echo "=== monit installed? ===" && $SSH "which monit && monit --version" || echo "(monit not found)"
-          echo "=== applying fix ==="
-          $SSH "sudo rm -f /etc/monit/conf.d/k3s 2>/dev/null; printf 'check process k3s matching \"k3s server\"\n  start program = \"/bin/systemctl start k3s\"\n  stop program = \"/bin/systemctl stop k3s\"\n  if failed then alert\n  if changed pid then alert\n' | sudo tee /etc/monit/conf.d/k3s-service; sudo monit reload 2>/dev/null || sudo systemctl reload monit 2>/dev/null; echo done"
-
-      - name: Fix OMV monit alert template (remove literal shell substitution)
-        if: ${{ always() && steps.inputs.outputs.fix_omv_alert_template == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-        run: |
-          SSH="ssh -i ~/.ssh/omv_key -o BatchMode=yes -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new tbaltzakis@${OMV_SSH_HOST}"
-          echo "=== Locating OMV monit mail template ==="
-          $SSH "sudo grep -rl 'journalctl' /etc/monit/ /etc/openmediavault/ /usr/share/openmediavault/ 2>/dev/null | head -20" || echo "(not found)"
-          echo "=== OMV monit config in DB ==="
-          $SSH "sudo omv-confdbadm read conf.service.monit 2>/dev/null | python3 -m json.tool 2>/dev/null | grep -A5 -B5 'journal\|mail\|alert\|message'" || echo "(no DB entry or no matches)"
-          echo "=== /etc/monit/monitrc mail section ==="
-          $SSH "sudo grep -n 'mail\|alert\|message\|journal' /etc/monit/monitrc 2>/dev/null | head -30" || echo "(none)"
-          echo "=== Applying fix: strip journalctl line from monitrc mail format ==="
-          $SSH "sudo sed -i '/journalctl/d' /etc/monit/monitrc 2>/dev/null && echo 'removed from monitrc' || echo 'not found in monitrc'"
-          echo "=== Checking OMV Jinja templates for monit ==="
-          $SSH "sudo find /usr/share/openmediavault/ -name '*.j2' -o -name '*.jinja2' 2>/dev/null | xargs grep -l 'journalctl' 2>/dev/null | head -10" || echo "(none)"
-          echo "=== Patching OMV Jinja template if found ==="
-          $SSH "sudo find /usr/share/openmediavault/ -name '*.j2' -o -name '*.jinja2' 2>/dev/null | xargs grep -l 'journalctl' 2>/dev/null | while read f; do echo \"Patching \$f\"; sudo sed -i '/journalctl/d' \"\$f\"; done" || true
-          echo "=== Reloading monit ==="
-          $SSH "sudo monit reload 2>/dev/null; echo done"
-
-      - name: Post result to status board
-        if: always()
-        uses: ./.github/actions/post-status
+              'cd ~/OMV && git pull -q origin main && sudo ./scripts/omv-ha-k3s-prep.sh --apply'"
