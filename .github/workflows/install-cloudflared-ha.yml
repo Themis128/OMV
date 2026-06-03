@@ -1,0 +1,181 @@
+name: install-cloudflared-ha
+
+# Install cloudflared on omv-ha and connect it to the existing cloudless
+# Cloudflare Tunnel as a second connector for HA failover.
+#
+# Strategy:
+#   1. On omv: read tunnel UUID + credentials from /etc/cloudflared/
+#   2. Two-hop SSH (runner→omv→omv-ha): install cloudflared, copy creds,
+#      write config.yml, install systemd service, start it.
+#
+# Idempotent — safe to re-run. If cloudflared is already running on omv-ha
+# this just ensures config and credentials are in sync.
+#
+# Required secrets: TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET (or TS_AUTHKEY), OMV_SSH_KEY
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/dispatches/install-cloudflared-ha.json]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        id: tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
+          hostname: omv-install-cloudflared-ha-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Read tunnel config from omv
+        id: tunnel
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          # Read UUID and credentials from the existing omv cloudflared config
+          TUNNEL_UUID=$(ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            'sudo awk "/^tunnel:/{print \$2}" /etc/cloudflared/config.yml')
+          if [ -z "$TUNNEL_UUID" ]; then
+            echo "ERROR: could not read tunnel UUID from omv /etc/cloudflared/config.yml"
+            exit 1
+          fi
+          echo "tunnel_uuid=${TUNNEL_UUID}" >> "$GITHUB_OUTPUT"
+          echo "Found tunnel UUID: ${TUNNEL_UUID}"
+
+      - name: Install cloudflared on omv-ha
+        id: install
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
+          TUNNEL_UUID: ${{ steps.tunnel.outputs.tunnel_uuid }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << OUTEREOF
+          set -euo pipefail
+          OMV_HA_HOST="${OMV_HA_HOST}"
+          TUNNEL_UUID="${TUNNEL_UUID}"
+
+          echo "=== Installing cloudflared on omv-ha ==="
+          ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+            tbaltzakis@\${OMV_HA_HOST} bash -s << 'EOF'
+          set -euo pipefail
+          if command -v cloudflared >/dev/null 2>&1; then
+            echo "cloudflared already installed: \$(cloudflared --version)"
+          else
+            echo "Installing cloudflared via apt..."
+            curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg \
+              | sudo gpg --dearmor -o /usr/share/keyrings/cloudflare-main.gpg
+            echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared bookworm main' \
+              | sudo tee /etc/apt/sources.list.d/cloudflared.list
+            sudo apt-get update -q
+            sudo apt-get install -y -q cloudflared
+            echo "cloudflared installed: \$(cloudflared --version)"
+          fi
+          EOF
+
+          echo "=== Copying tunnel credentials to omv-ha ==="
+          sudo cat /etc/cloudflared/\${TUNNEL_UUID}.json | \
+            ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+              tbaltzakis@\${OMV_HA_HOST} \
+              "sudo mkdir -p /etc/cloudflared && sudo tee /etc/cloudflared/\${TUNNEL_UUID}.json > /dev/null && sudo chmod 600 /etc/cloudflared/\${TUNNEL_UUID}.json"
+          echo "Credentials copied."
+
+          echo "=== Writing config.yml on omv-ha ==="
+          ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+            tbaltzakis@\${OMV_HA_HOST} bash -s << EOF
+          set -euo pipefail
+          TUNNEL_UUID="\${TUNNEL_UUID}"
+          sudo mkdir -p /etc/cloudflared
+          sudo tee /etc/cloudflared/config.yml > /dev/null << CFEOF
+          tunnel: \${TUNNEL_UUID}
+          credentials-file: /etc/cloudflared/\${TUNNEL_UUID}.json
+          no-autoupdate: true
+
+          ingress:
+            - hostname: cloudless.gr
+              service: https://localhost:18443
+              originRequest:
+                noTLSVerify: true
+                connectTimeout: 30s
+            - hostname: manage.cloudless.gr
+              service: https://localhost:18443
+              originRequest:
+                noTLSVerify: true
+                connectTimeout: 30s
+            - hostname: pi-origin.cloudless.gr
+              service: https://localhost:18443
+              originRequest:
+                noTLSVerify: true
+                connectTimeout: 30s
+            - service: http_status:404
+          CFEOF
+          echo "config.yml written"
+          cat /etc/cloudflared/config.yml
+          EOF
+
+          echo "=== Installing + starting cloudflared service on omv-ha ==="
+          ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+            tbaltzakis@\${OMV_HA_HOST} bash -s << 'EOF'
+          set -euo pipefail
+          if systemctl list-unit-files cloudflared.service >/dev/null 2>&1; then
+            echo "cloudflared.service already installed — restarting"
+            sudo systemctl restart cloudflared
+          else
+            echo "Installing cloudflared service"
+            sudo cloudflared service install
+            sudo systemctl enable cloudflared
+            sudo systemctl start cloudflared
+          fi
+          sleep 3
+          sudo systemctl is-active cloudflared && echo "cloudflared is active on omv-ha" \
+            || { echo "cloudflared failed to start:"; sudo journalctl -u cloudflared -n 20 --no-pager; exit 1; }
+          EOF
+          OUTEREOF
+
+      - name: Verify both connectors are live
+        id: verify
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
+        run: |
+          echo "=== omv cloudflared status ==="
+          ssh "tbaltzakis@${OMV_SSH_HOST}" 'sudo systemctl is-active cloudflared && sudo journalctl -u cloudflared -n 5 --no-pager'
+          echo "=== omv-ha cloudflared status ==="
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+              tbaltzakis@${OMV_HA_HOST} \
+              'sudo systemctl is-active cloudflared && sudo journalctl -u cloudflared -n 5 --no-pager'"
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
+        with:
+          detail: >-
+            tailscale=${{ steps.tailscale.outcome }}
+            install=${{ steps.install.outcome }}
+            verify=${{ steps.verify.outcome }}

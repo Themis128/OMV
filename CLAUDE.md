@@ -36,6 +36,7 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/cleanup-disk.json` | cleanup-disk | Docker prune + logrotate fix + monit fix + unattended-upgrades + reset failed units on omv |
 | `.github/dispatches/tune-k3s-config.json` | tune-k3s-config | Apply kubelet GC, log rotation, eviction, etcd retention to k3s config |
 | `.github/dispatches/configure-workloads.json` | configure-workloads | Patch ntfy + alertmanager resource limits on the live cluster |
+| `.github/dispatches/install-cloudflared-ha.json` | install-cloudflared-ha | Install cloudflared on omv-ha + copy tunnel credentials from omv |
 
 **Custom slash commands** (`.claude/commands/`):
 - `/trigger <workflow>` — update the dispatch file and push to trigger a workflow
