@@ -33,6 +33,10 @@ on:
         description: "Apply memory tunes on omv-ha (zram, OOM-protect k3s, journal cap). Safe to re-run."
         type: boolean
         default: false
+      node_cleanup:
+        description: "Run disk cleanup on omv (prune containerd images, vacuum journal, trim etcd snapshots to 3)."
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
@@ -80,6 +84,27 @@ jobs:
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             'sudo REJOIN=1 ~/OMV/scripts/etcd-recover.sh'
+
+      - name: Node cleanup (prune images, vacuum journal, trim etcd snapshots)
+        if: ${{ inputs.node_cleanup == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          echo "=== Prune unused containerd images ==="
+          sudo k3s crictl rmi --prune || true
+          echo "=== Vacuum systemd journal (keep 7 days) ==="
+          sudo journalctl --vacuum-time=7d
+          echo "=== Trim etcd snapshots to 3 most recent ==="
+          snap_dir=/var/lib/rancher/k3s/server/db/snapshots
+          if [ -d "$snap_dir" ]; then
+            ls -1t "$snap_dir" | tail -n +4 | xargs -r -I{} sudo rm -v "$snap_dir/{}"
+            echo "Snapshots remaining: $(ls "$snap_dir" | wc -l)"
+          fi
+          echo "=== Disk usage after cleanup ==="
+          df -h /
+          EOF
 
       - name: omv-ha memory tunes (zram + OOM protection)
         if: ${{ inputs.omv_ha_prep == 'true' }}

@@ -1,8 +1,9 @@
 {
-  "triggered_at": "2026-06-03T00:00:00Z",
+  "triggered_at": "2026-06-03T00:01:00Z",
   "inputs": {
     "apply": false,
     "etcd_recover": false,
-    "omv_ha_prep": false
+    "omv_ha_prep": false,
+    "node_cleanup": true
   }
 }
