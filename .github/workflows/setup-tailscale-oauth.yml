@@ -40,7 +40,7 @@ on:
     paths: [.github/dispatches/setup-tailscale-oauth.json]
 
 permissions:
-  secrets: write
+  contents: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
