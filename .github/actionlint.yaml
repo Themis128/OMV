@@ -1,3 +1,2 @@
-self-hosted-runner:
-  labels:
-    - omv-recovery
+# actionlint configuration
+# See https://github.com/rhysd/actionlint/blob/main/docs/config.md
