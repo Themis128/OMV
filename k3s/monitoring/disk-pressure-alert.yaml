@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: disk-pressure
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+spec:
+  groups:
+    - name: disk
+      rules:
+        - alert: DiskPressureHigh
+          expr: |
+            (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs",mountpoint!~"/boot.*"}
+               / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs",mountpoint!~"/boot.*"}) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Disk usage > 85% on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+            description: "{{ $value | humanize }}% used — free space before k3s crashes."
+        - alert: DiskPressureCritical
+          expr: |
+            (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs",mountpoint!~"/boot.*"}
+               / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs",mountpoint!~"/boot.*"}) * 100 > 95
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Disk usage > 95% on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+            description: "{{ $value | humanize }}% used — k3s is likely to crash. Free space immediately."

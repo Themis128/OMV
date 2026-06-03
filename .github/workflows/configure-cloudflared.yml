@@ -85,6 +85,27 @@ jobs:
             ./scripts/configure-cloudflared.sh
           EOF
 
+      - name: Configure cloudflared on omv-ha (if installed)
+        id: omv_ha_cloudflared
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
+          HOSTNAMES: ${{ steps.inputs.outputs.hostnames }}
+          TUNNEL_NAME: ${{ steps.inputs.outputs.tunnel_name }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+              tbaltzakis@${OMV_HA_HOST} bash -s" << EOF
+          set -euo pipefail
+          if ! command -v cloudflared >/dev/null 2>&1; then
+            echo "cloudflared not installed on omv-ha — skipping"
+            exit 0
+          fi
+          cd ~/OMV && git pull -q origin main
+          sudo HOSTNAMES='${HOSTNAMES}' TUNNEL_NAME='${TUNNEL_NAME}' \
+            ./scripts/configure-cloudflared.sh
+          EOF
+
       - name: Verify tunnel is serving
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}

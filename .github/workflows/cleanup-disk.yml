@@ -61,6 +61,24 @@ jobs:
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
+      - name: Apply pending apt upgrades on omv
+        id: apt_upgrade
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          echo "=== apt update ==="
+          sudo apt-get update -q
+          echo "=== Pending upgrades ==="
+          apt list --upgradable 2>/dev/null | grep -v 'Listing...' || true
+          echo "=== Applying upgrades (non-interactive) ==="
+          sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -q \
+            -o Dpkg::Options::="--force-confdef" \
+            -o Dpkg::Options::="--force-confold"
+          echo "=== Upgrade complete ==="
+          EOF
+
       - name: Disk usage before
         id: before
         env:
@@ -284,6 +302,7 @@ jobs:
         with:
           detail: >-
             tailscale=${{ steps.tailscale.outcome }}
+            apt_upgrade=${{ steps.apt_upgrade.outcome }}
             docker=${{ steps.docker.outcome }}
             timer=${{ steps.timer.outcome }}
             fixes=${{ steps.fixes.outcome }}
