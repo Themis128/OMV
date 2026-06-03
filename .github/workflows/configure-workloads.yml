@@ -63,13 +63,13 @@ jobs:
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -euo pipefail
-          # Retry up to 5 times (30s apart) in case k3s API is temporarily under load
-          for attempt in 1 2 3 4 5; do
+          # Retry up to 10 times (30s apart) in case k3s API is temporarily under load
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
             if sudo k3s kubectl get ns 2>/dev/null; then
               break
             fi
-            echo "k3s API not ready (attempt $attempt/5) — waiting 30s..."
-            [ "$attempt" -lt 5 ] && sleep 30 || { echo "k3s API unavailable after 5 attempts"; exit 1; }
+            echo "k3s API not ready (attempt $attempt/10) — waiting 30s..."
+            [ "$attempt" -lt 10 ] && sleep 30 || { echo "k3s API unavailable after 10 attempts"; exit 1; }
           done
           echo "=== All namespaces ==="
           sudo k3s kubectl get ns
@@ -81,6 +81,7 @@ jobs:
 
       - name: Patch ntfy — attachment and cache limits
         id: ntfy
+        continue-on-error: true
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |

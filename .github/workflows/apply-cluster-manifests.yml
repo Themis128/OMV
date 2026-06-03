@@ -77,6 +77,14 @@ jobs:
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -euo pipefail
+          # Wait for k3s API — retry up to 10 times (30s apart) in case of transient flap
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if sudo k3s kubectl get ns 2>/dev/null; then
+              break
+            fi
+            echo "k3s API not ready (attempt $attempt/10) — waiting 30s..."
+            [ "$attempt" -lt 10 ] && sleep 30 || { echo "k3s API unavailable after 10 attempts"; exit 1; }
+          done
           cd ~/OMV && git pull -q origin main
           echo "=== cloudless-app ==="
           sudo k3s kubectl apply --validate=false -k k3s/cloudless-app/
