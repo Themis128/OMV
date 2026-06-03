@@ -3,6 +3,7 @@ name: cleanup-disk
 # Free disk space on omv via SSH:
 #   • docker system prune -af  (removes stopped containers, unused images, build cache)
 #   • docker builder prune -af (clears BuildKit cache)
+#   • Install docker-image-prune.timer (hourly dangling-image prune, idempotent)
 #   • Fix logrotate rsyslog duplicate-entry error
 #   • Reset stale failed systemd units (service-failure-alert, logrotate)
 #   • Clear runner-work tmp dir on the USB drive
@@ -75,6 +76,26 @@ jobs:
           sudo docker system df
           EOF
 
+      - name: Install hourly docker-image-prune timer
+        id: timer
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+
+          printf '[Unit]\nDescription=Prune dangling Docker images\n\n[Service]\nType=oneshot\nExecStart=/usr/bin/docker image prune -f\nStandardOutput=journal\n' \
+            | sudo tee /etc/systemd/system/docker-image-prune.service > /dev/null
+
+          printf '[Unit]\nDescription=Hourly Docker image prune\nAfter=docker.service\n\n[Timer]\nOnCalendar=hourly\nPersistent=true\n\n[Install]\nWantedBy=timers.target\n' \
+            | sudo tee /etc/systemd/system/docker-image-prune.timer > /dev/null
+
+          sudo systemctl daemon-reload
+          sudo systemctl enable --now docker-image-prune.timer
+          echo "=== Timer status ==="
+          sudo systemctl list-timers docker-image-prune.timer --no-pager
+          EOF
+
       - name: Fix logrotate + reset failed units
         id: fixes
         env:
@@ -125,4 +146,5 @@ jobs:
           detail: >-
             tailscale=${{ steps.tailscale.outcome }}
             docker=${{ steps.docker.outcome }}
+            timer=${{ steps.timer.outcome }}
             fixes=${{ steps.fixes.outcome }}
