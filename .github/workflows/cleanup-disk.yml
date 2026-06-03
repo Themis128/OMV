@@ -8,6 +8,8 @@ name: cleanup-disk
 #     • Fix logrotate rsyslog duplicate-entry error
 #     • Reset stale failed systemd units (service-failure-alert, logrotate)
 #     • Clear runner-work tmp dir on the USB drive
+#     • Fix monit — remove stale OMV service check conf files
+#     • Configure unattended-upgrades (security-only, no kernel, no auto-reboot)
 #   omv-ha (two-hop: runner→omv→omv-ha using omv's local tbaltzakis key):
 #     • k3s crictl rmi --prune (unused containerd images)
 #     • docker prune if installed
@@ -155,6 +157,65 @@ jobs:
           fi
           EOF
 
+      - name: Fix monit — remove stale OMV service checks
+        id: monit
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+
+          echo "=== Monit conf.d before ==="
+          ls /etc/monit/conf.d/ 2>/dev/null || echo "(no conf.d)"
+
+          # Remove OMV-generated service check files that reference non-existent daemons
+          removed=0
+          for f in /etc/monit/conf.d/openmediavault-*; do
+            [ -f "$f" ] || continue
+            sudo rm -f "$f"
+            echo "Removed: $f"
+            removed=$((removed + 1))
+          done
+          [ "$removed" -eq 0 ] && echo "No stale OMV monit conf files found."
+
+          echo "=== Reloading monit ==="
+          sudo monit reload 2>/dev/null && echo "monit reloaded" || echo "monit not running — skipped"
+
+          echo "=== Monit conf.d after ==="
+          ls /etc/monit/conf.d/ 2>/dev/null || echo "(empty)"
+          EOF
+
+      - name: Configure unattended-upgrades (security-only, no reboot)
+        id: unattended
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+
+          echo "=== Installing unattended-upgrades ==="
+          sudo apt-get install -y -q unattended-upgrades apt-listchanges
+
+          echo "=== Writing security-only config ==="
+          printf 'Unattended-Upgrade::Allowed-Origins {\n    "${distro_id}:${distro_codename}-security";\n};\n' \
+            | sudo tee /etc/apt/apt.conf.d/50unattended-upgrades > /dev/null
+          printf 'Unattended-Upgrade::Package-Blacklist {\n    "linux-image.*";\n    "linux-headers.*";\n    "linux-modules.*";\n    "linux-libc-dev";\n    "raspberrypi-kernel.*";\n    "firmware-*";\n};\n' \
+            | sudo tee -a /etc/apt/apt.conf.d/50unattended-upgrades > /dev/null
+          printf 'Unattended-Upgrade::Automatic-Reboot "false";\n' \
+            | sudo tee -a /etc/apt/apt.conf.d/50unattended-upgrades > /dev/null
+          printf 'Unattended-Upgrade::Remove-Unused-Kernel-Packages "false";\n' \
+            | sudo tee -a /etc/apt/apt.conf.d/50unattended-upgrades > /dev/null
+          printf 'Unattended-Upgrade::Remove-Unused-Dependencies "false";\n' \
+            | sudo tee -a /etc/apt/apt.conf.d/50unattended-upgrades > /dev/null
+
+          printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\nAPT::Periodic::AutocleanInterval "7";\n' \
+            | sudo tee /etc/apt/apt.conf.d/20auto-upgrades > /dev/null
+
+          echo "=== Dry-run to verify config ==="
+          sudo unattended-upgrade --dry-run 2>&1 | tail -10
+          echo "unattended-upgrades configured: security-only, no auto-reboot"
+          EOF
+
       - name: omv-ha — cleanup images + reset failed units
         id: ha_cleanup
         env:
@@ -226,5 +287,7 @@ jobs:
             docker=${{ steps.docker.outcome }}
             timer=${{ steps.timer.outcome }}
             fixes=${{ steps.fixes.outcome }}
+            monit=${{ steps.monit.outcome }}
+            unattended=${{ steps.unattended.outcome }}
             ha_cleanup=${{ steps.ha_cleanup.outcome }}
             ha_timer=${{ steps.ha_timer.outcome }}

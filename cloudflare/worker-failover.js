@@ -5,6 +5,10 @@
 //   1. Rewrite host to pi-origin.cloudless.gr → routes through CF Tunnel → Pi Traefik :18443
 //   2. On 5xx or network failure/timeout → fallback to AWS CloudFront (AWS_FALLBACK_HOST)
 //
+// Debug headers on every response:
+//   X-Served-By: pi-origin | aws-fallback
+//   X-Origin-Latency: <ms>  (Pi attempt only)
+//
 // Required Worker Variable (Cloudflare dashboard or wrangler.toml [vars]):
 //   AWS_FALLBACK_HOST  e.g. d1234abcd.cloudfront.net
 //
@@ -23,6 +27,7 @@ export default {
     const piUrl = new URL(request.url);
     piUrl.hostname = PI_BACKEND;
 
+    const piStart = Date.now();
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -37,15 +42,18 @@ export default {
       clearTimeout(timer);
 
       if (piResp.status < 500) {
+        const headers = new Headers(piResp.headers);
+        headers.set('X-Served-By', 'pi-origin');
+        headers.set('X-Origin-Latency', String(Date.now() - piStart));
         return new Response(piResp.body, {
           status: piResp.status,
           statusText: piResp.statusText,
-          headers: piResp.headers,
+          headers,
         });
       }
-      console.log(`Pi returned ${piResp.status} — failing over to AWS`);
+      console.log(`Pi returned ${piResp.status} after ${Date.now() - piStart}ms — failing over to AWS`);
     } catch (err) {
-      console.log(`Pi unreachable (${err.message}) — failing over to AWS`);
+      console.log(`Pi unreachable (${err.message}) after ${Date.now() - piStart}ms — failing over to AWS`);
     }
 
     // --- 2. Fallback: AWS CloudFront ---
@@ -61,6 +69,7 @@ export default {
 
     const headers = new Headers(awsResp.headers);
     headers.set('X-Served-By', 'aws-fallback');
+    headers.set('X-Origin-Latency', String(Date.now() - piStart));
     return new Response(awsResp.body, {
       status: awsResp.status,
       statusText: awsResp.statusText,

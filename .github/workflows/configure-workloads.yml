@@ -1,0 +1,193 @@
+name: configure-workloads
+
+# Apply runtime configuration to k3s workloads that are deployed on-cluster
+# but whose manifests are not (yet) tracked in this repo.
+#
+# Idempotent — safe to re-run. Only patches the specific fields listed below.
+#
+# ntfy (on omv-ha):
+#   attachment-total-size-limit: 500M  (down from 5G default)
+#   attachment-file-size-limit:  5M    (down from 15M default)
+#   cache-duration:              6h    (down from 12h default)
+#   visitor-attachment-total-size-limit: 20M
+#
+# alertmanager (on omv-ha):
+#   --data.retention=120h  (keep default, make explicit)
+#
+# Required secrets: TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET (or TS_AUTHKEY), OMV_SSH_KEY
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/dispatches/configure-workloads.json]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        id: tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
+          hostname: omv-configure-workloads-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Discover workloads
+        id: discover
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          echo "=== All namespaces ==="
+          sudo k3s kubectl get ns
+          echo "=== All deployments ==="
+          sudo k3s kubectl get deployment -A
+          echo "=== ConfigMaps (ntfy/alertmanager/prometheus) ==="
+          sudo k3s kubectl get cm -A | grep -iE 'ntfy|alertmanager|prometheus' || echo "(none found)"
+          EOF
+
+      - name: Patch ntfy — attachment and cache limits
+        id: ntfy
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+
+          NS=$(sudo k3s kubectl get deployment -A --no-headers \
+            | grep -i ntfy | awk '{print $1}' | head -1 || true)
+          DEPLOY=$(sudo k3s kubectl get deployment -A --no-headers \
+            | grep -i ntfy | awk '{print $2}' | head -1 || true)
+
+          if [ -z "$NS" ] || [ -z "$DEPLOY" ]; then
+            echo "ntfy deployment not found — skipping"
+            exit 0
+          fi
+          echo "Found ntfy: namespace=$NS deployment=$DEPLOY"
+
+          CM=$(sudo k3s kubectl get cm -n "$NS" --no-headers \
+            | grep -i ntfy | awk '{print $1}' | head -1 || true)
+
+          if [ -n "$CM" ]; then
+            echo "Found ntfy ConfigMap: $CM"
+            sudo k3s kubectl get cm "$CM" -n "$NS" -o jsonpath='{.data.server\.yml}' > /tmp/ntfy-server.yml 2>/dev/null || true
+
+            if [ -s /tmp/ntfy-server.yml ]; then
+              echo "Current server.yml:"
+              cat /tmp/ntfy-server.yml
+
+              printf 'import yaml\n' > /tmp/patch-ntfy.py
+              printf 'with open("/tmp/ntfy-server.yml") as f:\n' >> /tmp/patch-ntfy.py
+              printf '    cfg = yaml.safe_load(f) or {}\n' >> /tmp/patch-ntfy.py
+              printf 'cfg["attachment-total-size-limit"] = "500M"\n' >> /tmp/patch-ntfy.py
+              printf 'cfg["attachment-file-size-limit"] = "5M"\n' >> /tmp/patch-ntfy.py
+              printf 'cfg["cache-duration"] = "6h"\n' >> /tmp/patch-ntfy.py
+              printf 'cfg["visitor-attachment-total-size-limit"] = "20M"\n' >> /tmp/patch-ntfy.py
+              printf 'with open("/tmp/ntfy-server.yml", "w") as f:\n' >> /tmp/patch-ntfy.py
+              printf '    yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)\n' >> /tmp/patch-ntfy.py
+              python3 /tmp/patch-ntfy.py
+              rm -f /tmp/patch-ntfy.py
+
+              echo "Updated server.yml:"
+              cat /tmp/ntfy-server.yml
+
+              JSON_VAL=$(python3 -c 'import json,sys; print(json.dumps(open("/tmp/ntfy-server.yml").read()))')
+              sudo k3s kubectl patch cm "$CM" -n "$NS" --type merge -p "{\"data\":{\"server.yml\":$JSON_VAL}}"
+              echo "ConfigMap patched — rolling restart ntfy"
+              sudo k3s kubectl rollout restart deployment/"$DEPLOY" -n "$NS"
+              sudo k3s kubectl rollout status deployment/"$DEPLOY" -n "$NS" --timeout=120s
+            else
+              echo "server.yml not in ConfigMap — patching via env vars"
+              sudo k3s kubectl set env deployment/"$DEPLOY" -n "$NS" \
+                NTFY_ATTACHMENT_TOTAL_SIZE_LIMIT=500M \
+                NTFY_ATTACHMENT_FILE_SIZE_LIMIT=5M \
+                NTFY_CACHE_DURATION=6h \
+                NTFY_VISITOR_ATTACHMENT_TOTAL_SIZE_LIMIT=20M
+            fi
+          else
+            echo "No ntfy ConfigMap found — patching via env vars"
+            sudo k3s kubectl set env deployment/"$DEPLOY" -n "$NS" \
+              NTFY_ATTACHMENT_TOTAL_SIZE_LIMIT=500M \
+              NTFY_ATTACHMENT_FILE_SIZE_LIMIT=5M \
+              NTFY_CACHE_DURATION=6h \
+              NTFY_VISITOR_ATTACHMENT_TOTAL_SIZE_LIMIT=20M
+          fi
+
+          echo "=== ntfy pod status ==="
+          sudo k3s kubectl get pods -n "$NS" -l app.kubernetes.io/name=ntfy 2>/dev/null \
+            || sudo k3s kubectl get pods -n "$NS"
+          EOF
+
+      - name: Patch alertmanager — verify data retention
+        id: alertmanager
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+
+          NS=$(sudo k3s kubectl get deployment -A --no-headers \
+            | grep -i alertmanager | awk '{print $1}' | head -1 || true)
+          DEPLOY=$(sudo k3s kubectl get deployment -A --no-headers \
+            | grep -i alertmanager | awk '{print $2}' | head -1 || true)
+
+          if [ -z "$NS" ] || [ -z "$DEPLOY" ]; then
+            echo "alertmanager deployment not found — skipping"
+            exit 0
+          fi
+          echo "Found alertmanager: namespace=$NS deployment=$DEPLOY"
+
+          echo "=== Current args ==="
+          sudo k3s kubectl get deployment "$DEPLOY" -n "$NS" \
+            -o jsonpath='{.spec.template.spec.containers[0].args}' | tr ',' '\n'
+
+          CURRENT=$(sudo k3s kubectl get deployment "$DEPLOY" -n "$NS" \
+            -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null || echo "")
+
+          if echo "$CURRENT" | grep -q 'data.retention'; then
+            echo "data.retention already set — no change needed"
+          else
+            echo "Adding --data.retention=120h to alertmanager args"
+            sudo k3s kubectl patch deployment "$DEPLOY" -n "$NS" \
+              --type json \
+              -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--data.retention=120h"}]'
+          fi
+
+          echo "=== alertmanager pod status ==="
+          sudo k3s kubectl get pods -n "$NS" | grep -i alertmanager || true
+          EOF
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
+        with:
+          detail: >-
+            tailscale=${{ steps.tailscale.outcome }}
+            discover=${{ steps.discover.outcome }}
+            ntfy=${{ steps.ntfy.outcome }}
+            alertmanager=${{ steps.alertmanager.outcome }}
