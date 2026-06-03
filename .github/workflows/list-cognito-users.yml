@@ -1,0 +1,104 @@
+name: list-cognito-users
+
+# Lists all users in the Cognito user pool and posts the result as a comment
+# on the status board issue (#66).
+#
+# Required repository variables:
+#   AWS_ACCOUNT_ID   12-digit AWS account ID.
+#
+# Required IAM permission on GitHubActionsOIDC role:
+#   cognito-idp:ListUsers on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/dispatches/list-cognito-users.json]
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  list-users:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        id: aws_creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
+          role-session-name: list-cognito-users
+          aws-region: us-east-1
+
+      - name: List Cognito users
+        id: list_users
+        run: |
+          set -euo pipefail
+
+          USER_POOL_ID="us-east-1_JQWwFbO9a"
+
+          echo "Querying Cognito user pool: $USER_POOL_ID"
+
+          USERS_JSON="$(aws cognito-idp list-users \
+            --user-pool-id "$USER_POOL_ID" \
+            --region us-east-1)"
+
+          COUNT="$(printf '%s' "$USERS_JSON" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d['Users']))")"
+
+          TABLE="$(printf '%s' "$USERS_JSON" | python3 - <<'PYEOF'
+import sys, json
+d = json.load(sys.stdin)
+rows = []
+for u in d['Users']:
+    attrs = {a['Name']: a['Value'] for a in u.get('Attributes', [])}
+    rows.append({
+        'Username': u['Username'],
+        'Email': attrs.get('email', '—'),
+        'Status': u['UserStatus'],
+        'Enabled': 'Yes' if u.get('Enabled', True) else 'No',
+        'Created': u['UserCreateDate'].strftime('%Y-%m-%d') if hasattr(u['UserCreateDate'], 'strftime') else str(u['UserCreateDate'])[:10],
+    })
+print('| Username | Email | Status | Enabled | Created |')
+print('|---|---|---|---|---|')
+for r in rows:
+    print(f"| {r['Username']} | {r['Email']} | {r['Status']} | {r['Enabled']} | {r['Created']} |")
+PYEOF
+          )"
+
+          # Write markdown report to a temp file (avoids multiline env var quoting issues)
+          cat > /tmp/cognito-report.md << MDEOF
+**Cognito User Pool**: \`$USER_POOL_ID\`
+**Total users**: $COUNT
+
+$TABLE
+MDEOF
+
+          echo "Found $COUNT users."
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Post user list to status board
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          ts=$(date -u '+%Y-%m-%d %H:%M UTC')
+          if [ -f /tmp/cognito-report.md ]; then
+            report="$(cat /tmp/cognito-report.md)"
+          else
+            report="_(query failed — check run logs)_"
+          fi
+          body="## Cognito Users Report
+          
+Run: $RUN_URL  
+At: $ts
+
+$report"
+          gh api "repos/${{ github.repository }}/issues/66/comments" -f body="$body"
