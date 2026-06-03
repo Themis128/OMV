@@ -4,6 +4,16 @@
 
 - When fixing issues: fix, test, and **merge directly to `main`** — do not create pull requests.
 
+## Notion — Manual Config Tasks
+
+Whenever a task or issue is identified that requires **manual configuration** (GitHub secrets,
+repo variables, SSH keys, OAuth credentials, cloud console actions, DNS changes, etc.) and
+cannot be automated from Claude Code, **always create a Notion task before ending the turn**:
+
+- Database: Tasks (`collection://58a87b58-e972-4324-9b22-728672b61a95`)
+- Properties: `Status=To Do`, `Type=Chore`, `Priority` (Urgent/High/Medium), `Labels` as appropriate
+- Content: full step-by-step instructions so the task is self-contained
+
 ## Triggering GitHub Actions workflows
 
 The GitHub MCP server has no `workflow_dispatch` tool. Instead, push an update to the
