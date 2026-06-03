@@ -86,22 +86,11 @@ jobs:
           # Fix rsyslog logrotate duplicate — remove the duplicate /var/log/syslog line
           if sudo logrotate --debug /etc/logrotate.conf 2>&1 | grep -q 'duplicate log entry'; then
             echo "Fixing duplicate syslog entry in /etc/logrotate.d/rsyslog ..."
-            sudo python3 -c "
-import re, sys
-text = open('/etc/logrotate.d/rsyslog').read()
-lines = text.splitlines()
-seen = set()
-out = []
-for line in lines:
-    stripped = line.strip()
-    if stripped == '/var/log/syslog' and stripped in seen:
-        print('Removing duplicate: ' + stripped, file=sys.stderr)
-        continue
-    if stripped == '/var/log/syslog':
-        seen.add(stripped)
-    out.append(line)
-open('/etc/logrotate.d/rsyslog', 'w').write('\\n'.join(out) + '\\n')
-"
+            sudo awk '
+              /\/var\/log\/syslog/ { if (seen) next; seen=1 }
+              { print }
+            ' /etc/logrotate.d/rsyslog | sudo tee /etc/logrotate.d/rsyslog.tmp > /dev/null
+            sudo mv /etc/logrotate.d/rsyslog.tmp /etc/logrotate.d/rsyslog
             echo "Testing logrotate config ..."
             sudo logrotate --debug /etc/logrotate.conf 2>&1 | grep -i error || echo "No errors."
           else
