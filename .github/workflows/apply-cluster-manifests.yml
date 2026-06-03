@@ -1,32 +1,66 @@
 name: apply-cluster-manifests
 
-# Apply the cluster-side manifests for cloudless.gr (just the Ingress today —
-# cert-manager / Cloudflare API token are no longer required because the
-# Cloudflare Tunnel handles all public TLS and uses noTLSVerify to the
-# origin). Runs on omv via Tailscale+SSH.
+# Apply all cluster manifests via kustomize:
+#   - k3s/cloudless-app/  (deployment, HPA, PDB, ingress, CronJobs, middlewares)
+#   - k3s/home-assistant/ (deployment, PV/PVC, service)
+#   - k3s/monitoring/     (PrometheusRules — disk-pressure alert)
+# cert-manager / Cloudflare API token are not required — the Cloudflare Tunnel
+# handles all public TLS (noTLSVerify to origin). Runs on omv via Tailscale+SSH.
 #
 # Required repository secrets:
-#   TS_AUTHKEY    Tailscale auth key.
+#   TS_OAUTH_CLIENT_ID  Tailscale OAuth client ID (from https://login.tailscale.com/admin/settings/oauth).
+#   TS_OAUTH_SECRET    Tailscale OAuth client secret.
 #   OMV_SSH_KEY   Private SSH key for tbaltzakis@omv.
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/dispatches/apply-cluster-manifests.json]
 
 permissions:
   contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   apply:
-    runs-on: [self-hosted, omv-recovery]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Preflight — check required secrets
+        id: preflight
+        env:
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+        run: |
+          missing=()
+          # Accept either OAuth (preferred) or legacy authkey
+          if [ -z "$TS_OAUTH_CLIENT_ID" ] && [ -z "$TS_AUTHKEY" ]; then
+            missing+=(TS_OAUTH_CLIENT_ID)
+          fi
+          [ -z "$OMV_SSH_KEY" ] && missing+=(OMV_SSH_KEY)
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ERROR: Missing required secrets: ${missing[*]}"
+            echo "Set them in Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+          echo "All required secrets are present."
+
       - name: Connect to Tailscale
+        id: tailscale
         uses: tailscale/github-action@v4
         with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
           hostname: omv-apply-manifests-ci
-
       - name: Configure SSH
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
@@ -38,13 +72,37 @@ jobs:
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
-      - name: Apply Ingress and verify
+      - name: Apply manifests and verify
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -euo pipefail
+          # Wait for k3s API — retry up to 10 times (30s apart) in case of transient flap
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if sudo k3s kubectl get ns 2>/dev/null; then
+              break
+            fi
+            echo "k3s API not ready (attempt $attempt/10) — waiting 30s..."
+            [ "$attempt" -lt 10 ] && sleep 30 || { echo "k3s API unavailable after 10 attempts"; exit 1; }
+          done
           cd ~/OMV && git pull -q origin main
-          sudo k3s kubectl apply -f k3s/cloudless-app/ingress.yaml
-          sudo k3s kubectl -n cloudless get ingress
+          echo "=== cloudless-app ==="
+          sudo k3s kubectl apply --validate=false -k k3s/cloudless-app/
+          echo "=== home-assistant ==="
+          sudo k3s kubectl apply --validate=false -k k3s/home-assistant/
+          echo "=== monitoring ==="
+          sudo k3s kubectl apply --validate=false -k k3s/monitoring/ || echo "monitoring apply skipped (namespace or CRD may not exist)"
+          echo "=== verify ==="
+          sudo k3s kubectl -n cloudless get ingress,deployment,hpa,svc,cronjob
+          sudo k3s kubectl -n home-assistant get deployment,svc
+          sudo k3s kubectl get prometheusrule -A 2>/dev/null || true
           EOF
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
+        with:
+          detail: >-
+            preflight=${{ steps.preflight.outcome }}
+            tailscale=${{ steps.tailscale.outcome }}
