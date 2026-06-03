@@ -1,0 +1,127 @@
+name: restart-runners
+
+# Restart GitHub Actions self-hosted runner systemd services on omv-2 and omv-3.
+# Each node is reached directly over Tailscale (not via an omv hop).
+# If OMV2_SSH_HOST or OMV3_SSH_HOST is not set the corresponding node is skipped
+# and instructions are printed.
+#
+# Required repository secrets:
+#   TS_OAUTH_CLIENT_ID  Tailscale OAuth client ID (https://login.tailscale.com/admin/settings/oauth).
+#   TS_OAUTH_SECRET     Tailscale OAuth client secret.
+#   OMV_SSH_KEY         Private SSH key for tbaltzakis on omv-2 and omv-3.
+#
+# Optional repository variables:
+#   OMV_SSH_HOST   omv's Tailscale IP (default: 100.113.41.119) — used for SSH config only.
+#   OMV2_SSH_HOST  omv-2's Tailscale IP. If empty, omv-2 is skipped.
+#   OMV3_SSH_HOST  omv-3's Tailscale IP. If empty, omv-3 is skipped.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/dispatches/restart-runners.json]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        id: tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
+          hostname: omv-restart-runners-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV2_SSH_HOST: ${{ vars.OMV2_SSH_HOST }}
+          OMV3_SSH_HOST: ${{ vars.OMV3_SSH_HOST }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+          if [ -n "${OMV2_SSH_HOST}" ]; then
+            printf 'Host omv-2\n  HostName %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+              "${OMV2_SSH_HOST}" >> ~/.ssh/config
+          fi
+          if [ -n "${OMV3_SSH_HOST}" ]; then
+            printf 'Host omv-3\n  HostName %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+              "${OMV3_SSH_HOST}" >> ~/.ssh/config
+          fi
+
+      - name: Restart runners on omv-2
+        id: omv2
+        continue-on-error: true
+        env:
+          OMV2_SSH_HOST: ${{ vars.OMV2_SSH_HOST }}
+        run: |
+          if [ -z "${OMV2_SSH_HOST}" ]; then
+            echo "OMV2_SSH_HOST is not set — skipping omv-2."
+            echo "To enable: Settings → Variables → Actions → New repository variable → OMV2_SSH_HOST=<tailscale-ip>"
+            exit 0
+          fi
+          ssh "tbaltzakis@omv-2" bash -s << 'EOF'
+          set -euo pipefail
+          echo "=== omv-2: listing actions.runner.* units ==="
+          units=$(systemctl list-units --full --no-legend 'actions.runner.*' | awk '{print $1}')
+          if [ -z "$units" ]; then
+            echo "No actions.runner.* units found on omv-2."
+            exit 0
+          fi
+          for unit in $units; do
+            echo "--- Restarting $unit ---"
+            sudo systemctl restart "$unit" || true
+            sudo systemctl status "$unit" --no-pager -l || true
+          done
+          EOF
+
+      - name: Restart runners on omv-3
+        id: omv3
+        continue-on-error: true
+        env:
+          OMV3_SSH_HOST: ${{ vars.OMV3_SSH_HOST }}
+        run: |
+          if [ -z "${OMV3_SSH_HOST}" ]; then
+            echo "OMV3_SSH_HOST is not set — skipping omv-3."
+            echo "To enable: Settings → Variables → Actions → New repository variable → OMV3_SSH_HOST=<tailscale-ip>"
+            exit 0
+          fi
+          ssh "tbaltzakis@omv-3" bash -s << 'EOF'
+          set -euo pipefail
+          echo "=== omv-3: listing actions.runner.* units ==="
+          units=$(systemctl list-units --full --no-legend 'actions.runner.*' | awk '{print $1}')
+          if [ -z "$units" ]; then
+            echo "No actions.runner.* units found on omv-3."
+            exit 0
+          fi
+          for unit in $units; do
+            echo "--- Restarting $unit ---"
+            sudo systemctl restart "$unit" || true
+            sudo systemctl status "$unit" --no-pager -l || true
+          done
+          EOF
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
+        with:
+          detail: >-
+            tailscale=${{ steps.tailscale.outcome }}
+            omv2=${{ steps.omv2.outcome }}
+            omv3=${{ steps.omv3.outcome }}
