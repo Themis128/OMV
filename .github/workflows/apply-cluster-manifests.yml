@@ -1,9 +1,10 @@
 name: apply-cluster-manifests
 
-# Apply the cluster-side manifests for cloudless.gr (just the Ingress today —
-# cert-manager / Cloudflare API token are no longer required because the
-# Cloudflare Tunnel handles all public TLS and uses noTLSVerify to the
-# origin). Runs on omv via Tailscale+SSH.
+# Apply all cluster manifests via kustomize:
+#   - k3s/cloudless-app/  (deployment, HPA, PDB, ingress, CronJobs, middlewares)
+#   - k3s/home-assistant/ (deployment, PV/PVC, service)
+# cert-manager / Cloudflare API token are not required — the Cloudflare Tunnel
+# handles all public TLS (noTLSVerify to origin). Runs on omv via Tailscale+SSH.
 #
 # Required repository secrets:
 #   TS_OAUTH_CLIENT_ID  Tailscale OAuth client ID (from https://login.tailscale.com/admin/settings/oauth).
@@ -70,15 +71,20 @@ jobs:
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
-      - name: Apply Ingress and verify
+      - name: Apply manifests and verify
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -euo pipefail
           cd ~/OMV && git pull -q origin main
-          sudo k3s kubectl apply --validate=false -f k3s/cloudless-app/ingress.yaml
-          sudo k3s kubectl -n cloudless get ingress
+          echo "=== cloudless-app ==="
+          sudo k3s kubectl apply --validate=false -k k3s/cloudless-app/
+          echo "=== home-assistant ==="
+          sudo k3s kubectl apply --validate=false -k k3s/home-assistant/
+          echo "=== verify ==="
+          sudo k3s kubectl -n cloudless get ingress,deployment,hpa,svc,cronjob
+          sudo k3s kubectl -n home-assistant get deployment,svc
           EOF
 
       - name: Post result to status board
