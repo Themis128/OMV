@@ -1,0 +1,139 @@
+name: cleanup-disk
+
+# Free disk space on omv via SSH:
+#   • docker system prune -af  (removes stopped containers, unused images, build cache)
+#   • docker builder prune -af (clears BuildKit cache)
+#   • Fix logrotate rsyslog duplicate-entry error
+#   • Reset stale failed systemd units (service-failure-alert, logrotate)
+#   • Clear runner-work tmp dir on the USB drive
+#
+# Safe: does NOT remove running containers, named volumes, or k3s data.
+#
+# Required secrets: TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET (or TS_AUTHKEY), OMV_SSH_KEY
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/dispatches/cleanup-disk.json]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        id: tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
+          hostname: omv-cleanup-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Disk usage before
+        id: before
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          echo "=== Disk usage BEFORE cleanup ==="
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "df -h /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7"
+
+      - name: Docker prune
+        id: docker
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          echo "=== Docker system prune (containers, images, networks, build cache) ==="
+          sudo docker system prune -af
+          echo "=== Docker builder prune (BuildKit cache) ==="
+          sudo docker builder prune -af || true
+          echo "=== Docker disk usage after ==="
+          sudo docker system df
+          EOF
+
+      - name: Fix logrotate + reset failed units
+        id: fixes
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+
+          # Fix rsyslog logrotate duplicate — remove the duplicate /var/log/syslog line
+          if sudo logrotate --debug /etc/logrotate.conf 2>&1 | grep -q 'duplicate log entry'; then
+            echo "Fixing duplicate syslog entry in /etc/logrotate.d/rsyslog ..."
+            sudo python3 -c "
+import re, sys
+text = open('/etc/logrotate.d/rsyslog').read()
+lines = text.splitlines()
+seen = set()
+out = []
+for line in lines:
+    stripped = line.strip()
+    if stripped == '/var/log/syslog' and stripped in seen:
+        print('Removing duplicate: ' + stripped, file=sys.stderr)
+        continue
+    if stripped == '/var/log/syslog':
+        seen.add(stripped)
+    out.append(line)
+open('/etc/logrotate.d/rsyslog', 'w').write('\\n'.join(out) + '\\n')
+"
+            echo "Testing logrotate config ..."
+            sudo logrotate --debug /etc/logrotate.conf 2>&1 | grep -i error || echo "No errors."
+          else
+            echo "logrotate config OK — no fix needed."
+          fi
+
+          # Reset stale failed units
+          echo "=== Resetting failed units ==="
+          sudo systemctl reset-failed service-failure-alert@k3s.service.service 2>/dev/null || true
+          sudo systemctl reset-failed logrotate.service 2>/dev/null || true
+          sudo systemctl --failed --no-pager --no-legend || echo "(no failed units)"
+
+          # Clear runner-work tmp on USB drive
+          echo "=== Clearing runner-work tmp ==="
+          RWORK=/srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7/runner-work
+          [ -d "$RWORK" ] && sudo rm -rf "${RWORK:?}"/* && echo "Cleared $RWORK" || true
+          EOF
+
+      - name: Disk usage after
+        id: after
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          echo "=== Disk usage AFTER cleanup ==="
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "df -h /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7"
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
+        with:
+          detail: >-
+            tailscale=${{ steps.tailscale.outcome }}
+            docker=${{ steps.docker.outcome }}
+            fixes=${{ steps.fixes.outcome }}

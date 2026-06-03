@@ -23,11 +23,14 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/authorize-ssh-key.json` | authorize-ssh-key | Set `public_key` to full pub key string |
 | `.github/dispatches/setup-tailscale-oauth.json` | setup-tailscale-oauth | Requires `TS_API_KEY` repo secret (Tailscale personal API key) |
 | `.github/dispatches/deploy-cloudflare-worker.json` | deploy-cloudflare-worker | Requires `CLOUDFLARE_API_TOKEN` secret + `CLOUDFLARE_ACCOUNT_ID` + `AWS_CLOUDFRONT_HOST` variables |
+| `.github/dispatches/cleanup-disk.json` | cleanup-disk | Docker prune + logrotate fix + reset failed units on omv |
 
 **Custom slash commands** (`.claude/commands/`):
 - `/trigger <workflow>` — update the dispatch file and push to trigger a workflow
 - `/ssh-setup` — walk through adding a local public key to omv's authorized_keys
 - `/workflow-status` — how to check a workflow run result and re-trigger after a fix
+- `/watch-run [run_id]` — poll a workflow run until complete and diagnose failures
+- `/omv-report [ha|both]` — read latest inventory from omv-reports branch with disk + service summary
 
 ## Architecture
 
