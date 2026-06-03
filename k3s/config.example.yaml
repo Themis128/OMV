@@ -6,6 +6,9 @@
 #
 # NEVER commit the populated config.yaml — it contains AWS credentials.
 
+# Keep k3s data on the 120 GB USB drive, not the SD card.
+data-dir: /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7/k3s
+
 cluster-init: true
 secrets-encryption: true
 flannel-backend: wireguard-native
