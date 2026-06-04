@@ -1,6 +1,6 @@
 {
-  "triggered_at": "2026-06-03T16:00:00Z",
+  "triggered_at": "2026-06-04T16:00:00Z",
   "inputs": {
-    "aws_account_id": ""
+    "aws_account_id": "278585680617"
   }
 }

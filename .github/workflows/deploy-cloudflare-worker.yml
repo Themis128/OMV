@@ -9,6 +9,7 @@ name: deploy-cloudflare-worker
 #
 # Required variables:
 #   AWS_CLOUDFRONT_HOST    e.g. d1234abcd.cloudfront.net (your SST CloudFront domain)
+#                          Can also be set in .github/dispatches/deploy-cloudflare-worker.json
 #
 # Optional variables (auto-detected if not set):
 #   CLOUDFLARE_ACCOUNT_ID  Auto-fetched from CLOUDFLARE_API_TOKEN if absent
@@ -37,9 +38,14 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          AWS_CLOUDFRONT_HOST: ${{ vars.AWS_CLOUDFRONT_HOST }}
+          VAR_AWS_CLOUDFRONT_HOST: ${{ vars.AWS_CLOUDFRONT_HOST }}
         run: |
           set -euo pipefail
+          # Read AWS_CLOUDFRONT_HOST: dispatch JSON → repo variable
+          AWS_CLOUDFRONT_HOST="$(jq -r '.inputs.aws_cloudfront_host // empty' \
+            .github/dispatches/deploy-cloudflare-worker.json 2>/dev/null || true)"
+          [ -z "${AWS_CLOUDFRONT_HOST}" ] && AWS_CLOUDFRONT_HOST="${VAR_AWS_CLOUDFRONT_HOST}"
+
           missing=()
           [ -z "${CLOUDFLARE_API_TOKEN}" ] && missing+=(CLOUDFLARE_API_TOKEN)
           [ -z "${AWS_CLOUDFRONT_HOST}" ]  && missing+=(AWS_CLOUDFRONT_HOST)
@@ -48,6 +54,7 @@ jobs:
             echo "Set them in Settings → Secrets and variables → Actions"
             exit 1
           fi
+          echo "aws_cloudfront_host=${AWS_CLOUDFRONT_HOST}" >> "$GITHUB_OUTPUT"
 
           # Auto-detect CLOUDFLARE_ACCOUNT_ID from API if not set as a repo variable
           ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID}"
@@ -72,7 +79,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.preflight.outputs.cloudflare_account_id }}
         run: |
           npx wrangler@latest deploy \
-            --var AWS_FALLBACK_HOST:"${{ vars.AWS_CLOUDFRONT_HOST }}"
+            --var AWS_FALLBACK_HOST:"${{ steps.preflight.outputs.aws_cloudfront_host }}"
 
       - name: Smoke test — Worker at cloudless.gr/api/health
         run: |

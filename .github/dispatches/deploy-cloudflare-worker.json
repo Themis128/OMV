@@ -1,4 +1,6 @@
 {
-  "triggered_at": "2026-05-24T00:00:00Z",
-  "note": "Set CLOUDFLARE_ACCOUNT_ID and AWS_CLOUDFRONT_HOST repo variables before triggering."
+  "triggered_at": "2026-06-04T16:00:00Z",
+  "inputs": {
+    "aws_cloudfront_host": "d1947b4i8egesz.cloudfront.net"
+  }
 }
