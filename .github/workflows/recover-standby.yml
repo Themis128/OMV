@@ -37,6 +37,10 @@ on:
         description: "Run disk cleanup on omv (prune containerd images, vacuum journal, trim etcd snapshots to 3)."
         type: boolean
         default: false
+      k3s_restart:
+        description: "Restart k3s on omv if its API is down (bypasses site health probe). Use when apply-cluster-manifests fails with 'k3s API not ready'."
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [.github/dispatches/recover-standby.json]
@@ -58,16 +62,19 @@ jobs:
             etcd_recover=$(jq -r '.inputs.etcd_recover // false' .github/dispatches/recover-standby.json)
             omv_ha_prep=$(jq -r '.inputs.omv_ha_prep // false'   .github/dispatches/recover-standby.json)
             node_cleanup=$(jq -r '.inputs.node_cleanup // false'  .github/dispatches/recover-standby.json)
+            k3s_restart=$(jq -r '.inputs.k3s_restart // false'    .github/dispatches/recover-standby.json)
           else
             apply="${{ inputs.apply }}"
             etcd_recover="${{ inputs.etcd_recover }}"
             omv_ha_prep="${{ inputs.omv_ha_prep }}"
             node_cleanup="${{ inputs.node_cleanup }}"
+            k3s_restart="${{ inputs.k3s_restart }}"
           fi
           echo "apply=$apply"               >> "$GITHUB_OUTPUT"
           echo "etcd_recover=$etcd_recover" >> "$GITHUB_OUTPUT"
           echo "omv_ha_prep=$omv_ha_prep"   >> "$GITHUB_OUTPUT"
           echo "node_cleanup=$node_cleanup" >> "$GITHUB_OUTPUT"
+          echo "k3s_restart=$k3s_restart"   >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -85,6 +92,35 @@ jobs:
           chmod 600 ~/.ssh/omv_key
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Restart k3s if API is down
+        if: ${{ steps.parse_inputs.outputs.k3s_restart == 'true' }}
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          state=$(systemctl is-active k3s 2>/dev/null || echo inactive)
+          echo "k3s service state: ${state}"
+          if [ "$state" != "active" ]; then
+            echo "k3s is not active — restarting"
+            sudo systemctl restart k3s
+          fi
+          echo "Waiting for k3s API at 127.0.0.1:6443 (up to 5 min)..."
+          for i in $(seq 1 30); do
+            if sudo k3s kubectl get nodes &>/dev/null 2>&1; then
+              echo "k3s API is up after $i attempts"
+              sudo k3s kubectl get nodes
+              sudo k3s kubectl get pods -A | head -20
+              exit 0
+            fi
+            echo "  attempt $i/30 — waiting 10s..."
+            sleep 10
+          done
+          echo "k3s API still not responding after 5 min"
+          sudo journalctl -u k3s -n 80 --no-pager
+          exit 1
+          EOF
 
       - name: Recover standby
         env:
