@@ -99,27 +99,41 @@ jobs:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
-          set -euo pipefail
-          state=$(systemctl is-active k3s 2>/dev/null || echo inactive)
+          state=$(systemctl is-active k3s 2>/dev/null; true)
           echo "k3s service state: ${state}"
+          echo "=== systemctl status k3s ==="
+          sudo systemctl status k3s --no-pager -l || true
           if [ "$state" != "active" ]; then
-            echo "k3s is not active — restarting"
-            sudo systemctl restart k3s
+            echo "k3s is not active — attempting restart"
+            sudo systemctl reset-failed k3s 2>/dev/null || true
+            sudo systemctl stop k3s 2>/dev/null || true
+            sleep 3
+            sudo systemctl start k3s || true
+            sleep 5
           fi
-          echo "Waiting for k3s API at 127.0.0.1:6443 (up to 5 min)..."
+          echo "=== Waiting for k3s API (up to 5 min) ==="
+          api_up=0
           for i in $(seq 1 30); do
             if sudo k3s kubectl get nodes &>/dev/null 2>&1; then
               echo "k3s API is up after $i attempts"
-              sudo k3s kubectl get nodes
-              sudo k3s kubectl get pods -A | head -20
-              exit 0
+              api_up=1
+              break
             fi
             echo "  attempt $i/30 — waiting 10s..."
             sleep 10
           done
-          echo "k3s API still not responding after 5 min"
-          sudo journalctl -u k3s -n 80 --no-pager
-          exit 1
+          echo "=== k3s journal (last 100 lines) ==="
+          sudo journalctl -u k3s -n 100 --no-pager || true
+          if [ "$api_up" = "1" ]; then
+            echo "=== k3s nodes ==="
+            sudo k3s kubectl get nodes
+            echo "=== pods (all namespaces) ==="
+            sudo k3s kubectl get pods -A | head -30
+            exit 0
+          else
+            echo "k3s API still not responding after 5 min"
+            exit 1
+          fi
           EOF
 
       - name: Recover standby
