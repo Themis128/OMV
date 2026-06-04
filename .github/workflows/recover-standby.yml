@@ -50,6 +50,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Parse inputs
+        id: parse_inputs
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            apply=$(jq -r '.inputs.apply // false'              .github/dispatches/recover-standby.json)
+            etcd_recover=$(jq -r '.inputs.etcd_recover // false' .github/dispatches/recover-standby.json)
+            omv_ha_prep=$(jq -r '.inputs.omv_ha_prep // false'   .github/dispatches/recover-standby.json)
+            node_cleanup=$(jq -r '.inputs.node_cleanup // false'  .github/dispatches/recover-standby.json)
+          else
+            apply="${{ inputs.apply }}"
+            etcd_recover="${{ inputs.etcd_recover }}"
+            omv_ha_prep="${{ inputs.omv_ha_prep }}"
+            node_cleanup="${{ inputs.node_cleanup }}"
+          fi
+          echo "apply=$apply"               >> "$GITHUB_OUTPUT"
+          echo "etcd_recover=$etcd_recover" >> "$GITHUB_OUTPUT"
+          echo "omv_ha_prep=$omv_ha_prep"   >> "$GITHUB_OUTPUT"
+          echo "node_cleanup=$node_cleanup" >> "$GITHUB_OUTPUT"
+
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
         with:
@@ -71,14 +90,14 @@ jobs:
         env:
           OMV_HOST: "tbaltzakis@${{ vars.OMV_SSH_HOST || '100.113.41.119' }}"
         run: |
-          if [ "${{ inputs.apply }}" = "true" ]; then
+          if [ "${{ steps.parse_inputs.outputs.apply }}" = "true" ]; then
             ./scripts/recover-standby.sh --yes
           else
             ./scripts/recover-standby.sh
           fi
 
       - name: etcd cluster-reset (quorum lost)
-        if: ${{ inputs.etcd_recover == 'true' }}
+        if: ${{ steps.parse_inputs.outputs.etcd_recover == 'true' }}
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
@@ -86,7 +105,7 @@ jobs:
             'sudo REJOIN=1 ~/OMV/scripts/etcd-recover.sh'
 
       - name: Node cleanup (prune images, vacuum journal, trim etcd snapshots)
-        if: ${{ inputs.node_cleanup == 'true' }}
+        if: ${{ steps.parse_inputs.outputs.node_cleanup == 'true' }}
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
@@ -107,7 +126,7 @@ jobs:
           EOF
 
       - name: omv-ha memory tunes (zram + OOM protection)
-        if: ${{ inputs.omv_ha_prep == 'true' }}
+        if: ${{ steps.parse_inputs.outputs.omv_ha_prep == 'true' }}
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
           OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
