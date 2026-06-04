@@ -103,18 +103,13 @@ jobs:
           state=$(systemctl is-active k3s 2>/dev/null; true)
           echo "k3s service state: ${state}"
 
-          # Locate k3s data-dir (may be symlink or --data-dir mount)
-          data_dir=$(sudo k3s server --help 2>/dev/null | grep -o '\-\-data-dir[^,]*' | head -1 || true)
-          # Try common locations
-          for d in /var/lib/rancher/k3s /srv/dev-disk-by-uuid-*/k3s; do
-            if [ -d "$d/server/db" ]; then data_dir="$d"; break; fi
-          done
-          echo "k3s data-dir: ${data_dir:-unknown}"
-          echo "=== Disk usage ==="
-          df -h /srv 2>/dev/null || df -h /
+          echo "=== USB drive disk usage ==="
+          for d in /srv/dev-disk-by-uuid-*; do [ -d "$d" ] && df -h "$d"; done || df -h /
 
-          echo "=== Free space on USB drive ==="
-          for d in /srv/dev-disk-by-uuid-*; do [ -d "$d" ] && df -h "$d"; done || true
+          echo "=== Masking k3s to stop restart loop during cleanup ==="
+          sudo systemctl mask k3s 2>/dev/null || true
+          sudo systemctl stop k3s 2>/dev/null || true
+          sleep 3
 
           echo "=== Cleaning stale etcd-tmp directories ==="
           sudo find /srv -name 'etcd-tmp' -type d 2>/dev/null -exec rm -rf {} + 2>/dev/null || true
@@ -130,17 +125,21 @@ jobs:
             ls -1t "$snap_dir" | tail -n +4 | xargs -r -I{} sudo rm -v "$snap_dir/{}"
           done
 
-          echo "=== Pruning unused container images ==="
-          sudo k3s crictl rmi --prune 2>/dev/null || true
+          echo "=== Pruning k3s container images (timeout 90s) ==="
+          timeout 90 sudo k3s crictl rmi --prune 2>/dev/null || echo "k3s crictl prune skipped/timed out"
+
+          echo "=== Pruning Docker images and containers ==="
+          sudo docker system prune -af 2>/dev/null || true
+
+          echo "=== Deleting Docker build cache (safe to remove) ==="
+          sudo rm -rf /srv/dev-disk-by-uuid-*/docker-cache/ 2>/dev/null || true
 
           echo "=== Disk usage after cleanup ==="
-          df -h /
-          for d in /srv/dev-disk-by-uuid-*; do [ -d "$d" ] && df -h "$d"; done || true
+          for d in /srv/dev-disk-by-uuid-*; do [ -d "$d" ] && df -h "$d"; done || df -h /
 
-          echo "=== Restarting k3s ==="
+          echo "=== Unmasking and restarting k3s ==="
+          sudo systemctl unmask k3s 2>/dev/null || true
           sudo systemctl reset-failed k3s 2>/dev/null || true
-          sudo systemctl stop k3s 2>/dev/null || true
-          sleep 3
           sudo systemctl start k3s || true
 
           echo "=== Waiting for k3s API (up to 5 min) ==="
