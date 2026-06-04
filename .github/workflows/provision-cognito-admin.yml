@@ -5,7 +5,11 @@ name: provision-cognito-admin
 # status board (issue #66) — user logs in at cloudless.gr and is prompted
 # to set a permanent password on first sign-in (hosted UI handles the flow).
 #
-# Required IAM permissions on GitHubActionsOIDC role:
+# Required repository secrets:
+#   AWS_ACCESS_KEY_ID      AWS access key with Cognito permissions.
+#   AWS_SECRET_ACCESS_KEY  Corresponding secret key.
+#
+# Required IAM permissions on the key's user/role:
 #   cognito-idp:AdminCreateUser      on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
 #   cognito-idp:AdminAddUserToGroup  on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
 
@@ -27,7 +31,6 @@ on:
 permissions:
   contents: read
   issues: write
-  id-token: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -56,8 +59,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::278585680617:role/GitHubActionsOIDC
-          role-session-name: provision-cognito-admin
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
       - name: Create Cognito user
