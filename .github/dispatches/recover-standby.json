@@ -1,10 +1,10 @@
 {
-  "triggered_at": "2026-06-04T12:25:00Z",
+  "triggered_at": "2026-06-04T12:30:00Z",
   "inputs": {
     "apply": true,
     "etcd_recover": false,
     "omv_ha_prep": false,
-    "node_cleanup": true,
+    "node_cleanup": false,
     "k3s_restart": true
   }
 }

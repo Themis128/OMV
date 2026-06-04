@@ -99,18 +99,50 @@ jobs:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -uo pipefail
           state=$(systemctl is-active k3s 2>/dev/null; true)
           echo "k3s service state: ${state}"
-          echo "=== systemctl status k3s ==="
-          sudo systemctl status k3s --no-pager -l || true
-          if [ "$state" != "active" ]; then
-            echo "k3s is not active — attempting restart"
-            sudo systemctl reset-failed k3s 2>/dev/null || true
-            sudo systemctl stop k3s 2>/dev/null || true
-            sleep 3
-            sudo systemctl start k3s || true
-            sleep 5
-          fi
+
+          # Locate k3s data-dir (may be symlink or --data-dir mount)
+          data_dir=$(sudo k3s server --help 2>/dev/null | grep -o '\-\-data-dir[^,]*' | head -1 || true)
+          # Try common locations
+          for d in /var/lib/rancher/k3s /srv/dev-disk-by-uuid-*/k3s; do
+            if [ -d "$d/server/db" ]; then data_dir="$d"; break; fi
+          done
+          echo "k3s data-dir: ${data_dir:-unknown}"
+          echo "=== Disk usage ==="
+          df -h /srv 2>/dev/null || df -h /
+
+          echo "=== Free space on USB drive ==="
+          for d in /srv/dev-disk-by-uuid-*; do [ -d "$d" ] && df -h "$d"; done || true
+
+          echo "=== Cleaning stale etcd-tmp directories ==="
+          sudo find /srv -name 'etcd-tmp' -type d 2>/dev/null -exec rm -rf {} + 2>/dev/null || true
+          sudo find /var/lib/rancher -name 'etcd-tmp' -type d 2>/dev/null -exec rm -rf {} + 2>/dev/null || true
+          echo "etcd-tmp cleaned"
+
+          echo "=== Trimming etcd snapshots to 3 most recent ==="
+          for snap_dir in /srv/dev-disk-by-uuid-*/k3s/server/db/snapshots \
+                          /var/lib/rancher/k3s/server/db/snapshots; do
+            [ -d "$snap_dir" ] || continue
+            count=$(ls -1 "$snap_dir" 2>/dev/null | wc -l)
+            echo "  $snap_dir: $count snapshots"
+            ls -1t "$snap_dir" | tail -n +4 | xargs -r -I{} sudo rm -v "$snap_dir/{}"
+          done
+
+          echo "=== Pruning unused container images ==="
+          sudo k3s crictl rmi --prune 2>/dev/null || true
+
+          echo "=== Disk usage after cleanup ==="
+          df -h /
+          for d in /srv/dev-disk-by-uuid-*; do [ -d "$d" ] && df -h "$d"; done || true
+
+          echo "=== Restarting k3s ==="
+          sudo systemctl reset-failed k3s 2>/dev/null || true
+          sudo systemctl stop k3s 2>/dev/null || true
+          sleep 3
+          sudo systemctl start k3s || true
+
           echo "=== Waiting for k3s API (up to 5 min) ==="
           api_up=0
           for i in $(seq 1 30); do
@@ -122,8 +154,10 @@ jobs:
             echo "  attempt $i/30 — waiting 10s..."
             sleep 10
           done
-          echo "=== k3s journal (last 100 lines) ==="
-          sudo journalctl -u k3s -n 100 --no-pager || true
+
+          echo "=== k3s journal (last 50 lines) ==="
+          sudo journalctl -u k3s -n 50 --no-pager || true
+
           if [ "$api_up" = "1" ]; then
             echo "=== k3s nodes ==="
             sudo k3s kubectl get nodes
@@ -166,13 +200,15 @@ jobs:
           echo "=== Vacuum systemd journal (keep 7 days) ==="
           sudo journalctl --vacuum-time=7d
           echo "=== Trim etcd snapshots to 3 most recent ==="
-          snap_dir=/var/lib/rancher/k3s/server/db/snapshots
-          if [ -d "$snap_dir" ]; then
+          for snap_dir in /srv/dev-disk-by-uuid-*/k3s/server/db/snapshots \
+                          /var/lib/rancher/k3s/server/db/snapshots; do
+            [ -d "$snap_dir" ] || continue
             ls -1t "$snap_dir" | tail -n +4 | xargs -r -I{} sudo rm -v "$snap_dir/{}"
-            echo "Snapshots remaining: $(ls "$snap_dir" | wc -l)"
-          fi
+            echo "Snapshots remaining in $snap_dir: $(ls "$snap_dir" | wc -l)"
+          done
           echo "=== Disk usage after cleanup ==="
           df -h /
+          for d in /srv/dev-disk-by-uuid-*; do [ -d "$d" ] && df -h "$d"; done || true
           EOF
 
       - name: omv-ha memory tunes (zram + OOM protection)
