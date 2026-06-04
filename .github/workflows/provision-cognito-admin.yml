@@ -179,4 +179,5 @@ jobs:
             else
               echo "**Provisioning failed** — see [run logs]($RUN_URL) for details."
             fi
-          } | gh api "repos/${{ github.repository }}/issues/66/comments" -f body=@-
+          } > /tmp/cognito-comment.md
+          gh api "repos/${{ github.repository }}/issues/66/comments" -F body=@/tmp/cognito-comment.md
