@@ -6,12 +6,12 @@ name: provision-cognito-admin
 # to set a permanent password on first sign-in (hosted UI handles the flow).
 #
 # Required repository secrets:
-#   AWS_ACCESS_KEY_ID      AWS access key with Cognito permissions.
+#   AWS_ACCESS_KEY_ID      AWS access key with Cognito permissions (cloudless-ops).
 #   AWS_SECRET_ACCESS_KEY  Corresponding secret key.
 #
-# Required IAM permissions on the key's user/role:
-#   cognito-idp:AdminCreateUser      on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
-#   cognito-idp:AdminAddUserToGroup  on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
+# Required IAM permissions on the key's user:
+#   cognito-idp:AdminCreateUser      on arn:aws:cognito-idp:us-east-1:278585680617:userpool/us-east-1_1Bq3Mpqer
+#   cognito-idp:AdminAddUserToGroup  on arn:aws:cognito-idp:us-east-1:278585680617:userpool/us-east-1_1Bq3Mpqer
 
 on:
   workflow_dispatch:
@@ -69,7 +69,7 @@ jobs:
           EMAIL: ${{ steps.inputs.outputs.email }}
         run: |
           set -euo pipefail
-          USER_POOL_ID="us-east-1_JQWwFbO9a"
+          USER_POOL_ID="us-east-1_1Bq3Mpqer"
 
           # Generate a temp password guaranteed to satisfy Cognito default policy:
           # uppercase, lowercase, digit, special char, min 8 chars
@@ -109,7 +109,7 @@ jobs:
           GROUP: ${{ steps.inputs.outputs.group }}
         run: |
           set -euo pipefail
-          USER_POOL_ID="us-east-1_JQWwFbO9a"
+          USER_POOL_ID="us-east-1_1Bq3Mpqer"
 
           echo "Adding $EMAIL to group: $GROUP"
           set +e
@@ -164,7 +164,7 @@ jobs:
             elif [ "$STATUS" = "exists" ]; then
               echo "**User already exists**: \`$EMAIL\` — no changes made."
               echo ""
-              echo "To reset the password: AWS Console → Cognito → User Pools → \`us-east-1_JQWwFbO9a\` → Users → select user → Reset password."
+              echo "To reset the password: AWS Console → Cognito → User Pools → \`us-east-1_1Bq3Mpqer\` → Users → select user → Reset password."
             else
               echo "**Provisioning failed** — see [run logs]($RUN_URL) for details."
             fi
