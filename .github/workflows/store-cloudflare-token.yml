@@ -1,0 +1,79 @@
+name: store-cloudflare-token
+
+# Store a Cloudflare API token as the CLOUDFLARE_API_TOKEN repo secret.
+# Run this after creating a new token in the Cloudflare dashboard.
+#
+# Required token permissions:
+#   Account > Workers Scripts > Edit
+#   Account > Account Settings > Read
+#
+# Steps:
+#   1. Cloudflare dashboard → Profile → API Tokens → Create Token
+#      → Edit Cloudflare Workers template → add Account Settings: Read
+#   2. Run this workflow via Actions tab → workflow_dispatch
+#      with the new token value.
+#   3. Trigger deploy-cloudflare-worker to verify.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloudflare_api_token:
+        description: "New CLOUDFLARE_API_TOKEN value"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  secrets: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  store:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PyNaCl
+        run: pip install --quiet PyNaCl requests
+
+      - name: Store Cloudflare API token as repo secret
+        env:
+          CLOUDFLARE_API_TOKEN_INPUT: ${{ inputs.cloudflare_api_token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 << 'PYEOF'
+          import os, base64, requests
+          from nacl import encoding, public
+
+          token_val = os.environ["CLOUDFLARE_API_TOKEN_INPUT"].strip()
+          gh_token  = os.environ["GH_TOKEN"]
+          repo      = os.environ["REPO"]
+
+          if not token_val:
+              raise SystemExit("ERROR: cloudflare_api_token is required.")
+
+          gh_api  = f"https://api.github.com/repos/{repo}/actions/secrets"
+          headers = {
+              "Authorization": f"Bearer {gh_token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+
+          pk      = requests.get(f"{gh_api}/public-key", headers=headers)
+          pk.raise_for_status()
+          pk_data = pk.json()
+          repo_key_id = pk_data["key_id"]
+          pub_key = public.PublicKey(pk_data["key"].encode(), encoding.Base64Encoder)
+
+          box       = public.SealedBox(pub_key)
+          encrypted = base64.b64encode(box.encrypt(token_val.encode())).decode()
+          r = requests.put(
+              f"{gh_api}/CLOUDFLARE_API_TOKEN",
+              headers=headers,
+              json={"encrypted_value": encrypted, "key_id": repo_key_id},
+          )
+          r.raise_for_status()
+          print(f"Stored CLOUDFLARE_API_TOKEN ({r.status_code})")
+          print("Next: trigger deploy-cloudflare-worker to verify.")
+          PYEOF
