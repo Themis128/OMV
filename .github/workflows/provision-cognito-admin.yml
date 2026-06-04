@@ -5,9 +5,6 @@ name: provision-cognito-admin
 # status board (issue #66) — user logs in at cloudless.gr and is prompted
 # to set a permanent password on first sign-in (hosted UI handles the flow).
 #
-# Required repository variables:
-#   AWS_ACCOUNT_ID   12-digit AWS account ID.
-#
 # Required IAM permissions on GitHubActionsOIDC role:
 #   cognito-idp:AdminCreateUser      on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
 #   cognito-idp:AdminAddUserToGroup  on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
@@ -56,21 +53,10 @@ jobs:
           fi
           printf 'email=%s\ngroup=%s\n' "$email" "$group" >> "$GITHUB_OUTPUT"
 
-      - name: Preflight
-        env:
-          AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
-        run: |
-          if [ -z "$AWS_ACCOUNT_ID" ]; then
-            echo "ERROR: AWS_ACCOUNT_ID repo variable is not set."
-            echo "Go to: Settings -> Secrets and variables -> Actions -> Variables -> New variable"
-            echo "Name: AWS_ACCOUNT_ID  Value: your 12-digit AWS account ID"
-            exit 1
-          fi
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
+          role-to-assume: arn:aws:iam::278585680617:role/GitHubActionsOIDC
           role-session-name: provision-cognito-admin
           aws-region: us-east-1
 
