@@ -1,0 +1,182 @@
+name: provision-cognito-admin
+
+# Creates a Cognito user in FORCE_CHANGE_PASSWORD status and optionally
+# adds them to a Cognito group. The temporary password is posted to the
+# status board (issue #66) — user logs in at cloudless.gr and is prompted
+# to set a permanent password on first sign-in (hosted UI handles the flow).
+#
+# Required repository variables:
+#   AWS_ACCOUNT_ID   12-digit AWS account ID.
+#
+# Required IAM permissions on GitHubActionsOIDC role:
+#   cognito-idp:AdminCreateUser      on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
+#   cognito-idp:AdminAddUserToGroup  on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: "Email address for the new user"
+        type: string
+        required: true
+      group:
+        description: "Cognito group to add the user to (leave blank to skip)"
+        type: string
+        default: "admin"
+  push:
+    branches: [main]
+    paths: [.github/dispatches/provision-cognito-admin.json]
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ -f .github/dispatches/provision-cognito-admin.json ]; then
+            email=$(jq -r '.inputs.email // ""' .github/dispatches/provision-cognito-admin.json)
+            group=$(jq -r '.inputs.group // "admin"' .github/dispatches/provision-cognito-admin.json)
+          else
+            email="${{ inputs.email }}"
+            group="${{ inputs.group }}"
+          fi
+          if [ -z "$email" ]; then
+            echo "ERROR: email is required" >&2; exit 1
+          fi
+          printf 'email=%s\ngroup=%s\n' "$email" "$group" >> "$GITHUB_OUTPUT"
+
+      - name: Preflight
+        env:
+          AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+        run: |
+          if [ -z "$AWS_ACCOUNT_ID" ]; then
+            echo "ERROR: AWS_ACCOUNT_ID repo variable is not set."
+            echo "Go to: Settings -> Secrets and variables -> Actions -> Variables -> New variable"
+            echo "Name: AWS_ACCOUNT_ID  Value: your 12-digit AWS account ID"
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
+          role-session-name: provision-cognito-admin
+          aws-region: us-east-1
+
+      - name: Create Cognito user
+        id: create_user
+        env:
+          EMAIL: ${{ steps.inputs.outputs.email }}
+        run: |
+          set -euo pipefail
+          USER_POOL_ID="us-east-1_JQWwFbO9a"
+
+          # Generate a temp password guaranteed to satisfy Cognito default policy:
+          # uppercase, lowercase, digit, special char, min 8 chars
+          RAND=$(openssl rand -base64 32 | tr -dc 'a-z0-9' | head -c 8)
+          TEMP_PASSWORD="Tmp${RAND}Z!9"
+
+          echo "Creating user: $EMAIL"
+          set +e
+          aws cognito-idp admin-create-user \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "$EMAIL" \
+            --user-attributes Name=email,Value="$EMAIL" Name=email_verified,Value=true \
+            --temporary-password "$TEMP_PASSWORD" \
+            --message-action SUPPRESS \
+            --region us-east-1 > /tmp/create-output.txt 2>&1
+          CREATE_STATUS=$?
+          set -e
+
+          if [ "$CREATE_STATUS" -eq 0 ]; then
+            echo "User created successfully."
+            echo "status=created" >> "$GITHUB_OUTPUT"
+            echo "temp_password=$TEMP_PASSWORD" >> "$GITHUB_OUTPUT"
+          elif grep -q 'UsernameExistsException' /tmp/create-output.txt; then
+            echo "User already exists — no changes made."
+            echo "status=exists" >> "$GITHUB_OUTPUT"
+            echo "temp_password=" >> "$GITHUB_OUTPUT"
+          else
+            echo "ERROR: Failed to create user:" >&2
+            cat /tmp/create-output.txt >&2
+            exit 1
+          fi
+
+      - name: Add user to Cognito group
+        if: steps.inputs.outputs.group != '' && steps.create_user.outputs.status == 'created'
+        env:
+          EMAIL: ${{ steps.inputs.outputs.email }}
+          GROUP: ${{ steps.inputs.outputs.group }}
+        run: |
+          set -euo pipefail
+          USER_POOL_ID="us-east-1_JQWwFbO9a"
+
+          echo "Adding $EMAIL to group: $GROUP"
+          set +e
+          aws cognito-idp admin-add-user-to-group \
+            --user-pool-id "$USER_POOL_ID" \
+            --username "$EMAIL" \
+            --group-name "$GROUP" \
+            --region us-east-1 > /tmp/group-output.txt 2>&1
+          GROUP_STATUS=$?
+          set -e
+
+          if [ "$GROUP_STATUS" -eq 0 ]; then
+            echo "Added to group '$GROUP' successfully."
+          elif grep -q 'ResourceNotFoundException' /tmp/group-output.txt; then
+            echo "WARNING: Group '$GROUP' does not exist — user was created but not added to group."
+            echo "Create the group in the Cognito console first, then re-run with the same inputs."
+          else
+            echo "ERROR: Failed to add user to group:" >&2
+            cat /tmp/group-output.txt >&2
+            exit 1
+          fi
+
+      - name: Post result to status board
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EMAIL: ${{ steps.inputs.outputs.email || '(unknown)' }}
+          GROUP: ${{ steps.inputs.outputs.group || '' }}
+          STATUS: ${{ steps.create_user.outputs.status || 'failed' }}
+          TEMP_PASSWORD: ${{ steps.create_user.outputs.temp_password || '' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          ts=$(date -u '+%Y-%m-%d %H:%M UTC')
+          {
+            echo "## Cognito Admin Provisioning"
+            echo ""
+            echo "Run: $RUN_URL"
+            echo "At: $ts"
+            echo ""
+            if [ "$STATUS" = "created" ]; then
+              echo "**User created**: \`$EMAIL\`"
+              echo "**Group**: ${GROUP:-(none assigned)}"
+              echo "**Cognito status**: FORCE_CHANGE_PASSWORD"
+              echo ""
+              echo "**Temporary password** (one-time use, valid for 7 days):"
+              echo "\`\`\`"
+              echo "$TEMP_PASSWORD"
+              echo "\`\`\`"
+              echo ""
+              echo "Login at https://cloudless.gr — the Cognito hosted UI will prompt for a new password on first sign-in."
+            elif [ "$STATUS" = "exists" ]; then
+              echo "**User already exists**: \`$EMAIL\` — no changes made."
+              echo ""
+              echo "To reset the password: AWS Console → Cognito → User Pools → \`us-east-1_JQWwFbO9a\` → Users → select user → Reset password."
+            else
+              echo "**Provisioning failed** — see [run logs]($RUN_URL) for details."
+            fi
+          } | gh api "repos/${{ github.repository }}/issues/66/comments" -f body=@-
