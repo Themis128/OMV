@@ -1,0 +1,67 @@
+name: set-repo-variable
+
+# Set (create or update) a single GitHub Actions repository variable.
+# Uses GITHUB_TOKEN — no extra secrets required.
+#
+# Example uses:
+#   AWS_CLOUDFRONT_HOST   → the SST CloudFront domain (e.g. dXXXXXXXX.cloudfront.net)
+#   AWS_ACCOUNT_ID        → 12-digit AWS account ID
+#   CLOUDFLARE_ACCOUNT_ID → Cloudflare account ID (auto-detected by deploy-cloudflare-worker now)
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Variable name (e.g. AWS_CLOUDFRONT_HOST)"
+        required: true
+        type: string
+      value:
+        description: "Variable value"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  set-variable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update repo variable
+        env:
+          VAR_NAME: ${{ inputs.name }}
+          VAR_VALUE: ${{ inputs.value }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          API="https://api.github.com/repos/${REPO}/actions/variables/${VAR_NAME}"
+          AUTH="Authorization: Bearer ${GH_TOKEN}"
+          CT="Content-Type: application/json"
+          VER="X-GitHub-Api-Version: 2022-11-28"
+
+          BODY="$(printf '{"name":"%s","value":"%s"}' "${VAR_NAME}" "${VAR_VALUE}")"
+
+          # Try PATCH first (update existing); if 404, fall back to POST (create new)
+          status=$(curl -s -o /tmp/gh_var_resp.json -w '%{http_code}' \
+            -X PATCH "${API}" \
+            -H "${AUTH}" -H "${CT}" -H "${VER}" \
+            -d "${BODY}")
+
+          if [ "${status}" = "204" ]; then
+            echo "Updated variable ${VAR_NAME} (${status})"
+          elif [ "${status}" = "404" ]; then
+            status=$(curl -s -o /tmp/gh_var_resp.json -w '%{http_code}' \
+              -X POST "https://api.github.com/repos/${REPO}/actions/variables" \
+              -H "${AUTH}" -H "${CT}" -H "${VER}" \
+              -d "${BODY}")
+            echo "Created variable ${VAR_NAME} (${status})"
+          else
+            echo "Unexpected status ${status}:"
+            cat /tmp/gh_var_resp.json
+            exit 1
+          fi

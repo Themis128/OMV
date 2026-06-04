@@ -33,6 +33,11 @@ name: provision-ses-smtp
 
 on:
   workflow_dispatch:
+    inputs:
+      aws_account_id:
+        description: "12-digit AWS account ID (overrides dispatch JSON value)"
+        required: false
+        type: string
   push:
     branches: [main]
     paths: [.github/dispatches/provision-ses-smtp.json]
@@ -51,10 +56,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Parse inputs
+        id: parse_inputs
+        env:
+          INPUT_AWS_ACCOUNT_ID: ${{ inputs.aws_account_id }}
+          VAR_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          # workflow_dispatch input takes priority; fall back to dispatch JSON; then repo var
+          aws_account_id="${INPUT_AWS_ACCOUNT_ID}"
+          if [ -z "${aws_account_id}" ]; then
+            aws_account_id="$(jq -r '.inputs.aws_account_id // empty' \
+              .github/dispatches/provision-ses-smtp.json 2>/dev/null || true)"
+          fi
+          if [ -z "${aws_account_id}" ]; then
+            aws_account_id="${VAR_AWS_ACCOUNT_ID}"
+          fi
+          echo "aws_account_id=${aws_account_id}" >> "$GITHUB_OUTPUT"
+          echo "Resolved AWS_ACCOUNT_ID: ${aws_account_id}"
+
       - name: Preflight — check required vars and secrets
         id: preflight
         env:
-          AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          AWS_ACCOUNT_ID: ${{ steps.parse_inputs.outputs.aws_account_id }}
           TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
           TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
@@ -98,7 +122,7 @@ jobs:
         id: aws_creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
+          role-to-assume: arn:aws:iam::${{ steps.parse_inputs.outputs.aws_account_id }}:role/GitHubActionsOIDC
           role-session-name: provision-ses-smtp
           aws-region: eu-west-1
 
