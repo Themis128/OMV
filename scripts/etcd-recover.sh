@@ -14,7 +14,7 @@
 # Env (all have defaults):
 #   OMV_HA_HOST    tbaltzakis@192.168.1.130
 #   DATA_DIR       /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7/k3s
-#   REJOIN         1  — after recovery, re-join omv-ha as a server (default: prompt)
+#   REJOIN         1  — after recovery, wait for omv-ha to reconnect as agent (default: prompt)
 #
 # WARNING: --cluster-reset discards the multi-member etcd state. Any writes
 # that were in-flight while the peer was unreachable are lost (the last
@@ -52,7 +52,7 @@ fi
 
 # --- 1. Stop omv-ha k3s (best-effort — may already be down) ---
 log "1/6  stopping k3s on omv-ha (${OMV_HA_HOST})"
-if ssh -o BatchMode=yes -o ConnectTimeout=8 "${OMV_HA_HOST}" \
+if ssh -o BatchMode=yes -o ConnectTimeout=8 -o StrictHostKeyChecking=accept-new "${OMV_HA_HOST}" \
     'sudo systemctl stop k3s 2>/dev/null; echo stopped' 2>/dev/null; then
   ok "omv-ha k3s stopped"
 else
@@ -106,28 +106,40 @@ log "6/6  verifying workloads"
 k3s kubectl get nodes
 k3s kubectl -n cloudless get pods 2>/dev/null || warn "cloudless namespace not yet ready"
 
-# --- 6. Optionally re-join omv-ha ---
+# --- 6. Wait for omv-ha agent to reconnect ---
+# omv-ha is an agent-only node (demoted from server 2026-05-24).
+# Agent nodes reconnect automatically after an etcd reset — no manual re-join needed.
 if [[ "${REJOIN:-}" == "1" ]]; then
   rejoin=y
 else
   echo
-  read -r -p "[etcd-recover] Re-join omv-ha as a control-plane server now? [y/N] " rejoin
+  read -r -p "[etcd-recover] Wait for omv-ha agent to reconnect? [y/N] " rejoin
 fi
 
 if [[ "${rejoin,,}" == "y" ]]; then
-  log "fetching node-token for omv-ha re-join"
-  TOKEN="$(cat "${DATA_DIR}/server/node-token")"
-  log "SSHing to omv-ha to run join-as-server.sh"
-  REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-  ssh -o BatchMode=yes "${OMV_HA_HOST}" \
-    "sudo K3S_URL=https://192.168.1.128:6443 K3S_TOKEN='${TOKEN}' bash -s" \
-    < "${REPO_ROOT}/k3s/join-as-server.sh"
-  log "waiting for omv-ha to appear in node list"
-  sleep 20
+  log "restarting k3s agent on omv-ha (${OMV_HA_HOST})"
+  if ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "${OMV_HA_HOST}" \
+      'sudo systemctl restart k3s 2>/dev/null && echo restarted' 2>/dev/null; then
+    ok "omv-ha k3s agent restarted"
+  else
+    warn "could not SSH to omv-ha — it will reconnect on its own when reachable"
+  fi
+  log "waiting up to 60 s for omv-ha to appear Ready"
+  deadline=$(( $(date +%s) + 60 ))
+  while true; do
+    if k3s kubectl get nodes 2>/dev/null | grep -q "omv-ha.*Ready"; then
+      ok "omv-ha Ready"
+      break
+    fi
+    if (( $(date +%s) > deadline )); then
+      warn "omv-ha not yet Ready — it will reconnect when its k3s agent starts"
+      break
+    fi
+    sleep 5
+  done
   k3s kubectl get nodes
-  ok "re-join complete"
 else
-  log "skipping re-join — run scripts/promote-omv-ha.sh later to re-add omv-ha"
+  log "skipping — omv-ha agent will reconnect automatically"
 fi
 
 ok "recovery complete"
