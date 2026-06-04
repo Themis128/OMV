@@ -13,8 +13,9 @@ name: deploy-cloudflare-worker
 
 on:
   workflow_dispatch:
-  # push trigger removed — requires CLOUDFLARE_ACCOUNT_ID + AWS_CLOUDFRONT_HOST vars
-  # (Settings → Secrets and variables → Actions → Variables) before re-enabling.
+  push:
+    branches: [main]
+    paths: [.github/dispatches/deploy-cloudflare-worker.json]
 
 permissions:
   contents: read
