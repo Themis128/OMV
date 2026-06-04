@@ -1,6 +1,7 @@
 {
-  "triggered_at": "2026-06-04T16:00:00Z",
+  "triggered_at": "2026-06-04T16:30:00Z",
   "inputs": {
-    "aws_cloudfront_host": "d1947b4i8egesz.cloudfront.net"
+    "aws_cloudfront_host": "d1947b4i8egesz.cloudfront.net",
+    "cloudflare_account_id": "fb7dc7b69b662480cd5961a4d1913c78"
   }
 }
