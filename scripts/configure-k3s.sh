@@ -23,8 +23,15 @@
 
 set -euo pipefail
 
-: "${ETCD_S3_ACCESS_KEY:?ETCD_S3_ACCESS_KEY must be set}"
-: "${ETCD_S3_SECRET_KEY:?ETCD_S3_SECRET_KEY must be set}"
+# Source credentials from env file when not passed explicitly
+AWS_ENV_FILE="${AWS_ENV_FILE:-/etc/cloudless/aws-creds.env}"
+if [[ -z "${ETCD_S3_ACCESS_KEY:-}" && -f "${AWS_ENV_FILE}" ]]; then
+  # shellcheck source=/dev/null
+  source "${AWS_ENV_FILE}"
+fi
+
+: "${ETCD_S3_ACCESS_KEY:?ETCD_S3_ACCESS_KEY must be set (or set in ${AWS_ENV_FILE})}"
+: "${ETCD_S3_SECRET_KEY:?ETCD_S3_SECRET_KEY must be set (or set in ${AWS_ENV_FILE})}"
 
 ETCD_S3_BUCKET="${ETCD_S3_BUCKET:-cloudless-etcd-snapshots}"
 ETCD_S3_REGION="${ETCD_S3_REGION:-us-east-1}"
@@ -93,4 +100,14 @@ EOF
 
 chmod 600 "${CONFIG}"
 echo "[configure-k3s] wrote ${CONFIG} (mode 600)"
+
+# Keep the k8s secret in sync so image-sync can pull from ECR
+if command -v kubectl &>/dev/null && kubectl get secret pi-standby-aws-creds -n default &>/dev/null 2>&1; then
+  kubectl create secret generic pi-standby-aws-creds \
+    --from-literal=AWS_ACCESS_KEY_ID="${ETCD_S3_ACCESS_KEY}" \
+    --from-literal=AWS_SECRET_ACCESS_KEY="${ETCD_S3_SECRET_KEY}" \
+    --dry-run=client -o yaml | kubectl apply -f -
+  echo "[configure-k3s] updated pi-standby-aws-creds secret"
+fi
+
 echo "[configure-k3s] restart k3s to apply: sudo systemctl restart k3s"
