@@ -1,0 +1,104 @@
+name: bootstrap-aws-creds-env
+
+# One-shot workflow: writes /etc/cloudless/aws-creds.env on omv.
+# Run this once to bootstrap the credentials file; thereafter
+# rotate-k3s-credentials sources the file automatically.
+#
+# Required repository secrets:
+#   TS_OAUTH_CLIENT_ID  Tailscale OAuth client ID
+#   TS_OAUTH_SECRET     Tailscale OAuth client secret
+#   OMV_SSH_KEY         Private SSH key for tbaltzakis@omv
+#
+# Optional repository variables:
+#   OMV_SSH_HOST  omv's Tailscale IP (default: 100.113.41.119)
+
+on:
+  workflow_dispatch:
+    inputs:
+      access_key_id:
+        description: "AWS access key ID for cloudless-ops"
+        type: string
+        required: true
+      secret_access_key:
+        description: "AWS secret access key for cloudless-ops"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mask secrets
+        run: |
+          echo "::add-mask::${{ inputs.secret_access_key }}"
+          echo "::add-mask::${{ inputs.access_key_id }}"
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
+          hostname: omv-bootstrap-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Write /etc/cloudless/aws-creds.env on omv
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          KEY_ID_ENC="$(printf '%s' '${{ inputs.access_key_id }}' | base64 -w0)"
+          SECRET_ENC="$(printf '%s' '${{ inputs.secret_access_key }}' | base64 -w0)"
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
+          set -euo pipefail
+          KEY_ID="\$(printf '%s' '${KEY_ID_ENC}' | base64 -d)"
+          SECRET="\$(printf '%s' '${SECRET_ENC}' | base64 -d)"
+          sudo mkdir -p /etc/cloudless
+          printf 'ETCD_S3_ACCESS_KEY=%s\nETCD_S3_SECRET_KEY=%s\n' "\${KEY_ID}" "\${SECRET}" \
+            | sudo tee /etc/cloudless/aws-creds.env > /dev/null
+          sudo chmod 600 /etc/cloudless/aws-creds.env
+          sudo chown root:root /etc/cloudless/aws-creds.env
+          echo "wrote /etc/cloudless/aws-creds.env"
+          EOF
+
+      - name: Apply config and restart k3s
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          cd ~/OMV && git pull -q origin main
+          sudo bash ./scripts/configure-k3s.sh
+          sudo systemctl restart k3s
+          EOF
+
+      - name: Wait for k3s to be ready
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          echo "Waiting 30 s for k3s to restart..."
+          sleep 30
+          ssh "tbaltzakis@${OMV_SSH_HOST}" 'sudo k3s kubectl get nodes'
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
