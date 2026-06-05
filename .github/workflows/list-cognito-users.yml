@@ -3,11 +3,8 @@ name: list-cognito-users
 # Lists all users in the Cognito user pool and posts the result as a comment
 # on the status board issue (#66).
 #
-# Required repository variables:
-#   AWS_ACCOUNT_ID   12-digit AWS account ID.
-#
-# Required IAM permission on GitHubActionsOIDC role:
-#   cognito-idp:ListUsers on arn:aws:cognito-idp:us-east-1:*:userpool/us-east-1_JQWwFbO9a
+# Required IAM: role cloudless-github-oidc (OIDC trust for Themis128/OMV)
+#   cognito-idp:ListUsers on us-east-1_1Bq3Mpqer
 
 on:
   workflow_dispatch:
@@ -29,23 +26,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Preflight
-        env:
-          AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
-        run: |
-          if [ -z "$AWS_ACCOUNT_ID" ]; then
-            echo "ERROR: AWS_ACCOUNT_ID repo variable is not set."
-            echo "Go to: Settings -> Secrets and variables -> Actions -> Variables -> New variable"
-            echo "Name: AWS_ACCOUNT_ID  Value: your 12-digit AWS account ID"
-            exit 1
-          fi
-          echo "AWS_ACCOUNT_ID is set."
-
       - name: Configure AWS credentials
-        id: aws_creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
+          role-to-assume: arn:aws:iam::278585680617:role/cloudless-github-oidc
           role-session-name: list-cognito-users
           aws-region: us-east-1
 
@@ -53,7 +37,7 @@ jobs:
         id: list_users
         run: |
           set -euo pipefail
-          USER_POOL_ID="us-east-1_JQWwFbO9a"
+          USER_POOL_ID="us-east-1_1Bq3Mpqer"
 
           echo "Querying Cognito user pool: $USER_POOL_ID"
           USERS_JSON="$(aws cognito-idp list-users --user-pool-id "$USER_POOL_ID" --region us-east-1)"
@@ -97,4 +81,5 @@ jobs:
             echo "At: $ts"
             echo ""
             echo "$report"
-          } | gh api "repos/${{ github.repository }}/issues/66/comments" -f body=@-
+          } > /tmp/cognito-users-comment.md
+          gh api "repos/${{ github.repository }}/issues/66/comments" -F body=@/tmp/cognito-users-comment.md
