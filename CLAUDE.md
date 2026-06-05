@@ -38,7 +38,6 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/configure-workloads.json` | configure-workloads | Patch ntfy + alertmanager resource limits on the live cluster |
 | `.github/dispatches/install-cloudflared-ha.json` | install-cloudflared-ha | Install cloudflared on omv-ha + copy tunnel credentials from omv |
 | `.github/dispatches/restart-runners.json` | restart-runners | Set `OMV2_SSH_HOST` + `OMV3_SSH_HOST` repo vars first; skips nodes with unset vars |
-| `.github/dispatches/provision-ses-smtp.json` | provision-ses-smtp | Requires `AWS_ACCOUNT_ID` var + `iam:CreateUser` on `GitHubActionsOIDC` role (AWS Console first) |
 | `.github/dispatches/provision-cognito-admin.json` | provision-cognito-admin | Set `email` + optional `group`; requires `AdminCreateUser`+`AdminAddUserToGroup` IAM first; posts temp password to issue #66 |
 
 **Custom slash commands** (`.claude/commands/`):
