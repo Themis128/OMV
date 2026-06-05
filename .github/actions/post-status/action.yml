@@ -6,6 +6,10 @@ inputs:
     description: "Optional extra line appended to the comment body."
     required: false
     default: ""
+  token:
+    description: "GitHub token to use (defaults to github.token)."
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -13,7 +17,7 @@ runs:
     - name: Post comment
       shell: bash
       env:
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ inputs.token || github.token }}
         STATUS: ${{ job.status }}
         DETAIL: ${{ inputs.detail }}
         WF: ${{ github.workflow }}
