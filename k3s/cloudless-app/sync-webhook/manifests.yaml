@@ -144,7 +144,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: PathPrefix(`/_sync/`)
+    - match: Host(`cloudless.gr`) && PathPrefix(`/_sync/`)
       priority: 1000
       kind: Rule
       services:
