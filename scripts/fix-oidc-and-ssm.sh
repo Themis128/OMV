@@ -12,7 +12,7 @@ ROLE_NAME="cloudless-github-oidc"
 REPO_SUBJECT="repo:Themis128/OMV:*"
 SSM_KEY_ID_PARAM="/sst/cloudless/github/AWS_ACCESS_KEY_ID"
 SSM_SECRET_PARAM="/sst/cloudless/github/AWS_SECRET_ACCESS_KEY"
-AWS_KEY_ID="${AWS_ACCESS_KEY_ID_VALUE:-AKIAUBXIAELUSD363ZTY}"
+AWS_KEY_ID="${AWS_ACCESS_KEY_ID_VALUE:-AKIAUBXIAELUS34WI2KW}"
 
 # Prompt for secret if not provided
 if [[ -z "${AWS_SECRET_ACCESS_KEY_VALUE:-}" ]]; then
