@@ -102,3 +102,5 @@ jobs:
       - name: Post result to status board
         if: always()
         uses: ./.github/actions/post-status
+        with:
+          detail: "bootstrap=done k3s=restarted"
