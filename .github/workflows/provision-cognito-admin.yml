@@ -5,13 +5,9 @@ name: provision-cognito-admin
 # status board (issue #66) — user logs in at cloudless.gr and is prompted
 # to set a permanent password on first sign-in (hosted UI handles the flow).
 #
-# Required repository secrets:
-#   AWS_ACCESS_KEY_ID      AWS access key with Cognito permissions (cloudless-ops).
-#   AWS_SECRET_ACCESS_KEY  Corresponding secret key.
-#
-# Required IAM permissions on the key's user:
-#   cognito-idp:AdminCreateUser      on arn:aws:cognito-idp:us-east-1:278585680617:userpool/us-east-1_1Bq3Mpqer
-#   cognito-idp:AdminAddUserToGroup  on arn:aws:cognito-idp:us-east-1:278585680617:userpool/us-east-1_1Bq3Mpqer
+# Required IAM: role cloudless-github-oidc (OIDC trust for Themis128/OMV)
+#   cognito-idp:AdminCreateUser      on us-east-1_1Bq3Mpqer
+#   cognito-idp:AdminAddUserToGroup  on us-east-1_1Bq3Mpqer
 
 on:
   workflow_dispatch:
@@ -31,6 +27,7 @@ on:
 permissions:
   contents: read
   issues: write
+  id-token: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -59,8 +56,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::278585680617:role/cloudless-github-oidc
+          role-session-name: provision-cognito-admin
           aws-region: us-east-1
 
       - name: Create Cognito user
@@ -71,8 +68,6 @@ jobs:
           set -euo pipefail
           USER_POOL_ID="us-east-1_1Bq3Mpqer"
 
-          # Generate a temp password guaranteed to satisfy Cognito default policy:
-          # uppercase, lowercase, digit, special char, min 8 chars
           RAND=$(openssl rand -base64 32 | tr -dc 'a-z0-9' | head -c 8)
           TEMP_PASSWORD="Tmp${RAND}Z!9"
 
@@ -125,7 +120,6 @@ jobs:
             echo "Added to group '$GROUP' successfully."
           elif grep -q 'ResourceNotFoundException' /tmp/group-output.txt; then
             echo "WARNING: Group '$GROUP' does not exist — user was created but not added to group."
-            echo "Create the group in the Cognito console first, then re-run with the same inputs."
           else
             echo "ERROR: Failed to add user to group:" >&2
             cat /tmp/group-output.txt >&2
