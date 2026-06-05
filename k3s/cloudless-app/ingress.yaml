@@ -30,6 +30,16 @@ spec:
                 name: cloudless-app
                 port:
                   name: http
+    - host: manage.cloudless.gr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cloudless-app
+                port:
+                  name: http
     - host: pi-origin.cloudless.gr
       http:
         paths:

@@ -94,13 +94,16 @@ spec:
                     --image-ids imageTag=latest \
                     --query 'imageDetails[0].imageDigest' \
                     --output text)
+                  # Collect digests from ALL running app pods; restart if any is behind.
                   RUNNING=$(kubectl -n "$NAMESPACE" get pod \
                     -l app.kubernetes.io/name=cloudless-app \
-                    -o jsonpath='{.items[0].status.containerStatuses[0].imageID}' \
-                    | grep -oE 'sha256:[a-f0-9]+' || echo "unknown")
+                    --field-selector=status.phase=Running \
+                    -o jsonpath='{.items[*].status.containerStatuses[0].imageID}' \
+                    | tr ' ' '\n' | grep -oE 'sha256:[a-f0-9]+' | sort -u || echo "unknown")
                   echo "ECR :latest = $ECR_DIGEST"
-                  echo "running    = $RUNNING"
-                  if [ "$ECR_DIGEST" = "$RUNNING" ]; then
+                  echo "running    = $(echo "$RUNNING" | tr '\n' ' ')"
+                  if echo "$RUNNING" | grep -q "^$ECR_DIGEST$" && \
+                     [ "$(echo "$RUNNING" | wc -l)" -eq 1 ]; then
                     echo "in sync — no-op"
                     exit 0
                   fi
