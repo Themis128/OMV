@@ -48,9 +48,14 @@ on:
 permissions:
   contents: read
 
+env:
+  OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+
 jobs:
   recover:
     runs-on: ubuntu-latest
+    env:
+      OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -85,7 +90,6 @@ jobs:
       - name: Configure SSH
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
           install -d -m 700 ~/.ssh
           printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
@@ -93,20 +97,27 @@ jobs:
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
-      - name: Restart k3s if API is down
+      # ── k3s_restart steps (split for visibility) ──────────────────────────
+
+      - name: k3s restart — diagnose + disk state
         if: ${{ steps.parse_inputs.outputs.k3s_restart == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -uo pipefail
-          state=$(systemctl is-active k3s 2>/dev/null; true)
-          echo "k3s service state: ${state}"
+          echo "=== k3s service state ==="
+          systemctl is-active k3s 2>/dev/null || true
+          systemctl status k3s --no-pager -l 2>/dev/null | tail -20 || true
 
-          echo "=== USB drive disk usage ==="
+          echo "=== Disk usage ==="
           for d in /srv/dev-disk-by-uuid-*; do [ -d "$d" ] && df -h "$d"; done || df -h /
+          EOF
 
-          echo "=== Masking k3s to stop restart loop during cleanup ==="
+      - name: k3s restart — stop + clean disk
+        if: ${{ steps.parse_inputs.outputs.k3s_restart == 'true' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -uo pipefail
+          echo "=== Masking k3s to stop restart loop ==="
           sudo systemctl mask k3s 2>/dev/null || true
           sudo systemctl stop k3s 2>/dev/null || true
           sleep 3
@@ -126,71 +137,71 @@ jobs:
           done
 
           echo "=== Pruning k3s container images (timeout 90s) ==="
-          timeout 90 sudo k3s crictl rmi --prune 2>/dev/null || echo "k3s crictl prune skipped/timed out"
+          timeout 90 sudo k3s crictl rmi --prune 2>/dev/null || echo "crictl prune skipped/timed out"
 
           echo "=== Pruning Docker images and containers ==="
           sudo docker system prune -af 2>/dev/null || true
-
-          echo "=== Deleting Docker build cache (safe to remove) ==="
           sudo rm -rf /srv/dev-disk-by-uuid-*/docker-cache/ 2>/dev/null || true
 
           echo "=== Disk usage after cleanup ==="
           for d in /srv/dev-disk-by-uuid-*; do [ -d "$d" ] && df -h "$d"; done || df -h /
+          EOF
 
-          echo "=== Unmasking and restarting k3s ==="
+      - name: k3s restart — start k3s
+        if: ${{ steps.parse_inputs.outputs.k3s_restart == 'true' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -uo pipefail
+          echo "=== Unmasking and starting k3s ==="
           sudo systemctl unmask k3s 2>/dev/null || true
           sudo systemctl reset-failed k3s 2>/dev/null || true
-          sudo systemctl start k3s || true
+          sudo systemctl start k3s
+          echo "k3s start command issued"
+          EOF
 
-          echo "=== Waiting for k3s API (up to 5 min) ==="
-          api_up=0
+      - name: k3s restart — wait for API (up to 5 min)
+        if: ${{ steps.parse_inputs.outputs.k3s_restart == 'true' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -uo pipefail
+          echo "Polling k3s API — up to 30 attempts × 10s = 5 min..."
           for i in $(seq 1 30); do
             if sudo k3s kubectl get nodes &>/dev/null 2>&1; then
-              echo "k3s API is up after $i attempts"
-              api_up=1
-              break
+              echo "k3s API is up after $i attempts (~$((i*10))s)"
+              sudo k3s kubectl get nodes
+              sudo k3s kubectl get pods -A | head -30
+              exit 0
             fi
             echo "  attempt $i/30 — waiting 10s..."
             sleep 10
           done
-
-          echo "=== k3s journal (last 50 lines) ==="
-          sudo journalctl -u k3s -n 50 --no-pager || true
-
-          if [ "$api_up" = "1" ]; then
-            echo "=== k3s nodes ==="
-            sudo k3s kubectl get nodes
-            echo "=== pods (all namespaces) ==="
-            sudo k3s kubectl get pods -A | head -30
-            exit 0
-          else
-            echo "k3s API still not responding after 5 min"
-            exit 1
-          fi
+          echo "k3s API still not responding after 5 min — check journal below"
+          exit 1
           EOF
 
+      - name: k3s restart — journal (last 60 lines)
+        if: ${{ steps.parse_inputs.outputs.k3s_restart == 'true' && always() }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            'sudo journalctl -u k3s -n 60 --no-pager' || true
+
+      # ── end k3s_restart steps ─────────────────────────────────────────────
+
       - name: Recover standby
+        if: ${{ steps.parse_inputs.outputs.apply == 'true' }}
         env:
           OMV_HOST: "tbaltzakis@${{ vars.OMV_SSH_HOST || '100.113.41.119' }}"
         run: |
-          if [ "${{ steps.parse_inputs.outputs.apply }}" = "true" ]; then
-            ./scripts/recover-standby.sh --yes
-          else
-            ./scripts/recover-standby.sh
-          fi
+          ./scripts/recover-standby.sh --yes
 
       - name: etcd cluster-reset (quorum lost)
         if: ${{ steps.parse_inputs.outputs.etcd_recover == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             'sudo REJOIN=1 ~/OMV/scripts/etcd-recover.sh'
 
       - name: Node cleanup (prune images, vacuum journal, trim etcd snapshots)
         if: ${{ steps.parse_inputs.outputs.node_cleanup == 'true' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
           set -euo pipefail
@@ -213,11 +224,9 @@ jobs:
       - name: omv-ha memory tunes (zram + OOM protection)
         if: ${{ steps.parse_inputs.outputs.omv_ha_prep == 'true' }}
         env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
           OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
         run: |
-          # shellcheck disable=SC2029  # OMV_HA_HOST intentionally expands client-side for two-hop SSH
-          # Hop through omv (on tailnet) → omv-ha (LAN only)
+          # shellcheck disable=SC2029
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
             "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
               tbaltzakis@${OMV_HA_HOST} \
