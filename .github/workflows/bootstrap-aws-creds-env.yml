@@ -95,9 +95,22 @@ jobs:
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
         run: |
-          echo "Waiting 30 s for k3s to restart..."
-          sleep 30
-          ssh "tbaltzakis@${OMV_SSH_HOST}" 'sudo k3s kubectl get nodes'
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -uo pipefail
+          echo "Polling k3s API — up to 30 attempts × 10s = 5 min..."
+          for i in $(seq 1 30); do
+            if sudo k3s kubectl get nodes &>/dev/null 2>&1; then
+              echo "k3s API is up after $i attempts (~$((i*10))s)"
+              sudo k3s kubectl get nodes
+              exit 0
+            fi
+            echo "  attempt $i/30 — waiting 10s..."
+            sleep 10
+          done
+          echo "k3s API still not responding after 5 min"
+          sudo journalctl -u k3s -n 30 --no-pager || true
+          exit 1
+          EOF
 
       - name: Post result to status board
         if: always()
