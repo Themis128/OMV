@@ -41,6 +41,7 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/provision-cognito-admin.json` | provision-cognito-admin | Set `email` + optional `group`; requires `AdminCreateUser`+`AdminAddUserToGroup` IAM first; posts temp password to issue #66 |
 | `.github/dispatches/apply-github-secrets-from-ssm.json` | apply-github-secrets-from-ssm | Reads `cloudless-ops` keys from SSM `/sst/cloudless/github/*` via OIDC → stores as GitHub secrets. Requires OIDC trust policy fix + SSM params (see Notion) |
 | `.github/dispatches/sync-cognito-config.json` | sync-cognito-config | Reads pool-id + client-id from SSM `/cloudless/production/cognito/*` via OIDC → patches `cloudless-app-config` k8s secret + restarts deployment. Requires IAM `ssm:GetParameter` on that path (see Notion) |
+| `.github/dispatches/cleanup-keycloak.json` | cleanup-keycloak | One-shot: deletes keycloak namespace from k3s cluster (Cognito has fully replaced it) |
 
 **Custom slash commands** (`.claude/commands/`):
 - `/trigger <workflow>` — update the dispatch file and push to trigger a workflow
