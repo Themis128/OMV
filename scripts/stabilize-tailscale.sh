@@ -71,7 +71,7 @@ for svc in tailscaled ssh sshd k3s k3s-agent; do
     override_dir="/etc/systemd/system/${svc}.service.d"
     if [ -d "$override_dir" ]; then
         echo "  $override_dir:"
-        ls "$override_dir" | sed 's/^/    /'
+        find "$override_dir" -maxdepth 1 -type f | sed 's|.*/||' | sed 's/^/    /'
     fi
 done
 
