@@ -1,0 +1,102 @@
+name: sync-cognito-config
+
+# Reads COGNITO_USER_POOL_ID and COGNITO_CLIENT_ID from SSM and patches the
+# cloudless-app-config k8s secret on the Pi cluster, then restarts the
+# cloudless deployment to pick up the new values.
+#
+# SSM parameters (must exist before running):
+#   /cloudless/production/cognito/pool-id     (String)
+#   /cloudless/production/cognito/client-id   (String)
+#
+# IAM requirements on cloudless-github-oidc:
+#   ssm:GetParameter on arn:aws:ssm:us-east-1:278585680617:parameter/cloudless/production/cognito/*
+#
+# Trigger: update triggered_at in .github/dispatches/sync-cognito-config.json
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/dispatches/sync-cognito-config.json
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::278585680617:role/cloudless-github-oidc
+          aws-region: us-east-1
+
+      - name: Read Cognito config from SSM
+        id: cognito
+        run: |
+          POOL_ID=$(aws ssm get-parameter \
+            --name "/cloudless/production/cognito/pool-id" \
+            --query 'Parameter.Value' --output text)
+          CLIENT_ID=$(aws ssm get-parameter \
+            --name "/cloudless/production/cognito/client-id" \
+            --query 'Parameter.Value' --output text)
+          echo "pool_id=${POOL_ID}" >> "$GITHUB_OUTPUT"
+          echo "client_id=${CLIENT_ID}" >> "$GITHUB_OUTPUT"
+          echo "Pool: ${POOL_ID}, Client: ${CLIENT_ID:0:8}..."
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          hostname: omv-cognito-sync-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Patch cloudless-app-config secret on cluster
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          POOL_ID: ${{ steps.cognito.outputs.pool_id }}
+          CLIENT_ID: ${{ steps.cognito.outputs.client_id }}
+        run: |
+          POOL_B64=$(printf '%s' "${POOL_ID}" | base64 -w0)
+          CLIENT_B64=$(printf '%s' "${CLIENT_ID}" | base64 -w0)
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << EOF
+          set -euo pipefail
+          POOL_ID="\$(printf '%s' '${POOL_B64}' | base64 -d)"
+          CLIENT_ID="\$(printf '%s' '${CLIENT_B64}' | base64 -d)"
+          echo "Patching cloudless-app-config: pool=\${POOL_ID}"
+          sudo k3s kubectl patch secret cloudless-app-config -n cloudless \
+            --type merge \
+            --patch "{\"stringData\":{\"COGNITO_USER_POOL_ID\":\"\${POOL_ID}\",\"COGNITO_CLIENT_ID\":\"\${CLIENT_ID}\"}}"
+          echo "Restarting cloudless deployment..."
+          sudo k3s kubectl rollout restart deployment -n cloudless
+          sudo k3s kubectl rollout status deployment -n cloudless --timeout=120s
+          echo "Done."
+          EOF
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
+        with:
+          detail: "cognito=${{ steps.cognito.outcome }}"
+          token: ${{ secrets.GH_PAT }}
