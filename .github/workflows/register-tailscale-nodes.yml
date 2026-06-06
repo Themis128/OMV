@@ -3,18 +3,25 @@ name: register-tailscale-nodes
 # Migrates omv (and optionally omv-ha) from their current tailnet to the
 # themis128.github tailnet so all SSH-based workflows can reach the nodes.
 #
+# Also configures omv as a Tailscale subnet router for 192.168.1.0/24 so
+# phones/laptops on the tailnet can reach any device on the home network
+# from anywhere (external WiFi, 5G, etc.).
+#
 # Required secrets (one-time setup — see Notion task):
 #   TS_OLD_AUTHKEY  — legacy auth key from tail8eb71.ts.net (Gmail tailnet)
 #                     tailscale admin → Settings → Keys → Generate auth key
-#                     (single-use, 1 day expiry)
+#                     (Reusable, 1 day expiry)
 #   TS_NEW_AUTHKEY  — auth key from themis128.github tailnet
 #                     tailscale admin → Settings → Keys → Generate auth key
-#                     (Reusable = true, 1 day expiry)
+#                     (Reusable, 1 day expiry, tag:ci)
 #   OMV_SSH_KEY     — existing SSH private key for tbaltzakis@omv
 #
-# After workflow completes, update repo variables with the IPs shown in logs:
-#   OMV_SSH_HOST    → new 100.x.x.x for omv
-#   OMV_HA_SSH_HOST → new 100.x.x.x for omv-ha (if migrated)
+# After workflow completes:
+#   1. Approve subnet route 192.168.1.0/24 in Tailscale admin:
+#      https://login.tailscale.com/admin/machines → omv → Edit route settings
+#   2. Update repo variables with the IPs shown in logs:
+#      OMV_SSH_HOST    → new 100.x.x.x for omv
+#      OMV_HA_SSH_HOST → new 100.x.x.x for omv-ha (if migrated)
 
 on:
   push:
@@ -64,22 +71,37 @@ jobs:
           printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
           chmod 600 ~/.ssh/omv_key
 
-      - name: Migrate omv to new tailnet
+      - name: Migrate omv to new tailnet + enable subnet router
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST }}
           TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
         run: |
-          # Write migration script locally (quoted heredoc prevents variable expansion)
+          # Quoted heredoc — no variable expansion inside script
           cat > /tmp/ts-migrate-omv.sh << 'SCRIPT'
           #!/bin/bash
+          set -e
           AUTH=$(cat /tmp/.ts_authkey_migrate)
           rm -f /tmp/.ts_authkey_migrate
           echo "=== migration start $(date) ===" >> /tmp/ts-migrate.log
+
+          # Enable IP forwarding for subnet router
+          echo 'net.ipv4.ip_forward = 1' | sudo tee /etc/sysctl.d/99-tailscale.conf
+          echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
+          sudo sysctl -p /etc/sysctl.d/99-tailscale.conf >> /tmp/ts-migrate.log 2>&1
+
           sudo tailscale logout || true
           sleep 2
-          sudo tailscale up --auth-key="$AUTH" --hostname=omv
+
+          # Join new tailnet and advertise home LAN as a subnet route
+          sudo tailscale up \
+            --auth-key="$AUTH" \
+            --hostname=omv \
+            --advertise-routes=192.168.1.0/24 \
+            --accept-routes
+
           tailscale ip -4 > /tmp/.ts_new_ip
           echo "new ip: $(cat /tmp/.ts_new_ip)" >> /tmp/ts-migrate.log
+          echo "subnet router: 192.168.1.0/24 advertised" >> /tmp/ts-migrate.log
           SCRIPT
 
           # Transfer auth key via stdin (avoids key appearing in process list)
@@ -98,7 +120,7 @@ jobs:
             -o BatchMode=yes -o ConnectTimeout=20 \
             "tbaltzakis@${OMV_SSH_HOST}" \
             "chmod +x /tmp/ts-migrate.sh && nohup /tmp/ts-migrate.sh >> /tmp/ts-migrate.log 2>&1 </dev/null & echo pid=\$!"
-          echo "omv: migration command sent."
+          echo "omv: migration + subnet router command sent."
 
       - name: Migrate omv-ha to new tailnet
         if: ${{ vars.OMV_HA_SSH_HOST != '' }}
@@ -108,12 +130,16 @@ jobs:
         run: |
           cat > /tmp/ts-migrate-ha.sh << 'SCRIPT'
           #!/bin/bash
+          set -e
           AUTH=$(cat /tmp/.ts_authkey_migrate)
           rm -f /tmp/.ts_authkey_migrate
           echo "=== migration start $(date) ===" >> /tmp/ts-migrate.log
           sudo tailscale logout || true
           sleep 2
-          sudo tailscale up --auth-key="$AUTH" --hostname=omv-ha
+          sudo tailscale up \
+            --auth-key="$AUTH" \
+            --hostname=omv-ha \
+            --accept-routes
           tailscale ip -4 > /tmp/.ts_new_ip
           echo "new ip: $(cat /tmp/.ts_new_ip)" >> /tmp/ts-migrate.log
           SCRIPT
@@ -171,10 +197,21 @@ jobs:
 
           echo ""
           echo "================================================================"
-          echo " ACTION REQUIRED — update repo variables:"
-          echo " https://github.com/Themis128/OMV/settings/variables/actions"
+          echo " MIGRATION COMPLETE"
+          echo ""
+          echo " ACTION 1 — Approve subnet route in Tailscale admin:"
+          echo "   https://login.tailscale.com/admin/machines"
+          echo "   → Click omv → Edit route settings → Enable 192.168.1.0/24"
+          echo ""
+          echo " ACTION 2 — Update repo variables:"
+          echo "   https://github.com/Themis128/OMV/settings/variables/actions"
           echo "   OMV_SSH_HOST    = ${OMV_NEW_IP}"
           [ -n "${HA_NEW_IP}" ] && echo "   OMV_HA_SSH_HOST = ${HA_NEW_IP}"
+          echo ""
+          echo " ACTION 3 — Install Tailscale on phone/laptop:"
+          echo "   https://tailscale.com/download"
+          echo "   Sign in with GitHub (themis128) account"
+          echo "   Enable 'Use Tailscale subnets' to access 192.168.1.x from anywhere"
           echo ""
           echo " Then trigger apply-cluster-manifests to verify end-to-end SSH."
           echo "================================================================"
