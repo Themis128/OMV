@@ -2,7 +2,7 @@ name: recover-standby
 
 # Operator-triggered cluster recovery. Joins the Tailscale tailnet from a
 # GitHub-hosted runner, then SSHes into omv and runs
-# scripts/recover-standby.sh — so the cloudless.online standby can be
+# scripts/recover-standby.sh — so the cloudless.gr cluster can be
 # recovered straight from the GitHub UI (phone included) with no local
 # SSH access, laptop, or pre-installed self-hosted runner.
 #

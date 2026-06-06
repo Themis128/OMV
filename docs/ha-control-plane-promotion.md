@@ -147,7 +147,7 @@ The orchestrator runs the manual steps below in sequence.
 ```
 
 This stops `k3s` on `omv` for ~2 min, switches a temp kubeconfig to `omv-ha`'s
-API endpoint, hits `cloudless.online/api/health`, then restarts `omv` and
+API endpoint, hits `cloudless.gr/api/health`, then restarts `omv` and
 confirms quorum reformed.
 
 ### Real failover test — 2026-05-11
@@ -159,8 +159,8 @@ Results:
 
 - VIP `192.168.1.200` moved to `omv-ha` within seconds (keepalived
   `BACKUP → MASTER`).
-- `cloudless.online` → 307 ✅
-- `manage.cloudless.online` → 302 ✅
+- `cloudless.gr` → 307 ✅
+- `manage.cloudless.gr` → 302 ✅
 - `kubectl` API unavailable, as expected — 2-member etcd loses quorum when one
   node is down; the survivor's API goes read-only until quorum returns.
 - On `omv` restart: both nodes Ready within 15 s, VIP returned to `omv`.

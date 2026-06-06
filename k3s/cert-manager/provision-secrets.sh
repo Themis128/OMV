@@ -12,8 +12,7 @@
 #   sudo ./provision-secrets.sh --cloudflare-token <token> --skip-issuer
 #
 # Options:
-#   --cloudflare-token TOKEN   Cloudflare API token (Zone→DNS→Edit) — no longer needed
-#                              (cloudless.online retired; cloudless.gr uses Route 53)
+#   --cloudflare-token TOKEN   Cloudflare API token (Zone→DNS→Edit)
 #   --skip-issuer              Apply the Secret only, skip ClusterIssuer update
 #   --dry-run                  Print the manifests without applying
 #

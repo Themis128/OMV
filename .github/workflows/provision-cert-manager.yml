@@ -4,10 +4,6 @@ name: provision-cert-manager
 #   • letsencrypt-route53 ClusterIssuer  (Route53 DNS-01 solver for cloudless.gr)
 #   • letsencrypt-route53-staging ClusterIssuer
 #
-# Note: cloudless.online was retired. The Cloudflare solver has been removed;
-# only Route53 (cloudless.gr) remains. cert-manager is also no longer strictly
-# required — Cloudflare Universal SSL handles TLS for cloudless.gr.
-#
 # Uses Tailscale + SSH to reach omv, then runs `sudo k3s kubectl` so the
 # k3s kubeconfig is used — plain `kubectl` on the tbaltzakis user requires
 # a separate kubeconfig and fails OpenAPI validation.

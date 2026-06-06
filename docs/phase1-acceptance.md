@@ -51,26 +51,25 @@ Cluster, image registry, app, ingress, TLS, DNS, and backup integration all gree
 
 | Check | Result |
 |---|---|
-| Ingress | `cloudless-app` (class `traefik`, host `cloudless.online`) |
+| Ingress | `cloudless-app` (class `traefik`, host `cloudless.gr`) |
 | ClusterIssuers | `letsencrypt-route53` + `letsencrypt-route53-staging` both Ready=True |
-| Certificate | `cloudless-online-tls` Ready=True |
-| Cert details | `CN=cloudless.online`, issuer Let's Encrypt R12, valid `2026-05-02 → 2026-07-31` |
+| Certificate | Cloudflare Universal SSL (cert-manager no longer required) |
+| Cert details | Managed by Cloudflare; origin uses `noTLSVerify: true` via Tunnel |
 | Cert-manager IAM | `cloudless-cert-manager` (TXT-only on Z04620301I2V4SU2RF1RV) |
 
 ### DNS
 
 | Check | Result |
 |---|---|
-| `.online` TLD authoritative NS | ~~the 4 ns-*.awsdns-* records~~ **migrated to Cloudflare** — now `fay.ns.cloudflare.com` / `jihoon.ns.cloudflare.com` (verified 2026-05-15; see ha-architecture.md) |
-| `cloudless.online` A | `150.228.63.192` (Pi WAN, TTL 300) |
-| `www.cloudless.online` A | `150.228.63.192` |
+| `cloudless.gr` NS | `fay.ns.cloudflare.com` / `jihoon.ns.cloudflare.com` |
+| `cloudless.gr` A | `104.21.67.68` / `172.67.216.36` (Cloudflare edge) |
+| `www.cloudless.gr` A | `104.21.67.68` / `172.67.216.36` |
 
 ### End-to-end
 
 | Path | Result |
 |---|---|
-| `curl --resolve cloudless.online:18443:192.168.1.128 https://cloudless.online:18443/api/health` | `{"status":"ok","timestamp":"…","version":"0.1.0"}` (real LE cert validated) |
-| `curl https://cloudless.online/api/health` (public internet) | timeout (router forward not configured yet) |
+| `curl https://cloudless.gr/api/health` | `{"status":"healthy","timestamp":"…"}` (via Cloudflare Tunnel) |
 
 ### Existing OMV services (regression check)
 
@@ -87,15 +86,14 @@ Cluster, image registry, app, ingress, TLS, DNS, and backup integration all gree
 
 | Routine | Cadence | Behaviour |
 |---|---|---|
-| `cloudless DNS watcher` (`trig_01E9jkFKTYK7TyR4WkEU4HQs`) | hourly | snapshots NS/A/AAAA/MX/TXT for both domains, emails on diff only |
-| `cloudless.online NS propagation check` (`trig_01KArorGrVotibbh8bAknxo9`) | one-shot, re-armed | last verdict was PENDING; latest manual probe shows TLD now correct — this routine is now redundant, can be retired |
+| `cloudless DNS watcher` (`trig_01E9jkFKTYK7TyR4WkEU4HQs`) | hourly | snapshots NS/A/AAAA/MX/TXT for cloudless.gr, emails on diff only |
 
 ## Outstanding
 
 | Item | Owner | Notes |
 |---|---|---|
 | **Home router port-forward** 80→18080 + 443→18443 to 192.168.1.128 | user (one-time, gateway admin UI) | Last gate before public HTTPS |
-| **uptime-kuma monitor** for `https://cloudless.online/api/health` | user (uptime-kuma UI; v1.x has no monitor-CRUD API) | Add via http://192.168.1.128:3001 — type HTTPS, interval 60 s, expect 200 |
+| **uptime-kuma monitor** for `https://cloudless.gr/api/health` | user (uptime-kuma UI; v1.x has no monitor-CRUD API) | Add via http://192.168.1.128:3001 — type HTTPS, interval 60 s, expect 200 |
 | **Phase 2** Route 53 health-checked failover | next | Once the public HTTPS path is up, wire CloudFront primary + Pi secondary as failover records on cloudless.gr |
 | **Phase 3** DDNS Lambda for the Pi WAN IP | future | Replaces the manual A record |
 
