@@ -59,7 +59,7 @@ jobs:
           OAUTH_SECRET: ${{ inputs.oauth_secret }}
           TS_API_KEY_INPUT: ${{ inputs.tailscale_api_key }}
           TS_API_KEY_SECRET: ${{ secrets.TS_API_KEY }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
           REPO: ${{ github.repository }}
           DELETE_OLD: ${{ inputs.delete_old_authkey || 'true' }}
         run: |
