@@ -1,9 +1,12 @@
 name: provision-cert-manager
 
 # Provision the cert-manager credentials and ClusterIssuers on the cluster:
-#   • cloudflare-api-token Secret  (Cloudflare DNS-01 solver for cloudless.online)
-#   • letsencrypt-route53 ClusterIssuer  (Cloudflare solver for .online, Route53 for .gr)
+#   • letsencrypt-route53 ClusterIssuer  (Route53 DNS-01 solver for cloudless.gr)
 #   • letsencrypt-route53-staging ClusterIssuer
+#
+# Note: cloudless.online was retired. The Cloudflare solver has been removed;
+# only Route53 (cloudless.gr) remains. cert-manager is also no longer strictly
+# required — Cloudflare Universal SSL handles TLS for cloudless.gr.
 #
 # Uses Tailscale + SSH to reach omv, then runs `sudo k3s kubectl` so the
 # k3s kubeconfig is used — plain `kubectl` on the tbaltzakis user requires
@@ -13,7 +16,6 @@ name: provision-cert-manager
 #   TS_OAUTH_CLIENT_ID      Tailscale OAuth client ID
 #   TS_OAUTH_SECRET         Tailscale OAuth client secret
 #   OMV_SSH_KEY             Private SSH key for tbaltzakis@omv
-#   CLOUDFLARE_API_TOKEN    Cloudflare token with Zone→DNS→Edit on cloudless.online
 
 on:
   workflow_dispatch:
@@ -24,9 +26,9 @@ on:
         default: "false"
         type: choice
         options: ["false", "true"]
-  # push trigger disabled — cert-manager not required for cloudless.gr.
-  # Cloudflare Tunnel + Universal SSL handles all TLS (noTLSVerify to origin).
-  # Workflow kept for manual use if cert-manager is needed in the future.
+  push:
+    paths:
+      - .github/dispatches/provision-cert-manager.json
 
 permissions:
   contents: read
@@ -49,36 +51,16 @@ jobs:
           else
             skip_issuer="${{ inputs.skip_issuer || 'false' }}"
           fi
-          echo "skip_issuer=$skip_issuer" >> "$GITHUB_OUTPUT"
-
-      - name: Preflight — check required secrets
-        id: preflight
-        env:
-          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
-          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          missing=()
-          if [ -z "$TS_OAUTH_CLIENT_ID" ] && [ -z "$TS_AUTHKEY" ]; then
-            missing+=(TS_OAUTH_CLIENT_ID)
-          fi
-          [ -z "$OMV_SSH_KEY" ]           && missing+=(OMV_SSH_KEY)
-          [ -z "$CLOUDFLARE_API_TOKEN" ]  && missing+=(CLOUDFLARE_API_TOKEN)
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "ERROR: Missing required secrets: ${missing[*]}"
-            exit 1
-          fi
-          echo "All required secrets are present."
+          printf 'skip_issuer=%s\n' "$skip_issuer" >> "$GITHUB_OUTPUT"
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          authkey: ${{ secrets.TS_AUTHKEY }}
           tags: tag:ci
           hostname: omv-cert-manager-ci
+
       - name: Configure SSH
         env:
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
@@ -90,48 +72,24 @@ jobs:
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
-      - name: Apply Cloudflare API token Secret
-        id: secret
+      - name: Copy provision script
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          scp -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
+            k3s/cert-manager/provision-secrets.sh \
+            "tbaltzakis@${OMV_SSH_HOST}:/tmp/provision-secrets.sh"
+
+      - name: Run provision script
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SKIP_FLAG: ${{ steps.inputs.outputs.skip_issuer == 'true' && '--skip-issuer' || '' }}
         run: |
           ssh "tbaltzakis@${OMV_SSH_HOST}" \
-            "sudo k3s kubectl create namespace cert-manager --dry-run=client -o yaml | sudo k3s kubectl apply -f -"
-          ssh "tbaltzakis@${OMV_SSH_HOST}" \
-            "sudo k3s kubectl -n cert-manager create secret generic cloudflare-api-token \
-              --from-literal=api-token='${CLOUDFLARE_API_TOKEN}' \
-              --dry-run=client -o yaml | sudo k3s kubectl apply -f -"
-
-      - name: Apply ClusterIssuers
-        id: issuers
-        if: ${{ steps.inputs.outputs.skip_issuer == 'false' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-        run: |
-          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
-          set -euo pipefail
-          cd ~/OMV && git pull -q origin main
-          sudo k3s kubectl apply -f k3s/cert-manager/cluster-issuer.yaml
-          EOF
-
-      - name: Verify issuers
-        id: verify
-        if: ${{ steps.inputs.outputs.skip_issuer == 'false' }}
-        env:
-          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
-        run: |
-          ssh "tbaltzakis@${OMV_SSH_HOST}" \
-            'sudo k3s kubectl get clusterissuers -o wide'
+            "chmod +x /tmp/provision-secrets.sh && \
+             sudo /tmp/provision-secrets.sh --cloudflare-token '${CLOUDFLARE_API_TOKEN}' ${SKIP_FLAG}"
 
       - name: Post result to status board
         if: always()
         uses: ./.github/actions/post-status
-        with:
-          detail: >-
-            preflight=${{ steps.preflight.outcome }}
-            tailscale=skipped
-            ns=skipped
-            secret=${{ steps.secret.outcome }}
-            issuers=${{ steps.issuers.outcome }}
-            verify=${{ steps.verify.outcome }}

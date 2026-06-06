@@ -12,7 +12,8 @@
 #   sudo ./provision-secrets.sh --cloudflare-token <token> --skip-issuer
 #
 # Options:
-#   --cloudflare-token TOKEN   Cloudflare API token (Zone→DNS→Edit, cloudless.online)
+#   --cloudflare-token TOKEN   Cloudflare API token (Zone→DNS→Edit) — no longer needed
+#                              (cloudless.online retired; cloudless.gr uses Route 53)
 #   --skip-issuer              Apply the Secret only, skip ClusterIssuer update
 #   --dry-run                  Print the manifests without applying
 #
@@ -38,7 +39,7 @@ if [ -z "$CLOUDFLARE_TOKEN" ]; then
     echo "Usage: $0 --cloudflare-token <token> [--skip-issuer] [--dry-run]" >&2
     echo "" >&2
     echo "Get a token at: Cloudflare → My Profile → API Tokens → Create Token" >&2
-    echo "Required permission: Zone → DNS → Edit (scoped to cloudless.online)" >&2
+    echo "Required permission: Zone → DNS → Edit" >&2
     exit 1
 fi
 
@@ -85,14 +86,6 @@ spec:
     solvers:
       - selector:
           dnsZones:
-            - cloudless.online
-        dns01:
-          cloudflare:
-            apiTokenSecretRef:
-              name: cloudflare-api-token
-              key: api-token
-      - selector:
-          dnsZones:
             - cloudless.gr
         dns01:
           route53:
@@ -120,14 +113,6 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-route53-staging-account
     solvers:
-      - selector:
-          dnsZones:
-            - cloudless.online
-        dns01:
-          cloudflare:
-            apiTokenSecretRef:
-              name: cloudflare-api-token
-              key: api-token
       - selector:
           dnsZones:
             - cloudless.gr
