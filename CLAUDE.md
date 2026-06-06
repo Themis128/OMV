@@ -40,8 +40,7 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/restart-runners.json` | restart-runners | Set `OMV2_SSH_HOST` + `OMV3_SSH_HOST` repo vars first; skips nodes with unset vars |
 | `.github/dispatches/provision-cognito-admin.json` | provision-cognito-admin | Set `email` + optional `group`; requires `AdminCreateUser`+`AdminAddUserToGroup` IAM first; posts temp password to issue #66 |
 | `.github/dispatches/apply-github-secrets-from-ssm.json` | apply-github-secrets-from-ssm | Reads `cloudless-ops` keys from SSM `/sst/cloudless/github/*` via OIDC → stores as GitHub secrets. Requires OIDC trust policy fix + SSM params (see Notion) |
-| `.github/dispatches/sync-cognito-config.json` | sync-cognito-config | Reads pool-id + client-id from SSM `/cloudless/production/cognito/*` via OIDC → patches `cloudless-app-config` k8s secret + restarts deployment. Requires IAM `ssm:GetParameter` on that path (see Notion) |
-| `.github/dispatches/cleanup-keycloak.json` | cleanup-keycloak | One-shot: deletes keycloak namespace from k3s cluster (Cognito has fully replaced it) |
+| `.github/dispatches/stabilize-tailscale.json` | stabilize-tailscale | Apply OOM hardening (tailscaled=-900, sshd=-800, k3s=-500) + Restart=always on both nodes. Set `apply=true/false`, `skip_omv_ha=true` if omv-ha unreachable. Requires `OMV_HA_SSH_HOST` repo var + `OMV_HA_SSH_KEY` secret (can reuse `OMV_SSH_KEY`) |
 
 **Custom slash commands** (`.claude/commands/`):
 - `/trigger <workflow>` — update the dispatch file and push to trigger a workflow
@@ -49,13 +48,6 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 - `/workflow-status` — how to check a workflow run result and re-trigger after a fix
 - `/watch-run [run_id]` — poll a workflow run until complete and diagnose failures
 - `/omv-report [ha|both]` — read latest inventory from omv-reports branch with disk + service summary
-
-## Cognito
-
-- **Active pool**: `us-east-1_1Bq3Mpqer` (cloudless-auth) — canonical pool for both Pi cluster app and AWS Lambda failover
-- **Legacy pool**: `us-east-1_JQWwFbO9a` — old; to be deleted after all apps migrate
-- **Admin user**: `tbaltzakis@cloudless.gr` — status `CONFIRMED`, group `admin`
-- **Consolidation**: `sync-cognito-config` workflow patches `cloudless-app-config` k8s secret from SSM; prereqs (IAM + SSM params) tracked in Notion
 
 ## Git and GitHub Push
 
