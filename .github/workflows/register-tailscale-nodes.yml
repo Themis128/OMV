@@ -8,9 +8,8 @@ name: register-tailscale-nodes
 # from anywhere (external WiFi, 5G, etc.).
 #
 # Required secrets (one-time setup):
-#   TS_OLD_AUTHKEY       — auth key from the CURRENT (Gmail) tailnet tail8eb71.ts.net
-#                          Tailscale admin → Settings → Keys → Generate auth key
-#                          (Reusable = true, 1 day expiry)
+#   TS_AUTHKEY           — auth key from the CURRENT (Gmail) tailnet tail8eb71.ts.net
+#                          already exists in repo secrets
 #   OMV_SSH_KEY          — existing SSH private key for tbaltzakis@omv
 #
 # Already-present secrets used automatically (no extra setup needed):
@@ -41,13 +40,13 @@ jobs:
 
       - name: Preflight — check required secrets
         env:
-          TS_OLD_AUTHKEY: ${{ secrets.TS_OLD_AUTHKEY }}
+          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
           TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
         run: |
           missing=()
-          [ -z "$TS_OLD_AUTHKEY" ]      && missing+=(TS_OLD_AUTHKEY)
+          [ -z "$TS_AUTHKEY" ]          && missing+=(TS_AUTHKEY)
           [ -z "$TS_OAUTH_CLIENT_ID" ]  && missing+=(TS_OAUTH_CLIENT_ID)
           [ -z "$TS_OAUTH_SECRET" ]     && missing+=(TS_OAUTH_SECRET)
           [ -z "$OMV_SSH_KEY" ]         && missing+=(OMV_SSH_KEY)
@@ -94,7 +93,7 @@ jobs:
         id: tailscale-old
         uses: tailscale/github-action@v4
         with:
-          authkey: ${{ secrets.TS_OLD_AUTHKEY }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
           hostname: ci-ts-migrate
           version: 1.94.2
           timeout: 2m
