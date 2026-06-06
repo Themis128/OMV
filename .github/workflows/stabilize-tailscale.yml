@@ -1,0 +1,124 @@
+name: stabilize-tailscale
+
+# Apply OOM protection + auto-restart for tailscaled and sshd on omv and omv-ha.
+# This prevents repeated k3s restarts (or any memory spike) from killing the
+# Tailscale agent and cutting off all remote SSH access.
+#
+# Required repository secrets:
+#   TS_OAUTH_CLIENT_ID   Tailscale OAuth client ID
+#   TS_OAUTH_SECRET      Tailscale OAuth client secret
+#   OMV_SSH_KEY          Private SSH key for tbaltzakis@omv
+#   OMV_HA_SSH_KEY       Private SSH key for tbaltzakis@omv-ha (can be the same key)
+#
+# Optional repository variables:
+#   OMV_SSH_HOST      omv Tailscale IP   (default: 100.113.41.119)
+#   OMV_HA_SSH_HOST   omv-ha Tailscale IP (default: 100.90.80.52)
+#                     Set to empty string to skip omv-ha entirely.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply hardening (false = diagnose only)"
+        type: boolean
+        default: true
+      skip_omv_ha:
+        description: "Skip omv-ha (e.g. if it is unreachable)"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: [.github/dispatches/stabilize-tailscale.json]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  stabilize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ -f .github/dispatches/stabilize-tailscale.json ]; then
+            apply=$(jq -r '.inputs.apply // "true"' .github/dispatches/stabilize-tailscale.json)
+            skip_omv_ha=$(jq -r '.inputs.skip_omv_ha // "false"' .github/dispatches/stabilize-tailscale.json)
+          else
+            apply="${{ inputs.apply || 'true' }}"
+            skip_omv_ha="${{ inputs.skip_omv_ha || 'false' }}"
+          fi
+          printf 'apply=%s\n' "$apply" >> "$GITHUB_OUTPUT"
+          printf 'skip_omv_ha=%s\n' "$skip_omv_ha" >> "$GITHUB_OUTPUT"
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          tags: tag:ci
+          hostname: omv-stabilize-ci
+
+      - name: Configure SSH
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+          OMV_HA_SSH_KEY: ${{ secrets.OMV_HA_SSH_KEY || secrets.OMV_SSH_KEY }}
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST || '100.90.80.52' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}"    | tr -d '\r' > ~/.ssh/omv_key
+          printf '%s\n' "${OMV_HA_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_ha_key
+          chmod 600 ~/.ssh/omv_key ~/.ssh/omv_ha_key
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_SSH_HOST}" >> ~/.ssh/config
+          printf 'Host %s\n  IdentityFile ~/.ssh/omv_ha_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
+            "${OMV_HA_SSH_HOST}" >> ~/.ssh/config
+
+      - name: Stabilize omv
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          APPLY_FLAG: ${{ steps.inputs.outputs.apply == 'true' && '--apply' || '' }}
+        run: |
+          scp -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
+            scripts/stabilize-tailscale.sh \
+            "tbaltzakis@${OMV_SSH_HOST}:/tmp/stabilize-tailscale.sh"
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "chmod +x /tmp/stabilize-tailscale.sh && sudo /tmp/stabilize-tailscale.sh ${APPLY_FLAG}"
+
+      - name: Stabilize omv-ha
+        if: ${{ steps.inputs.outputs.skip_omv_ha != 'true' }}
+        env:
+          OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST || '100.90.80.52' }}
+          APPLY_FLAG: ${{ steps.inputs.outputs.apply == 'true' && '--apply' || '' }}
+        run: |
+          scp -i ~/.ssh/omv_ha_key -o StrictHostKeyChecking=accept-new \
+            scripts/stabilize-tailscale.sh \
+            "tbaltzakis@${OMV_HA_SSH_HOST}:/tmp/stabilize-tailscale.sh"
+          ssh "tbaltzakis@${OMV_HA_SSH_HOST}" \
+            "chmod +x /tmp/stabilize-tailscale.sh && sudo /tmp/stabilize-tailscale.sh ${APPLY_FLAG}"
+
+      - name: Verify Tailscale status on omv
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            'echo "=== tailscale status ===" && tailscale status && echo "=== sshd ===" && systemctl is-active sshd || systemctl is-active ssh || true'
+
+      - name: Verify Tailscale status on omv-ha
+        if: ${{ steps.inputs.outputs.skip_omv_ha != 'true' }}
+        env:
+          OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST || '100.90.80.52' }}
+        run: |
+          ssh "tbaltzakis@${OMV_HA_SSH_HOST}" \
+            'echo "=== tailscale status ===" && tailscale status && echo "=== sshd ===" && systemctl is-active sshd || systemctl is-active ssh || true'
+
+      - name: Post result to status board
+        if: always()
+        uses: ./.github/actions/post-status
