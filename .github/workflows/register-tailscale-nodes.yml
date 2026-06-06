@@ -7,14 +7,12 @@ name: register-tailscale-nodes
 # phones/laptops on the tailnet can reach any device on the home network
 # from anywhere (external WiFi, 5G, etc.).
 #
-# Required secrets (one-time setup — see Notion task):
-#   TS_OLD_AUTHKEY  — legacy auth key from tail8eb71.ts.net (Gmail tailnet)
-#                     tailscale admin → Settings → Keys → Generate auth key
-#                     (Reusable, 1 day expiry)
-#   TS_NEW_AUTHKEY  — auth key from themis128.github tailnet
-#                     tailscale admin → Settings → Keys → Generate auth key
-#                     (Reusable, 1 day expiry, tag:ci)
-#   OMV_SSH_KEY     — existing SSH private key for tbaltzakis@omv
+# Required secrets:
+#   TS_AUTHKEY   — existing auth key from tail8eb71.ts.net (Gmail tailnet)
+#   TS_NEW_AUTHKEY — auth key from themis128.github tailnet
+#                    tailscale admin → Settings → Keys → Generate auth key
+#                    (Reusable, 1 day expiry, tag:ci)
+#   OMV_SSH_KEY  — existing SSH private key for tbaltzakis@omv
 #
 # After workflow completes:
 #   1. Approve subnet route 192.168.1.0/24 in Tailscale admin:
@@ -39,12 +37,12 @@ jobs:
 
       - name: Preflight — check required secrets
         env:
-          TS_OLD_AUTHKEY: ${{ secrets.TS_OLD_AUTHKEY }}
+          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
           TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
         run: |
           missing=()
-          [ -z "$TS_OLD_AUTHKEY" ] && missing+=(TS_OLD_AUTHKEY)
+          [ -z "$TS_AUTHKEY" ] && missing+=(TS_AUTHKEY)
           [ -z "$TS_NEW_AUTHKEY" ] && missing+=(TS_NEW_AUTHKEY)
           [ -z "$OMV_SSH_KEY" ] && missing+=(OMV_SSH_KEY)
           if [ ${#missing[@]} -gt 0 ]; then
@@ -58,7 +56,7 @@ jobs:
         id: tailscale-old
         uses: tailscale/github-action@v4
         with:
-          authkey: ${{ secrets.TS_OLD_AUTHKEY }}
+          authkey: ${{ secrets.TS_AUTHKEY }}
           hostname: ci-ts-migrate
           version: 1.94.2
           timeout: 2m
@@ -76,7 +74,6 @@ jobs:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST }}
           TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
         run: |
-          # Quoted heredoc — no variable expansion inside script
           cat > /tmp/ts-migrate-omv.sh << 'SCRIPT'
           #!/bin/bash
           set -e
@@ -104,18 +101,15 @@ jobs:
           echo "subnet router: 192.168.1.0/24 advertised" >> /tmp/ts-migrate.log
           SCRIPT
 
-          # Transfer auth key via stdin (avoids key appearing in process list)
           printf '%s' "${TS_NEW_AUTHKEY}" | ssh \
             -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
             "tbaltzakis@${OMV_SSH_HOST}" \
             "cat > /tmp/.ts_authkey_migrate && chmod 600 /tmp/.ts_authkey_migrate"
 
-          # Copy migration script
           scp -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
             /tmp/ts-migrate-omv.sh "tbaltzakis@${OMV_SSH_HOST}:/tmp/ts-migrate.sh"
 
-          # Launch in nohup background — SSH exits before tailscale logout drops connection
           ssh -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
             "tbaltzakis@${OMV_SSH_HOST}" \
