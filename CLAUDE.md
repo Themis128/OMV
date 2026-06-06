@@ -49,6 +49,19 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 - `/watch-run [run_id]` — poll a workflow run until complete and diagnose failures
 - `/omv-report [ha|both]` — read latest inventory from omv-reports branch with disk + service summary
 
+## Cognito
+
+- **Active pool**: `us-east-1_1Bq3Mpqer` (cloudless-auth) — canonical pool for both Pi cluster app and AWS Lambda failover
+- **Legacy pool**: `us-east-1_JQWwFbO9a` — old; to be deleted after all apps migrate
+- **Admin user**: `tbaltzakis@cloudless.gr` — status `CONFIRMED`, group `admin`
+- **Consolidation**: `sync-cognito-config` workflow patches `cloudless-app-config` k8s secret from SSM; prereqs (IAM + SSM params) tracked in Notion
+
+## Git and GitHub Push
+
+- **Direct `git push` returns HTTP 403** in this environment — all pushes must use `mcp__github__push_files`
+- After every MCP push, sync local: `git fetch origin main && git reset --hard origin/main`
+- **`github.token` + `id-token: write` = 403** on issue comments — pass `GH_PAT` via the `token` input on `.github/actions/post-status`
+
 ## Architecture
 
 - **`cloudless.gr` on the Pi k3s cluster**: served via Cloudflare Tunnel (`cloudflared`) → Traefik :18443.
