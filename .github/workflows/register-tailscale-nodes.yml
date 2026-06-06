@@ -7,22 +7,20 @@ name: register-tailscale-nodes
 # phones/laptops on the tailnet can reach any device on the home network
 # from anywhere (external WiFi, 5G, etc.).
 #
-# Required secrets (one-time setup):
-#   TS_AUTHKEY           — auth key from the CURRENT (Gmail) tailnet tail8eb71.ts.net
-#                          already exists in repo secrets
-#   OMV_SSH_KEY          — existing SSH private key for tbaltzakis@omv
-#
-# Already-present secrets used automatically (no extra setup needed):
-#   TS_OAUTH_CLIENT_ID   — OAuth client for themis128.github tailnet
-#   TS_OAUTH_SECRET      — OAuth secret for themis128.github tailnet
-#   (TS_NEW_AUTHKEY is no longer needed — generated on-the-fly from OAuth)
+# Required secrets:
+#   TS_AUTHKEY      — auth key from the CURRENT (Gmail) tailnet tail8eb71.ts.net
+#                     already exists in repo secrets
+#   TS_NEW_AUTHKEY  — auth key from the NEW tailnet (themis128.github)
+#                     tskey-auth-kGGdHVy3r121CNTRL-... (generated 2026-06-06)
+#                     Add at: https://github.com/Themis128/OMV/settings/secrets/actions
+#   OMV_SSH_KEY     — existing SSH private key for tbaltzakis@omv
 #
 # After workflow completes:
 #   1. Approve subnet route 192.168.1.0/24 in Tailscale admin:
-#      https://login.tailscale.com/admin/machines → omv → Edit route settings
+#      https://login.tailscale.com/admin/machines -> omv -> Edit route settings
 #   2. Update repo variables with the IPs shown in logs:
-#      OMV_SSH_HOST    → new 100.x.x.x for omv
-#      OMV_HA_SSH_HOST → new 100.x.x.x for omv-ha (if migrated)
+#      OMV_SSH_HOST    -> new 100.x.x.x for omv
+#      OMV_HA_SSH_HOST -> new 100.x.x.x for omv-ha (if migrated)
 
 on:
   push:
@@ -38,18 +36,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Preflight — check required secrets
+      - name: Preflight -- check required secrets
         env:
           TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
-          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
         run: |
           missing=()
-          [ -z "$TS_AUTHKEY" ]          && missing+=(TS_AUTHKEY)
-          [ -z "$TS_OAUTH_CLIENT_ID" ]  && missing+=(TS_OAUTH_CLIENT_ID)
-          [ -z "$TS_OAUTH_SECRET" ]     && missing+=(TS_OAUTH_SECRET)
-          [ -z "$OMV_SSH_KEY" ]         && missing+=(OMV_SSH_KEY)
+          [ -z "$TS_AUTHKEY" ]     && missing+=(TS_AUTHKEY)
+          [ -z "$TS_NEW_AUTHKEY" ] && missing+=(TS_NEW_AUTHKEY)
+          [ -z "$OMV_SSH_KEY" ]    && missing+=(OMV_SSH_KEY)
           if [ ${#missing[@]} -gt 0 ]; then
             echo "ERROR: Missing secrets: ${missing[*]}"
             echo "Add at: https://github.com/Themis128/OMV/settings/secrets/actions"
@@ -57,40 +53,7 @@ jobs:
           fi
           echo "All required secrets present."
 
-      - name: Generate new-tailnet auth key via OAuth
-        id: gen-authkey
-        env:
-          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
-        run: |
-          OAUTH_TOKEN=$(curl -sf -X POST https://api.tailscale.com/api/v2/oauth/token \
-            --data-urlencode "client_id=${TS_OAUTH_CLIENT_ID}" \
-            --data-urlencode "client_secret=${TS_OAUTH_SECRET}" \
-            | jq -r '.access_token')
-
-          if [ -z "$OAUTH_TOKEN" ] || [ "$OAUTH_TOKEN" = "null" ]; then
-            echo "ERROR: Failed to obtain OAuth token from Tailscale API"
-            exit 1
-          fi
-
-          AUTHKEY=$(curl -sf -X POST "https://api.tailscale.com/api/v2/tailnet/-/keys" \
-            -H "Authorization: Bearer ${OAUTH_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d '{"capabilities":{"devices":{"create":{"reusable":true,"preauthorized":true,"ephemeral":false}}},"expirySeconds":3600}' \
-            | jq -r '.key')
-
-          if [ -z "$AUTHKEY" ] || [ "$AUTHKEY" = "null" ]; then
-            echo "ERROR: Failed to generate auth key via Tailscale API"
-            echo "Check that TS_OAUTH_CLIENT_ID has 'auth_keys:write' scope"
-            exit 1
-          fi
-
-          echo "::add-mask::${AUTHKEY}"
-          echo "ts_new_authkey=${AUTHKEY}" >> "$GITHUB_OUTPUT"
-          echo "New tailnet auth key generated successfully."
-
       - name: Connect to old tailnet (tail8eb71.ts.net)
-        id: tailscale-old
         uses: tailscale/github-action@v4
         with:
           authkey: ${{ secrets.TS_AUTHKEY }}
@@ -109,9 +72,8 @@ jobs:
       - name: Migrate omv to new tailnet + enable subnet router
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST }}
-          TS_NEW_AUTHKEY: ${{ steps.gen-authkey.outputs.ts_new_authkey }}
+          TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
         run: |
-          # Quoted heredoc — no variable expansion inside script
           cat > /tmp/ts-migrate-omv.sh << 'SCRIPT'
           #!/bin/bash
           set -e
@@ -119,7 +81,6 @@ jobs:
           rm -f /tmp/.ts_authkey_migrate
           echo "=== migration start $(date) ===" >> /tmp/ts-migrate.log
 
-          # Enable IP forwarding for subnet router
           echo 'net.ipv4.ip_forward = 1' | sudo tee /etc/sysctl.d/99-tailscale.conf
           echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
           sudo sysctl -p /etc/sysctl.d/99-tailscale.conf >> /tmp/ts-migrate.log 2>&1
@@ -127,7 +88,6 @@ jobs:
           sudo tailscale logout || true
           sleep 2
 
-          # Join new tailnet and advertise home LAN as a subnet route
           sudo tailscale up \
             --auth-key="$AUTH" \
             --hostname=omv \
@@ -139,18 +99,15 @@ jobs:
           echo "subnet router: 192.168.1.0/24 advertised" >> /tmp/ts-migrate.log
           SCRIPT
 
-          # Transfer auth key via stdin (avoids key appearing in process list)
           printf '%s' "${TS_NEW_AUTHKEY}" | ssh \
             -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
             "tbaltzakis@${OMV_SSH_HOST}" \
             "cat > /tmp/.ts_authkey_migrate && chmod 600 /tmp/.ts_authkey_migrate"
 
-          # Copy migration script
           scp -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
             /tmp/ts-migrate-omv.sh "tbaltzakis@${OMV_SSH_HOST}:/tmp/ts-migrate.sh"
 
-          # Launch in nohup background — SSH exits before tailscale logout drops connection
           ssh -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
             "tbaltzakis@${OMV_SSH_HOST}" \
@@ -161,7 +118,7 @@ jobs:
         if: ${{ vars.OMV_HA_SSH_HOST != '' }}
         env:
           OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST }}
-          TS_NEW_AUTHKEY: ${{ steps.gen-authkey.outputs.ts_new_authkey }}
+          TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
         run: |
           cat > /tmp/ts-migrate-ha.sh << 'SCRIPT'
           #!/bin/bash
@@ -209,26 +166,24 @@ jobs:
           version: 1.94.2
           timeout: 2m
 
-      - name: Verify — get new Tailscale IPs via MagicDNS
+      - name: Verify -- get new Tailscale IPs via MagicDNS
         env:
           OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST }}
         run: |
-          echo "=== omv ==="
           OMV_NEW_IP=$(ssh -i ~/.ssh/omv_key -o StrictHostKeyChecking=no \
             -o BatchMode=yes -o ConnectTimeout=30 \
             tbaltzakis@omv \
             "cat /tmp/.ts_new_ip 2>/dev/null || tailscale ip -4" 2>/dev/null) \
-            || OMV_NEW_IP="UNKNOWN — check https://login.tailscale.com/admin/machines"
+            || OMV_NEW_IP="UNKNOWN -- check https://login.tailscale.com/admin/machines"
           echo "omv new IP: ${OMV_NEW_IP}"
 
           HA_NEW_IP=""
           if [ -n "${OMV_HA_SSH_HOST}" ]; then
-            echo "=== omv-ha ==="
             HA_NEW_IP=$(ssh -i ~/.ssh/omv_key -o StrictHostKeyChecking=no \
               -o BatchMode=yes -o ConnectTimeout=30 \
               tbaltzakis@omv-ha \
               "cat /tmp/.ts_new_ip 2>/dev/null || tailscale ip -4" 2>/dev/null) \
-              || HA_NEW_IP="UNKNOWN — check https://login.tailscale.com/admin/machines"
+              || HA_NEW_IP="UNKNOWN -- check https://login.tailscale.com/admin/machines"
             echo "omv-ha new IP: ${HA_NEW_IP}"
           fi
 
@@ -236,16 +191,16 @@ jobs:
           echo "================================================================"
           echo " MIGRATION COMPLETE"
           echo ""
-          echo " ACTION 1 — Approve subnet route in Tailscale admin:"
+          echo " ACTION 1 -- Approve subnet route in Tailscale admin:"
           echo "   https://login.tailscale.com/admin/machines"
-          echo "   → Click omv → Edit route settings → Enable 192.168.1.0/24"
+          echo "   -> Click omv -> Edit route settings -> Enable 192.168.1.0/24"
           echo ""
-          echo " ACTION 2 — Update repo variables:"
+          echo " ACTION 2 -- Update repo variables:"
           echo "   https://github.com/Themis128/OMV/settings/variables/actions"
           echo "   OMV_SSH_HOST    = ${OMV_NEW_IP}"
           [ -n "${HA_NEW_IP}" ] && echo "   OMV_HA_SSH_HOST = ${HA_NEW_IP}"
           echo ""
-          echo " ACTION 3 — Install Tailscale on phone/laptop:"
+          echo " ACTION 3 -- Install Tailscale on phone/laptop:"
           echo "   https://tailscale.com/download"
           echo "   Sign in with GitHub (themis128) account"
           echo "   Enable 'Use Tailscale subnets' to access 192.168.1.x from anywhere"
