@@ -22,8 +22,7 @@ corresponding dispatch file under `.github/dispatches/` — the workflow trigger
 To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 
 | Dispatch file | Workflow | Notes |
-|---|---|
----|
+|---|---|---|
 | `.github/dispatches/provision-cert-manager.json` | provision-cert-manager | Uses `CLOUDFLARE_API_TOKEN` secret |
 | `.github/dispatches/apply-cluster-manifests.json` | apply-cluster-manifests | No inputs |
 | `.github/dispatches/recover-standby.json` | recover-standby | Set `apply/etcd_recover/omv_ha_prep/node_cleanup/k3s_rejoin/demote_ha_to_agent` |
