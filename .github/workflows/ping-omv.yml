@@ -1,0 +1,65 @@
+name: ping-omv
+
+# One-shot diagnostic: joins new tailnet via OAuth and SSHes to omv by
+# MagicDNS hostname to confirm registration and get the new Tailscale IP.
+
+on:
+  push:
+    paths:
+      - .github/dispatches/ping-omv.json
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to new tailnet (themis128.github)
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          hostname: ci-ping-omv
+          version: 1.94.2
+          timeout: 2m
+
+      - name: Set up SSH key
+        env:
+          OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${OMV_SSH_KEY}" | tr -d '\r' > ~/.ssh/omv_key
+          chmod 600 ~/.ssh/omv_key
+
+      - name: Check omv via MagicDNS
+        run: |
+          echo "=== Tailscale status ==="
+          tailscale status || true
+
+          echo ""
+          echo "=== SSH to omv by hostname ==="
+          ssh -i ~/.ssh/omv_key \
+            -o StrictHostKeyChecking=no \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            tbaltzakis@omv \
+            "echo 'SSH OK'; hostname; tailscale ip -4" && OMV_OK=true || OMV_OK=false
+
+          if [ "$OMV_OK" = "true" ]; then
+            echo ""
+            echo "================================================================"
+            echo " omv is reachable on the new tailnet!"
+            echo " Update OMV_SSH_HOST repo variable with the IP shown above."
+            echo " https://github.com/Themis128/OMV/settings/variables/actions"
+            echo "================================================================"
+          else
+            echo ""
+            echo "================================================================"
+            echo " omv NOT reachable by hostname 'omv'."
+            echo " Check Tailscale admin: https://login.tailscale.com/admin/machines"
+            echo "================================================================"
+          fi
