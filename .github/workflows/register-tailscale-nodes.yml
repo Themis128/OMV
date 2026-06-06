@@ -7,12 +7,16 @@ name: register-tailscale-nodes
 # phones/laptops on the tailnet can reach any device on the home network
 # from anywhere (external WiFi, 5G, etc.).
 #
-# Required secrets:
-#   TS_AUTHKEY   — existing auth key from tail8eb71.ts.net (Gmail tailnet)
-#   TS_NEW_AUTHKEY — auth key from themis128.github tailnet
-#                    tailscale admin → Settings → Keys → Generate auth key
-#                    (Reusable, 1 day expiry, tag:ci)
-#   OMV_SSH_KEY  — existing SSH private key for tbaltzakis@omv
+# Required secrets (one-time setup):
+#   TS_OLD_AUTHKEY       — auth key from the CURRENT (Gmail) tailnet tail8eb71.ts.net
+#                          Tailscale admin → Settings → Keys → Generate auth key
+#                          (Reusable = true, 1 day expiry)
+#   OMV_SSH_KEY          — existing SSH private key for tbaltzakis@omv
+#
+# Already-present secrets used automatically (no extra setup needed):
+#   TS_OAUTH_CLIENT_ID   — OAuth client for themis128.github tailnet
+#   TS_OAUTH_SECRET      — OAuth secret for themis128.github tailnet
+#   (TS_NEW_AUTHKEY is no longer needed — generated on-the-fly from OAuth)
 #
 # After workflow completes:
 #   1. Approve subnet route 192.168.1.0/24 in Tailscale admin:
@@ -37,14 +41,16 @@ jobs:
 
       - name: Preflight — check required secrets
         env:
-          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
-          TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
+          TS_OLD_AUTHKEY: ${{ secrets.TS_OLD_AUTHKEY }}
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
           OMV_SSH_KEY: ${{ secrets.OMV_SSH_KEY }}
         run: |
           missing=()
-          [ -z "$TS_AUTHKEY" ] && missing+=(TS_AUTHKEY)
-          [ -z "$TS_NEW_AUTHKEY" ] && missing+=(TS_NEW_AUTHKEY)
-          [ -z "$OMV_SSH_KEY" ] && missing+=(OMV_SSH_KEY)
+          [ -z "$TS_OLD_AUTHKEY" ]      && missing+=(TS_OLD_AUTHKEY)
+          [ -z "$TS_OAUTH_CLIENT_ID" ]  && missing+=(TS_OAUTH_CLIENT_ID)
+          [ -z "$TS_OAUTH_SECRET" ]     && missing+=(TS_OAUTH_SECRET)
+          [ -z "$OMV_SSH_KEY" ]         && missing+=(OMV_SSH_KEY)
           if [ ${#missing[@]} -gt 0 ]; then
             echo "ERROR: Missing secrets: ${missing[*]}"
             echo "Add at: https://github.com/Themis128/OMV/settings/secrets/actions"
@@ -52,11 +58,43 @@ jobs:
           fi
           echo "All required secrets present."
 
+      - name: Generate new-tailnet auth key via OAuth
+        id: gen-authkey
+        env:
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+        run: |
+          OAUTH_TOKEN=$(curl -sf -X POST https://api.tailscale.com/api/v2/oauth/token \
+            --data-urlencode "client_id=${TS_OAUTH_CLIENT_ID}" \
+            --data-urlencode "client_secret=${TS_OAUTH_SECRET}" \
+            | jq -r '.access_token')
+
+          if [ -z "$OAUTH_TOKEN" ] || [ "$OAUTH_TOKEN" = "null" ]; then
+            echo "ERROR: Failed to obtain OAuth token from Tailscale API"
+            exit 1
+          fi
+
+          AUTHKEY=$(curl -sf -X POST "https://api.tailscale.com/api/v2/tailnet/-/keys" \
+            -H "Authorization: Bearer ${OAUTH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"capabilities":{"devices":{"create":{"reusable":true,"preauthorized":true,"ephemeral":false}}},"expirySeconds":3600}' \
+            | jq -r '.key')
+
+          if [ -z "$AUTHKEY" ] || [ "$AUTHKEY" = "null" ]; then
+            echo "ERROR: Failed to generate auth key via Tailscale API"
+            echo "Check that TS_OAUTH_CLIENT_ID has 'auth_keys:write' scope"
+            exit 1
+          fi
+
+          echo "::add-mask::${AUTHKEY}"
+          echo "ts_new_authkey=${AUTHKEY}" >> "$GITHUB_OUTPUT"
+          echo "New tailnet auth key generated successfully."
+
       - name: Connect to old tailnet (tail8eb71.ts.net)
         id: tailscale-old
         uses: tailscale/github-action@v4
         with:
-          authkey: ${{ secrets.TS_AUTHKEY }}
+          authkey: ${{ secrets.TS_OLD_AUTHKEY }}
           hostname: ci-ts-migrate
           version: 1.94.2
           timeout: 2m
@@ -72,8 +110,9 @@ jobs:
       - name: Migrate omv to new tailnet + enable subnet router
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST }}
-          TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
+          TS_NEW_AUTHKEY: ${{ steps.gen-authkey.outputs.ts_new_authkey }}
         run: |
+          # Quoted heredoc — no variable expansion inside script
           cat > /tmp/ts-migrate-omv.sh << 'SCRIPT'
           #!/bin/bash
           set -e
@@ -101,15 +140,18 @@ jobs:
           echo "subnet router: 192.168.1.0/24 advertised" >> /tmp/ts-migrate.log
           SCRIPT
 
+          # Transfer auth key via stdin (avoids key appearing in process list)
           printf '%s' "${TS_NEW_AUTHKEY}" | ssh \
             -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
             "tbaltzakis@${OMV_SSH_HOST}" \
             "cat > /tmp/.ts_authkey_migrate && chmod 600 /tmp/.ts_authkey_migrate"
 
+          # Copy migration script
           scp -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
             /tmp/ts-migrate-omv.sh "tbaltzakis@${OMV_SSH_HOST}:/tmp/ts-migrate.sh"
 
+          # Launch in nohup background — SSH exits before tailscale logout drops connection
           ssh -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
             "tbaltzakis@${OMV_SSH_HOST}" \
@@ -120,7 +162,7 @@ jobs:
         if: ${{ vars.OMV_HA_SSH_HOST != '' }}
         env:
           OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST }}
-          TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
+          TS_NEW_AUTHKEY: ${{ steps.gen-authkey.outputs.ts_new_authkey }}
         run: |
           cat > /tmp/ts-migrate-ha.sh << 'SCRIPT'
           #!/bin/bash
@@ -159,12 +201,14 @@ jobs:
           sleep 45
 
       - name: Switch runner to new tailnet
-        env:
-          TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
-        run: |
-          sudo tailscale logout || true
-          sleep 3
-          sudo tailscale up --auth-key="${TS_NEW_AUTHKEY}" --hostname=ci-ts-verify
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          hostname: ci-ts-verify
+          version: 1.94.2
+          timeout: 2m
 
       - name: Verify — get new Tailscale IPs via MagicDNS
         env:
