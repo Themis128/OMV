@@ -4,15 +4,19 @@ name: tune-k3s-config
 # settings to /etc/rancher/k3s/config.yaml, then restart k3s.
 # Idempotent — re-running overwrites previous values with current recommendations.
 #
-# Settings applied:
-#   image-gc-high-threshold: 75  (default 85 — trigger GC earlier)
-#   image-gc-low-threshold:  65  (default 80)
+# Settings applied (research-grade 2025):
+#   image-gc-high-threshold: 60  (was 75 — trigger GC at 60% disk use)
+#   image-gc-low-threshold:  40  (was 65 — clean down to 40%)
 #   container-log-max-size:  10Mi
 #   container-log-max-files: 3
-#   eviction-hard:  nodefs.available<15%,imagefs.available<15%
-#   eviction-minimum-reclaim: nodefs.available=500Mi
-#   etcd-snapshot-retention: 3   (default 5)
-#   etcd-snapshot-schedule-cron: "0 2 * * *"  (daily 02:00 instead of 00:00+12:00)
+#   system-reserved: cpu=200m,memory=512Mi
+#   kube-reserved:   cpu=200m,memory=512Mi
+#   eviction-hard:   memory.available<200Mi,nodefs.available<5%,imagefs.available<10%
+#   eviction-soft:   memory.available<400Mi,nodefs.available<10%
+#   eviction-soft-grace-period: memory.available=2m,nodefs.available=2m
+#   etcd-snapshot-retention: 3  (default 5)
+#   etcd-snapshot-schedule-cron: "0 */6 * * *"  (every 6h)
+#   etcd-snapshot-compress: true  (saves ~60% snapshot disk space)
 #
 # Required secrets: TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET (or TS_AUTHKEY), OMV_SSH_KEY
 
@@ -73,18 +77,22 @@ jobs:
           printf 'p = "/etc/rancher/k3s/config.yaml"\n' >> /tmp/tune-k3s.py
           printf 'cfg = (yaml.safe_load(open(p)) or {}) if os.path.exists(p) else {}\n' >> /tmp/tune-k3s.py
           printf 'na = [\n' >> /tmp/tune-k3s.py
-          printf '    "image-gc-high-threshold=75",\n' >> /tmp/tune-k3s.py
-          printf '    "image-gc-low-threshold=65",\n' >> /tmp/tune-k3s.py
+          printf '    "image-gc-high-threshold=60",\n' >> /tmp/tune-k3s.py
+          printf '    "image-gc-low-threshold=40",\n' >> /tmp/tune-k3s.py
           printf '    "container-log-max-size=10Mi",\n' >> /tmp/tune-k3s.py
           printf '    "container-log-max-files=3",\n' >> /tmp/tune-k3s.py
-          printf '    "eviction-hard=nodefs.available<15%%,imagefs.available<15%%",\n' >> /tmp/tune-k3s.py
-          printf '    "eviction-minimum-reclaim=nodefs.available=500Mi",\n' >> /tmp/tune-k3s.py
+          printf '    "system-reserved=cpu=200m,memory=512Mi",\n' >> /tmp/tune-k3s.py
+          printf '    "kube-reserved=cpu=200m,memory=512Mi",\n' >> /tmp/tune-k3s.py
+          printf '    "eviction-hard=memory.available<200Mi,nodefs.available<5%%,imagefs.available<10%%",\n' >> /tmp/tune-k3s.py
+          printf '    "eviction-soft=memory.available<400Mi,nodefs.available<10%%",\n' >> /tmp/tune-k3s.py
+          printf '    "eviction-soft-grace-period=memory.available=2m,nodefs.available=2m",\n' >> /tmp/tune-k3s.py
           printf ']\n' >> /tmp/tune-k3s.py
           printf 'px = {a.split("=")[0] for a in na}\n' >> /tmp/tune-k3s.py
           printf 'kept = [a for a in cfg.get("kubelet-arg", []) if a.split("=")[0] not in px]\n' >> /tmp/tune-k3s.py
           printf 'cfg["kubelet-arg"] = kept + na\n' >> /tmp/tune-k3s.py
           printf 'cfg["etcd-snapshot-retention"] = 3\n' >> /tmp/tune-k3s.py
-          printf 'cfg["etcd-snapshot-schedule-cron"] = "0 2 * * *"\n' >> /tmp/tune-k3s.py
+          printf 'cfg["etcd-snapshot-schedule-cron"] = "0 */6 * * *"\n' >> /tmp/tune-k3s.py
+          printf 'cfg["etcd-snapshot-compress"] = True\n' >> /tmp/tune-k3s.py
           printf 'os.path.exists(p) and shutil.copy2(p, p + ".bak")\n' >> /tmp/tune-k3s.py
           printf 'yaml.dump(cfg, open(p, "w"), default_flow_style=False, sort_keys=False)\n' >> /tmp/tune-k3s.py
           printf 'print("Updated", p)\n' >> /tmp/tune-k3s.py

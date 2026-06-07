@@ -60,6 +60,39 @@ jobs:
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
+      - name: Patch metrics-server — kubelet-insecure-tls (ARM64 fix)
+        id: metrics_server
+        continue-on-error: true
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+          # Wait for k3s API
+          for attempt in 1 2 3 4 5; do
+            sudo k3s kubectl get ns 2>/dev/null && break
+            echo "k3s API not ready (attempt $attempt/5) — waiting 15s..."
+            sleep 15
+          done
+
+          ARGS=$(sudo k3s kubectl get deployment metrics-server -n kube-system \
+            -o jsonpath='{.spec.template.spec.containers[0].args}' 2>/dev/null || echo "")
+
+          if echo "$ARGS" | grep -q 'kubelet-insecure-tls'; then
+            echo "metrics-server already has --kubelet-insecure-tls — skipping"
+          else
+            echo "Patching metrics-server with --kubelet-insecure-tls ..."
+            sudo k3s kubectl patch deployment metrics-server -n kube-system --type=json \
+              -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+            echo "Waiting for metrics-server rollout ..."
+            sudo k3s kubectl rollout status deployment/metrics-server -n kube-system --timeout=60s \
+              || echo "rollout timeout — patch applied, pod restart in flight"
+          fi
+
+          echo "=== metrics-server status ==="
+          sudo k3s kubectl top nodes 2>/dev/null || echo "(metrics-server not yet ready)"
+          EOF
+
       - name: Discover workloads
         id: discover
         env:
@@ -152,6 +185,11 @@ jobs:
               NTFY_VISITOR_ATTACHMENT_TOTAL_SIZE_LIMIT=20M
           fi
 
+          echo "=== Patching ntfy resource requests/limits ==="
+          sudo k3s kubectl patch deployment "$DEPLOY" -n "$NS" --type merge \
+            -p '{"spec":{"template":{"spec":{"containers":[{"name":"ntfy","resources":{"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}]}}}}' \
+            2>/dev/null || true
+
           echo "=== ntfy pod status ==="
           sudo k3s kubectl get pods -n "$NS" -l app.kubernetes.io/name=ntfy 2>/dev/null \
             || sudo k3s kubectl get pods -n "$NS"
@@ -192,6 +230,11 @@ jobs:
               --type json \
               -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--data.retention=120h"}]'
           fi
+
+          echo "=== Patching alertmanager resource requests/limits ==="
+          sudo k3s kubectl patch deployment "$DEPLOY" -n "$NS" --type merge \
+            -p '{"spec":{"template":{"spec":{"containers":[{"name":"alertmanager","resources":{"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}]}}}}' \
+            2>/dev/null || true
 
           echo "=== alertmanager pod status ==="
           sudo k3s kubectl get pods -n "$NS" | grep -i alertmanager || true

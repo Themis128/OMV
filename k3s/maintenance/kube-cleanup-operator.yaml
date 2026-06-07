@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-cleanup-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-cleanup-operator
+  namespace: kube-cleanup-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-cleanup-operator
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list", "watch", "delete"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["list", "watch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-cleanup-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-cleanup-operator
+subjects:
+- kind: ServiceAccount
+  name: kube-cleanup-operator
+  namespace: kube-cleanup-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-cleanup-operator
+  namespace: kube-cleanup-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kube-cleanup-operator
+  template:
+    metadata:
+      labels:
+        app: kube-cleanup-operator
+    spec:
+      serviceAccountName: kube-cleanup-operator
+      containers:
+      - name: kube-cleanup-operator
+        image: ghcr.io/lwolf/kube-cleanup-operator:v0.8.4
+        args:
+        - --delete-evicted-pods-after=15m
+        - --delete-failed-after=1h
+        - --delete-successful-after=15m
+        - --delete-orphaned-pods-after=1h
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi

@@ -109,10 +109,13 @@ jobs:
           kubectl_apply k3s/home-assistant/
           echo "=== monitoring ==="
           kubectl_apply k3s/monitoring/ || echo "monitoring apply skipped (namespace or CRD may not exist)"
+          echo "=== maintenance ==="
+          kubectl_apply k3s/maintenance/
           echo "=== verify ==="
           sudo k3s kubectl -n cloudless get ingress,deployment,hpa,svc,cronjob
           sudo k3s kubectl -n home-assistant get deployment,svc
           sudo k3s kubectl get prometheusrule -A 2>/dev/null || true
+          sudo k3s kubectl -n kube-cleanup-operator get deployment,pods 2>/dev/null || true
           EOF
 
       - name: Post result to status board
