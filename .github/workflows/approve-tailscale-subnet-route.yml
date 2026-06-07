@@ -25,7 +25,7 @@ jobs:
           set -e
 
           echo "=== Finding omv device ID ==="
-          DEVICES=$(curl -sf -u "${TS_API_KEY}:" \
+          DEVICES=$(curl -sf -H "Authorization: Bearer ${TS_API_KEY}" \
             "https://api.tailscale.com/api/v2/tailnet/-/devices")
           echo "Devices response received."
 
@@ -39,24 +39,24 @@ jobs:
           echo "omv device ID: ${DEVICE_ID}"
 
           echo "=== Getting current routes ==="
-          ROUTES=$(curl -sf -u "${TS_API_KEY}:" \
-            "https://api.tailscale.com/api/v2/devices/${DEVICE_ID}/routes")
+          # Note: routes endpoint uses /device/ (singular), not /devices/
+          ROUTES=$(curl -sf -H "Authorization: Bearer ${TS_API_KEY}" \
+            "https://api.tailscale.com/api/v2/device/${DEVICE_ID}/routes")
           echo "Advertised routes:"
           echo "${ROUTES}" | jq -r '.advertisedRoutes[]' 2>/dev/null || true
           echo "Currently enabled routes:"
           echo "${ROUTES}" | jq -r '.enabledRoutes[]' 2>/dev/null || true
 
           echo "=== Enabling 192.168.1.0/24 ==="
-          # Merge existing enabled routes with the new one (avoid wiping exit nodes etc)
-          EXISTING=$(echo "${ROUTES}" | jq -r '[.enabledRoutes[]?]')
+          EXISTING=$(echo "${ROUTES}" | jq '[.enabledRoutes[]?]')
           NEW_ROUTES=$(echo "${EXISTING}" | jq '. + ["192.168.1.0/24"] | unique')
           echo "New enabled routes list: ${NEW_ROUTES}"
 
-          RESULT=$(curl -sf -u "${TS_API_KEY}:" \
+          RESULT=$(curl -sf -H "Authorization: Bearer ${TS_API_KEY}" \
             -X POST \
             -H "Content-Type: application/json" \
             -d "{\"routes\": ${NEW_ROUTES}}" \
-            "https://api.tailscale.com/api/v2/devices/${DEVICE_ID}/routes")
+            "https://api.tailscale.com/api/v2/device/${DEVICE_ID}/routes")
 
           echo "=== Result ==="
           echo "Enabled routes after update:"
