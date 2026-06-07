@@ -68,7 +68,7 @@ jobs:
           printf 'Host %s\n  IdentityFile ~/.ssh/omv_key\n  StrictHostKeyChecking accept-new\n  BatchMode yes\n  ConnectTimeout 20\n' \
             "${OMV_SSH_HOST}" >> ~/.ssh/config
 
-      - name: Add public key to authorized_keys
+      - name: Add public key to omv authorized_keys
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
           PUBKEY: ${{ steps.inputs.outputs.public_key }}
@@ -80,12 +80,36 @@ jobs:
           chmod 600 ~/.ssh/authorized_keys
           key="${PUBKEY}"
           if grep -qF "\$key" ~/.ssh/authorized_keys 2>/dev/null; then
-            echo "Key already present in authorized_keys — nothing to do."
+            echo "Key already present in omv authorized_keys — nothing to do."
           else
             printf '%s\n' "\$key" >> ~/.ssh/authorized_keys
-            echo "Key added to ~/.ssh/authorized_keys"
+            echo "Key added to omv ~/.ssh/authorized_keys"
           fi
-          echo "Current authorized keys:"
+          echo "omv authorized keys:"
+          cat ~/.ssh/authorized_keys
+          EOF
+
+      - name: Add public key to omv-ha authorized_keys
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+          OMV_HA_HOST: ${{ vars.OMV_HA_HOST || '192.168.1.130' }}
+          PUBKEY: ${{ steps.inputs.outputs.public_key }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" \
+            "ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new \
+             tbaltzakis@${OMV_HA_HOST} bash -s" << EOF
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          touch ~/.ssh/authorized_keys
+          chmod 600 ~/.ssh/authorized_keys
+          key="${PUBKEY}"
+          if grep -qF "\$key" ~/.ssh/authorized_keys 2>/dev/null; then
+            echo "Key already present in omv-ha authorized_keys — nothing to do."
+          else
+            printf '%s\n' "\$key" >> ~/.ssh/authorized_keys
+            echo "Key added to omv-ha ~/.ssh/authorized_keys"
+          fi
+          echo "omv-ha authorized keys:"
           cat ~/.ssh/authorized_keys
           EOF
 
