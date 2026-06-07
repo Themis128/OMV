@@ -190,6 +190,42 @@ jobs:
             -p '{"spec":{"template":{"spec":{"containers":[{"name":"ntfy","resources":{"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}]}}}}' \
             2>/dev/null || true
 
+          echo "=== Applying ntfy HPA (min=1, max=2, CPU 70%) ==="
+          cat <<HPA | sudo k3s kubectl apply -f - 2>/dev/null || echo "HPA apply skipped (metrics-server may not be ready yet)"
+          apiVersion: autoscaling/v2
+          kind: HorizontalPodAutoscaler
+          metadata:
+            name: ntfy
+            namespace: ${NS}
+          spec:
+            scaleTargetRef:
+              apiVersion: apps/v1
+              kind: Deployment
+              name: ${DEPLOY}
+            minReplicas: 1
+            maxReplicas: 2
+            metrics:
+            - type: Resource
+              resource:
+                name: cpu
+                target:
+                  type: Utilization
+                  averageUtilization: 70
+            behavior:
+              scaleUp:
+                stabilizationWindowSeconds: 60
+                policies:
+                - type: Pods
+                  value: 1
+                  periodSeconds: 60
+              scaleDown:
+                stabilizationWindowSeconds: 300
+                policies:
+                - type: Percent
+                  value: 50
+                  periodSeconds: 60
+          HPA
+
           echo "=== ntfy pod status ==="
           sudo k3s kubectl get pods -n "$NS" -l app.kubernetes.io/name=ntfy 2>/dev/null \
             || sudo k3s kubectl get pods -n "$NS"
@@ -327,6 +363,7 @@ jobs:
         with:
           detail: >-
             tailscale=${{ steps.tailscale.outcome }}
+            metrics_server=${{ steps.metrics_server.outcome }}
             discover=${{ steps.discover.outcome }}
             ntfy=${{ steps.ntfy.outcome }}
             alertmanager=${{ steps.alertmanager.outcome }}

@@ -1,0 +1,149 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pod-health
+  namespace: monitoring
+  labels:
+    app: kube-prometheus-stack
+spec:
+  groups:
+
+  - name: pod.crashloop
+    rules:
+    - alert: PodCrashLooping
+      expr: |
+        rate(kube_pod_container_status_restarts_total[15m]) * 60 * 15 > 3
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $labels.namespace }}/{{ $labels.pod }} crash-looping"
+        description: >-
+          Container {{ $labels.container }} restarted
+          {{ $value | printf "%.0f" }} times in 15 m.
+          Run: kubectl logs -p {{ $labels.pod }} -n {{ $labels.namespace }}
+
+    - alert: PodOOMKilled
+      expr: |
+        kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
+      for: 0m
+      labels:
+        severity: critical
+      annotations:
+        summary: "{{ $labels.namespace }}/{{ $labels.pod }} OOMKilled"
+        description: >-
+          Container {{ $labels.container }} was OOM-killed.
+          Raise its memory limit or investigate a leak.
+
+    - alert: PodRestartingFrequently
+      expr: |
+        kube_pod_container_status_restarts_total > 20
+      for: 0m
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $labels.namespace }}/{{ $labels.pod }} has restarted {{ $value | printf \"%.0f\" }} times total"
+
+  - name: pod.readiness
+    rules:
+    - alert: PodNotReady
+      expr: |
+        kube_pod_status_ready{condition="true"} == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $labels.namespace }}/{{ $labels.pod }} not ready for 5 m"
+        description: >-
+          Check: kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }}
+
+    - alert: PodPendingTooLong
+      expr: |
+        kube_pod_status_phase{phase="Pending"} == 1
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $labels.namespace }}/{{ $labels.pod }} stuck Pending for 10 m"
+        description: >-
+          Possible causes: insufficient node resources, image pull failure,
+          PVC not bound. Check: kubectl describe pod {{ $labels.pod }} -n {{ $labels.namespace }}
+
+    - alert: DeploymentReplicasMismatch
+      expr: |
+        kube_deployment_spec_replicas
+          != kube_deployment_status_replicas_available
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $labels.namespace }}/{{ $labels.deployment }} replica mismatch for 5 m"
+        description: >-
+          Desired {{ $value }} replicas not all available.
+          Check: kubectl rollout status deployment/{{ $labels.deployment }} -n {{ $labels.namespace }}
+
+  - name: pod.resources
+    rules:
+    - alert: ContainerHighMemory
+      expr: |
+        (
+          container_memory_working_set_bytes{container!="",container!="POD"}
+          / on(namespace,pod,container)
+          kube_pod_container_resource_limits{resource="memory",container!=""}
+        ) > 0.90
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} memory > 90% of limit"
+        description: "Using {{ $value | humanizePercentage }} — OOMKill risk. Current limit may be too low."
+
+    - alert: ContainerHighCPU
+      expr: |
+        (
+          rate(container_cpu_usage_seconds_total{container!="",container!="POD"}[5m])
+          / on(namespace,pod,container)
+          kube_pod_container_resource_limits{resource="cpu",container!=""}
+        ) > 0.90
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} CPU > 90% of limit"
+        description: "Using {{ $value | humanizePercentage }} of CPU limit for 10 m — consider raising limit or adding replicas."
+
+    - alert: ContainerThrottled
+      expr: |
+        rate(container_cpu_cfs_throttled_seconds_total{container!=""}[5m])
+          / rate(container_cpu_cfs_periods_total{container!=""}[5m]) > 0.50
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} CPU throttled > 50%"
+        description: "Container is heavily throttled. Raise cpu limit or reduce load."
+
+  - name: pod.hpa
+    rules:
+    - alert: HPAMaxedOut
+      expr: |
+        kube_horizontalpodautoscaler_status_current_replicas
+          == kube_horizontalpodautoscaler_spec_max_replicas
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} at max replicas for 15 m"
+        description: "Autoscaler cannot add more pods. Consider raising maxReplicas or reducing load."
+
+    - alert: HPAScalingFailure
+      expr: |
+        kube_horizontalpodautoscaler_status_condition{
+          condition="ScalingActive", status="false"
+        } == 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} scaling is inactive"
+        description: "metrics-server may be unavailable or resource requests missing on the target deployment."

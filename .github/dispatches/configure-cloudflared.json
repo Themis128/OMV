@@ -1,7 +1,7 @@
 {
-  "triggered_at": "2026-06-03T00:00:00Z",
+  "triggered_at": "2026-06-07T16:00:00Z",
   "inputs": {
-    "hostnames": "cloudless.gr,manage.cloudless.gr,pi-origin.cloudless.gr",
+    "hostnames": "cloudless.gr,manage.cloudless.gr,pi-origin.cloudless.gr,grafana.cloudless.gr",
     "tunnel_name": "cloudless"
   }
 }
