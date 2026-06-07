@@ -43,6 +43,7 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/stabilize-tailscale.json` | stabilize-tailscale | Apply OOM hardening (tailscaled=-900, sshd=-800, k3s=-500) + Restart=always on both nodes. Set `apply=true/false`, `skip_omv_ha=true` if omv-ha unreachable. Requires `OMV_HA_SSH_HOST` repo var + `OMV_HA_SSH_KEY` secret (can reuse `OMV_SSH_KEY`) |
 | `.github/dispatches/register-tailscale-nodes.json` | register-tailscale-nodes | Migrate omv + omv-ha to themis128.github tailnet. Requires `TS_AUTHKEY` (Gmail tailnet) + `TS_NEW_AUTHKEY` (reusable, themis128 tailnet) secrets |
 | `.github/dispatches/generate-ts-authkey.json` | generate-ts-authkey | Generate `TS_NEW_AUTHKEY` via Tailscale API + auto-trigger register-tailscale-nodes. Requires `TS_API_KEY` + `GH_PAT` secrets |
+| `.github/dispatches/approve-tailscale-subnet-route.json` | approve-tailscale-subnet-route | Enable 192.168.1.0/24 subnet route for omv via Tailscale API. Requires `TS_API_KEY` secret (personal API access token from https://login.tailscale.com/admin/settings/keys) |
 
 **Custom slash commands** (`.claude/commands/`):
 - `/trigger <workflow>` — update the dispatch file and push to trigger a workflow
