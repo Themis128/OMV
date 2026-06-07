@@ -161,10 +161,9 @@ jobs:
             echo "logrotate config OK — no fix needed."
           fi
 
-          # Reset stale failed units
+          # Reset all stale failed units
           echo "=== Resetting failed units ==="
-          sudo systemctl reset-failed service-failure-alert@k3s.service.service 2>/dev/null || true
-          sudo systemctl reset-failed logrotate.service 2>/dev/null || true
+          sudo systemctl reset-failed 2>/dev/null || true
           sudo systemctl --failed --no-pager --no-legend || echo "(no failed units)"
 
           # Clear runner-work tmp on USB drive (contents only, keep dir)

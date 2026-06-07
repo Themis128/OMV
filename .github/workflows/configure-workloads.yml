@@ -14,6 +14,10 @@ name: configure-workloads
 # alertmanager (on omv-ha):
 #   --data.retention=120h  (keep default, make explicit)
 #
+# prometheus:
+#   memory limit: 1500Mi  (up from whatever is causing OOM at ~765MB)
+#   memory request: 512Mi
+#
 # Required secrets: TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET (or TS_AUTHKEY), OMV_SSH_KEY
 
 on:
@@ -193,6 +197,49 @@ jobs:
           sudo k3s kubectl get pods -n "$NS" | grep -i alertmanager || true
           EOF
 
+      - name: Patch prometheus — raise memory limit to 1500Mi
+        id: prometheus
+        if: always()
+        continue-on-error: true
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+
+          NS=$(sudo k3s kubectl get deployment -A --no-headers \
+            | grep -i prometheus | grep -iv alertmanager | awk '{print $1}' | head -1 || true)
+          DEPLOY=$(sudo k3s kubectl get deployment -A --no-headers \
+            | grep -i prometheus | grep -iv alertmanager | awk '{print $2}' | head -1 || true)
+
+          if [ -z "$NS" ] || [ -z "$DEPLOY" ]; then
+            echo "prometheus deployment not found — skipping"
+            exit 0
+          fi
+          echo "Found prometheus: namespace=$NS deployment=$DEPLOY"
+
+          echo "=== Current resource limits ==="
+          sudo k3s kubectl get deployment "$DEPLOY" -n "$NS" \
+            -o jsonpath='{.spec.template.spec.containers[0].resources}' || true
+
+          echo ""
+          echo "Patching memory limit to 1500Mi and request to 512Mi ..."
+          sudo k3s kubectl patch deployment "$DEPLOY" -n "$NS" \
+            --type json \
+            -p '[
+              {"op":"replace","path":"/spec/template/spec/containers/0/resources/limits/memory","value":"1500Mi"},
+              {"op":"replace","path":"/spec/template/spec/containers/0/resources/requests/memory","value":"512Mi"}
+            ]' 2>/dev/null \
+          || sudo k3s kubectl patch deployment "$DEPLOY" -n "$NS" \
+            --type merge \
+            -p '{"spec":{"template":{"spec":{"containers":[{"name":"prometheus","resources":{"limits":{"memory":"1500Mi"},"requests":{"memory":"512Mi","cpu":"100m"}}}]}}}}'
+
+          echo "=== Rolling restart prometheus ==="
+          sudo k3s kubectl rollout restart deployment/"$DEPLOY" -n "$NS"
+          sudo k3s kubectl rollout status deployment/"$DEPLOY" -n "$NS" --timeout=120s \
+            || echo "rollout status timed out — patch was applied, pod restart is in flight"
+          EOF
+
       - name: Post result to status board
         if: always()
         uses: ./.github/actions/post-status
@@ -202,3 +249,4 @@ jobs:
             discover=${{ steps.discover.outcome }}
             ntfy=${{ steps.ntfy.outcome }}
             alertmanager=${{ steps.alertmanager.outcome }}
+            prometheus=${{ steps.prometheus.outcome }}
