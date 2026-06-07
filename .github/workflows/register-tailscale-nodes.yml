@@ -71,6 +71,7 @@ jobs:
           chmod 600 ~/.ssh/omv_key
 
       - name: Migrate omv to new tailnet + enable subnet router
+        continue-on-error: true
         timeout-minutes: 2
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST }}
@@ -121,6 +122,7 @@ jobs:
 
       - name: Migrate omv-ha to new tailnet
         if: ${{ vars.OMV_HA_SSH_HOST != '' }}
+        continue-on-error: true
         timeout-minutes: 2
         env:
           OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST }}
@@ -161,11 +163,13 @@ jobs:
           echo "omv-ha: migration command sent."
 
       - name: Wait for nodes to switch tailnets
+        if: always()
         run: |
           echo "Waiting 45s for nodes to complete migration..."
           sleep 45
 
       - name: Switch runner to new tailnet
+        if: always()
         uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
@@ -176,6 +180,7 @@ jobs:
           timeout: 2m
 
       - name: Verify -- get new Tailscale IPs via MagicDNS
+        if: always()
         env:
           OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST }}
         run: |
