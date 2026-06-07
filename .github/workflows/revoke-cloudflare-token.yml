@@ -1,0 +1,102 @@
+name: revoke-cloudflare-token
+
+# Revoke the CLOUDFLARE_API_TOKEN and remove it from repo secrets.
+#
+# How it works:
+#   1. Reads CLOUDFLARE_API_TOKEN from repo secrets (or takes it as masked input).
+#   2. Calls GET /user/tokens/verify to retrieve the token's own ID.
+#   3. Calls DELETE /user/tokens/{id} to revoke it on Cloudflare.
+#      (Requires the token to have User → API Tokens → Edit permission.
+#       If it doesn't, the Cloudflare revocation is skipped and the token
+#       must be revoked manually at dash.cloudflare.com/profile/api-tokens;
+#       the GitHub secret is still cleared.)
+#   4. Deletes CLOUDFLARE_API_TOKEN from GitHub repo secrets via GH_PAT.
+#
+# Required secrets:
+#   CLOUDFLARE_API_TOKEN  — the token to revoke (or pass via token_override input)
+#   GH_PAT               — classic PAT with repo scope (to delete the secret)
+
+on:
+  workflow_dispatch:
+    inputs:
+      token_override:
+        description: "Token to revoke (leave blank to use CLOUDFLARE_API_TOKEN secret)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  revoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: pip install --quiet requests
+
+      - name: Revoke token + clear GitHub secret
+        env:
+          CF_TOKEN_SECRET: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_TOKEN_INPUT: ${{ inputs.token_override }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 << 'PYEOF'
+          import os, requests, sys
+
+          cf_token = (os.environ.get("CF_TOKEN_INPUT") or "").strip() or \
+                     (os.environ.get("CF_TOKEN_SECRET") or "").strip()
+          gh_token = os.environ["GH_TOKEN"]
+          repo     = os.environ["REPO"]
+
+          if not cf_token:
+              print("WARNING: No Cloudflare token found in secrets or inputs.")
+              print("Skipping Cloudflare revocation; will still clear GitHub secret if present.")
+          else:
+              # Step 1: get the token's own ID
+              verify = requests.get(
+                  "https://api.cloudflare.com/client/v4/user/tokens/verify",
+                  headers={"Authorization": f"Bearer {cf_token}"},
+              )
+              if not verify.ok:
+                  print(f"WARNING: Token verify returned {verify.status_code} — token may already be revoked or invalid.")
+                  print("Skipping Cloudflare revocation.")
+              else:
+                  token_id = verify.json()["result"]["id"]
+                  token_status = verify.json()["result"]["status"]
+                  print(f"Token ID: {token_id}, Status: {token_status}")
+
+                  # Step 2: delete the token
+                  delete = requests.delete(
+                      f"https://api.cloudflare.com/client/v4/user/tokens/{token_id}",
+                      headers={"Authorization": f"Bearer {cf_token}"},
+                  )
+                  if delete.status_code == 200:
+                      print(f"Cloudflare token {token_id} revoked successfully.")
+                  elif delete.status_code == 403:
+                      print(f"WARNING: Token lacks 'User → API Tokens → Edit' permission.")
+                      print(f"Cloudflare revocation skipped. Revoke manually at:")
+                      print("  https://dash.cloudflare.com/profile/api-tokens")
+                  elif delete.status_code == 404:
+                      print(f"Token {token_id} not found (already revoked?).")
+                  else:
+                      print(f"WARNING: DELETE returned {delete.status_code}: {delete.text}")
+
+          # Step 3: delete CLOUDFLARE_API_TOKEN from GitHub repo secrets
+          gh_api  = f"https://api.github.com/repos/{repo}/actions/secrets"
+          headers = {
+              "Authorization": f"Bearer {gh_token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+          r = requests.delete(f"{gh_api}/CLOUDFLARE_API_TOKEN", headers=headers)
+          if r.status_code == 204:
+              print("GitHub secret CLOUDFLARE_API_TOKEN deleted.")
+          elif r.status_code == 404:
+              print("GitHub secret CLOUDFLARE_API_TOKEN not found (already deleted).")
+          else:
+              r.raise_for_status()
+          PYEOF
