@@ -240,6 +240,44 @@ jobs:
             || echo "rollout status timed out — patch was applied, pod restart is in flight"
           EOF
 
+      - name: Delete unneeded pods (Failed / Evicted / Succeeded)
+        id: pod_cleanup
+        if: always()
+        env:
+          OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST || '100.113.41.119' }}
+        run: |
+          ssh "tbaltzakis@${OMV_SSH_HOST}" bash -s << 'EOF'
+          set -euo pipefail
+
+          echo "=== All pods before cleanup ==="
+          sudo k3s kubectl get pods -A --no-headers
+
+          echo ""
+          echo "=== Deleting Failed pods ==="
+          sudo k3s kubectl get pods -A --field-selector=status.phase==Failed --no-headers \
+            | awk '{print "-n " $1 " " $2}' \
+            | xargs -r -I{} sh -c 'sudo k3s kubectl delete pod {} --grace-period=0 --force 2>/dev/null && echo "Deleted: {}"' \
+            || echo "(none)"
+
+          echo "=== Deleting Succeeded/Completed pods ==="
+          sudo k3s kubectl get pods -A --field-selector=status.phase==Succeeded --no-headers \
+            | awk '{print "-n " $1 " " $2}' \
+            | xargs -r -I{} sh -c 'sudo k3s kubectl delete pod {} --grace-period=0 --force 2>/dev/null && echo "Deleted: {}"' \
+            || echo "(none)"
+
+          echo "=== Deleting Evicted pods ==="
+          sudo k3s kubectl get pods -A --no-headers \
+            | awk '$4=="Evicted" {print $1 " " $2}' \
+            | while read ns pod; do
+                sudo k3s kubectl delete pod "$pod" -n "$ns" --grace-period=0 --force 2>/dev/null \
+                  && echo "Deleted evicted: $ns/$pod"
+              done || true
+
+          echo ""
+          echo "=== All pods after cleanup ==="
+          sudo k3s kubectl get pods -A
+          EOF
+
       - name: Post result to status board
         if: always()
         uses: ./.github/actions/post-status
@@ -250,3 +288,4 @@ jobs:
             ntfy=${{ steps.ntfy.outcome }}
             alertmanager=${{ steps.alertmanager.outcome }}
             prometheus=${{ steps.prometheus.outcome }}
+            pod_cleanup=${{ steps.pod_cleanup.outcome }}
