@@ -168,6 +168,13 @@ jobs:
           echo "Waiting 45s for nodes to complete migration..."
           sleep 45
 
+      - name: Stop old tailscale before switching tailnets
+        if: always()
+        run: |
+          sudo tailscale logout 2>/dev/null || true
+          sudo pkill tailscaled 2>/dev/null || true
+          sleep 3
+
       - name: Switch runner to new tailnet
         if: always()
         uses: tailscale/github-action@v4
