@@ -1,0 +1,64 @@
+name: approve-tailscale-subnet-route
+
+# Approves the 192.168.1.0/24 subnet route advertised by omv via the
+# Tailscale API so phones/laptops on the tailnet can reach any home
+# network device from anywhere.
+#
+# Required secret: TS_API_KEY (Tailscale personal API key)
+
+on:
+  push:
+    paths:
+      - .github/dispatches/approve-tailscale-subnet-route.json
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  approve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve subnet route 192.168.1.0/24 for omv
+        env:
+          TS_API_KEY: ${{ secrets.TS_API_KEY }}
+        run: |
+          set -e
+
+          echo "=== Finding omv device ID ==="
+          DEVICES=$(curl -sf -u "${TS_API_KEY}:" \
+            "https://api.tailscale.com/api/v2/tailnet/-/devices")
+          echo "Devices response received."
+
+          DEVICE_ID=$(echo "${DEVICES}" | jq -r '.devices[] | select(.hostname == "omv") | .id')
+          if [ -z "${DEVICE_ID}" ]; then
+            echo "ERROR: omv device not found in tailnet. Is it registered?"
+            echo "Devices found:"
+            echo "${DEVICES}" | jq -r '.devices[].hostname'
+            exit 1
+          fi
+          echo "omv device ID: ${DEVICE_ID}"
+
+          echo "=== Getting current routes ==="
+          ROUTES=$(curl -sf -u "${TS_API_KEY}:" \
+            "https://api.tailscale.com/api/v2/devices/${DEVICE_ID}/routes")
+          echo "Advertised routes:"
+          echo "${ROUTES}" | jq -r '.advertisedRoutes[]' 2>/dev/null || true
+          echo "Currently enabled routes:"
+          echo "${ROUTES}" | jq -r '.enabledRoutes[]' 2>/dev/null || true
+
+          echo "=== Enabling 192.168.1.0/24 ==="
+          # Merge existing enabled routes with the new one (avoid wiping exit nodes etc)
+          EXISTING=$(echo "${ROUTES}" | jq -r '[.enabledRoutes[]?]')
+          NEW_ROUTES=$(echo "${EXISTING}" | jq '. + ["192.168.1.0/24"] | unique')
+          echo "New enabled routes list: ${NEW_ROUTES}"
+
+          RESULT=$(curl -sf -u "${TS_API_KEY}:" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"routes\": ${NEW_ROUTES}}" \
+            "https://api.tailscale.com/api/v2/devices/${DEVICE_ID}/routes")
+
+          echo "=== Result ==="
+          echo "Enabled routes after update:"
+          echo "${RESULT}" | jq -r '.enabledRoutes[]' 2>/dev/null || echo "${RESULT}"
+          echo "SUCCESS: 192.168.1.0/24 subnet route approved for omv."
