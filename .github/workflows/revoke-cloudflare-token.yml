@@ -23,6 +23,9 @@ on:
         description: "Token to revoke (leave blank to use CLOUDFLARE_API_TOKEN secret)"
         required: false
         type: string
+  push:
+    branches: [main]
+    paths: [.github/dispatches/revoke-cloudflare-token.json]
 
 permissions:
   contents: read
