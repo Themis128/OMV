@@ -71,6 +71,7 @@ jobs:
           chmod 600 ~/.ssh/omv_key
 
       - name: Migrate omv to new tailnet + enable subnet router
+        timeout-minutes: 2
         env:
           OMV_SSH_HOST: ${{ vars.OMV_SSH_HOST }}
           TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
@@ -103,20 +104,24 @@ jobs:
           printf '%s' "${TS_NEW_AUTHKEY}" | ssh \
             -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
             "tbaltzakis@${OMV_SSH_HOST}" \
             "cat > /tmp/.ts_authkey_migrate && chmod 600 /tmp/.ts_authkey_migrate"
 
           scp -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
             /tmp/ts-migrate-omv.sh "tbaltzakis@${OMV_SSH_HOST}:/tmp/ts-migrate.sh"
 
           ssh -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
             "tbaltzakis@${OMV_SSH_HOST}" \
             "chmod +x /tmp/ts-migrate.sh && nohup /tmp/ts-migrate.sh >> /tmp/ts-migrate.log 2>&1 </dev/null & echo pid=\$!"
           echo "omv: migration + subnet router command sent."
 
       - name: Migrate omv-ha to new tailnet
         if: ${{ vars.OMV_HA_SSH_HOST != '' }}
+        timeout-minutes: 2
         env:
           OMV_HA_SSH_HOST: ${{ vars.OMV_HA_SSH_HOST }}
           TS_NEW_AUTHKEY: ${{ secrets.TS_NEW_AUTHKEY }}
@@ -140,14 +145,17 @@ jobs:
           printf '%s' "${TS_NEW_AUTHKEY}" | ssh \
             -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
             "tbaltzakis@${OMV_HA_SSH_HOST}" \
             "cat > /tmp/.ts_authkey_migrate && chmod 600 /tmp/.ts_authkey_migrate"
 
           scp -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
             /tmp/ts-migrate-ha.sh "tbaltzakis@${OMV_HA_SSH_HOST}:/tmp/ts-migrate.sh"
 
           ssh -i ~/.ssh/omv_key -o StrictHostKeyChecking=accept-new \
             -o BatchMode=yes -o ConnectTimeout=20 \
+            -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
             "tbaltzakis@${OMV_HA_SSH_HOST}" \
             "chmod +x /tmp/ts-migrate.sh && nohup /tmp/ts-migrate.sh >> /tmp/ts-migrate.log 2>&1 </dev/null & echo pid=\$!"
           echo "omv-ha: migration command sent."
