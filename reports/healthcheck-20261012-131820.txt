@@ -1,0 +1,48 @@
+OMV Health Check — omv — 2026-10-12 16:13:15 EEST
+
+=== OMV engine daemon ===
+  [PASS] openmediavault-engined is running
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 4 error-level journal entries
+      Oct 11 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1791726605.6694622,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Oct 11 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1791726605.6851757,"logger":"tls","msg":"finished cleaning storage units"}
+      Oct 12 04:24:33 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 12 05:01:14 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+
+=== Kernel messages (errors and worse) ===
+  [PASS] no kernel error messages
+
+=== Disk usage ===
+  [PASS] / is 76% full
+  [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 23% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 75% full
+
+=== Memory ===
+  [PASS] 33% memory available (2652MB / 7954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.99 (4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [PASS] all packages up to date
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  14 passed, 2 warnings, 0 failures

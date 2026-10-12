@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-10-11 14:25:57 EEST
+OMV Health Check — omv — 2026-10-12 16:13:15 EEST
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,11 @@ OMV Health Check — omv — 2026-10-11 14:25:57 EEST
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 37 error-level journal entries (showing last 10)
-      Apr 13 22:39:09 omv monit[1195]: 'k3s' process is not running
-      Apr 13 22:39:35 omv systemd[1]: Failed to start k3s-k3s-omv.service - Lightweight Kubernetes.
-      Apr 13 22:39:39 omv monit[1195]: 'k3s' process is not running
-      Apr 13 22:40:01 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 10 16:51:33 omv systemd[1]: Failed to start omv-main-heartbeat.service - Daily heartbeat email confirming alert chain is alive.
-      Oct 10 16:56:15 omv systemd[1]: Failed to start logrotate.service - Rotate log files.
-      Oct 11 00:13:14 omv systemd[1]: Failed to start logrotate.service - Rotate log files.
-      Oct 11 03:00:01 omv clamdscan-0f88e200-dce2-4990-91e7-4084eefeb207[23374]: The scan failed.
-      Oct 11 05:00:55 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 11 05:01:02 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+  [WARN] 4 error-level journal entries
+      Oct 11 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1791726605.6694622,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Oct 11 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1791726605.6851757,"logger":"tls","msg":"finished cleaning storage units"}
+      Oct 12 04:24:33 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 12 05:01:14 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -29,10 +23,10 @@ OMV Health Check — omv — 2026-10-11 14:25:57 EEST
   [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 75% full
 
 === Memory ===
-  [PASS] 32% memory available (2610MB / 7954MB)
+  [PASS] 33% memory available (2652MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.78 (4 cores)
+  [PASS] 5-min load 0.99 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
