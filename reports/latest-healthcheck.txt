@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-10-14 13:16:14 EEST
+OMV Health Check — omv — 2026-10-15 12:59:24 EEST
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,13 @@ OMV Health Check — omv — 2026-10-14 13:16:14 EEST
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 10 error-level journal entries (showing last 10)
-      Oct 13 15:31:18 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 13 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1791899405.6633723,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-      Oct 13 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1791899405.6818137,"logger":"tls","msg":"finished cleaning storage units"}
-      Oct 13 17:48:26 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 13 20:39:31 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 13 20:40:16 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 13 20:41:39 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 13 20:42:24 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 13 22:10:08 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 14 05:00:34 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+  [WARN] 6 error-level journal entries
+      Oct 14 21:43:00 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 14 21:53:34 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 14 22:11:06 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 15 04:12:48 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 15 05:00:40 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 15 05:00:58 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -29,17 +25,17 @@ OMV Health Check — omv — 2026-10-14 13:16:14 EEST
   [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 75% full
 
 === Memory ===
-  [PASS] 33% memory available (2646MB / 7954MB)
+  [PASS] 30% memory available (2398MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.07 (4 cores)
+  [PASS] 5-min load 0.68 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 6 package(s) upgradable
+  [PASS] all packages up to date
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -51,4 +47,4 @@ OMV Health Check — omv — 2026-10-14 13:16:14 EEST
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  13 passed, 3 warnings, 0 failures
+  14 passed, 2 warnings, 0 failures

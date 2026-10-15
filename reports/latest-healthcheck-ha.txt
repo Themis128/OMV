@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-10-14 13:20:56 EEST
+OMV Health Check — OMV-HA — 2026-10-15 13:04:04 EEST
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,40 +7,40 @@ OMV Health Check — OMV-HA — 2026-10-14 13:20:56 EEST
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 17 error-level journal entries (showing last 10)
-      Oct 13 20:36:27 OMV-HA blkmapd[539]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
-      Oct 13 20:36:47 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 13 20:36:55 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 13 20:37:28 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 13 20:38:11 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
-      Oct 13 20:51:58 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 14 05:24:12 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 14 05:26:13 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 14 07:25:11 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 14 09:30:13 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+  [WARN] 27 error-level journal entries (showing last 10)
+      Oct 14 13:42:19 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 14 13:46:21 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 14 15:59:26 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 14 20:17:35 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 15 02:50:51 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 15 05:20:04 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 15 07:21:03 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 15 09:14:01 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 15 09:16:02 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 15 11:21:03 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
 
 === Kernel messages (errors and worse) ===
-  [WARN] 13 kernel error message(s)
-      [   11.834501] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   11.840343] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   33.790776] hwmon hwmon1: Undervoltage detected!
-      [   41.854430] hwmon hwmon1: Undervoltage detected!
-      [   74.110426] hwmon hwmon1: Undervoltage detected!
-      [  686.976527] hwmon hwmon1: Undervoltage detected!
-      [31421.051265] hwmon hwmon1: Undervoltage detected!
-      [31542.009333] hwmon hwmon1: Undervoltage detected!
-      [38680.732083] hwmon hwmon1: Undervoltage detected!
-      [46182.308104] hwmon hwmon1: Undervoltage detected!
+  [WARN] 23 kernel error message(s)
+      [61308.436300] hwmon hwmon1: Undervoltage detected!
+      [61550.356160] hwmon hwmon1: Undervoltage detected!
+      [69535.774015] hwmon hwmon1: Undervoltage detected!
+      [85024.778676] hwmon hwmon1: Undervoltage detected!
+      [108620.167645] hwmon hwmon1: Undervoltage detected!
+      [117573.271236] hwmon hwmon1: Undervoltage detected!
+      [124832.920209] hwmon hwmon1: Undervoltage detected!
+      [131610.755395] hwmon hwmon1: Undervoltage detected!
+      [131731.712090] hwmon hwmon1: Undervoltage detected!
+      [139233.282661] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 49% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 42% memory available (404MB / 955MB)
+  [PASS] 40% memory available (382MB / 955MB)
 
 === Load average ===
-  [PASS] 5-min load 0.14 (4 cores)
+  [PASS] 5-min load 0.12 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
