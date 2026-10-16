@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-10-15 12:59:24 EEST
+OMV Health Check — omv — 2026-10-16 12:53:15 EEST
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -8,34 +8,34 @@ OMV Health Check — omv — 2026-10-15 12:59:24 EEST
 
 === Journal errors (this boot) ===
   [WARN] 6 error-level journal entries
-      Oct 14 21:43:00 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 14 21:53:34 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 14 22:11:06 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 15 04:12:48 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 15 05:00:40 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 15 05:00:58 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 15 14:11:46 omv sshd-session[57950]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 59848 ssh2 [preauth]
+      Oct 15 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1792072205.639652,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Oct 15 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1792072205.663623,"logger":"tls","msg":"finished cleaning storage units"}
+      Oct 15 20:19:40 omv sshd-session[13144]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 59847 ssh2 [preauth]
+      Oct 15 20:26:31 omv sshd-session[25033]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 59864 ssh2 [preauth]
+      Oct 16 05:00:43 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
 
 === Disk usage ===
-  [PASS] / is 77% full
+  [PASS] / is 76% full
   [PASS] /boot/firmware is 15% full
   [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 23% full
-  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 75% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 76% full
 
 === Memory ===
-  [PASS] 30% memory available (2398MB / 7954MB)
+  [PASS] 26% memory available (2088MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.68 (4 cores)
+  [PASS] 5-min load 1.19 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [PASS] all packages up to date
+  [WARN] 7 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -47,4 +47,4 @@ OMV Health Check — omv — 2026-10-15 12:59:24 EEST
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  14 passed, 2 warnings, 0 failures
+  13 passed, 3 warnings, 0 failures
