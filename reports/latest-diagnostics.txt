@@ -1,4 +1,4 @@
-omv-report diagnostics — 2026-10-16T09:53:11Z
+omv-report diagnostics — 2026-10-17T09:25:33Z
 
 Tailscale step outcome : success
 OMV_SSH_KEY secret     : present
@@ -6,12 +6,12 @@ omv tailnet host       : 100.74.191.58
 omv-ha LAN host        : 192.168.1.130
 
 ## tailscale status
-100.90.92.64    omv-report-ci       omv-report-ci.tail4ecae1.ts.net  linux    -                           
+100.69.186.82   omv-report-ci       omv-report-ci.tail4ecae1.ts.net  linux    -                           
 100.74.191.58   github-omv          tagged-devices                   linux    -                           
 100.83.120.93   office-1            Themis128@                       windows  -                           
-100.66.201.116  office-2            Themis128@                       linux    offline, last seen 72d ago  
-100.99.227.29   office-3            Themis128@                       linux    offline, last seen 47d ago  
-100.98.121.44   office              Themis128@                       linux    offline, last seen 51d ago  
+100.66.201.116  office-2            Themis128@                       linux    offline, last seen 73d ago  
+100.99.227.29   office-3            Themis128@                       linux    offline, last seen 48d ago  
+100.98.121.44   office              Themis128@                       linux    offline, last seen 52d ago  
 100.85.166.50   tailscale-operator  tagged-devices                   linux    -                           
 
 ## OMV_SSH_KEY structure (no key material printed)

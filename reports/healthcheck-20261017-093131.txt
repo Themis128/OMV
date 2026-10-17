@@ -1,0 +1,51 @@
+OMV Health Check — omv — 2026-10-17 12:25:38 EEST
+
+=== OMV engine daemon ===
+  [PASS] openmediavault-engined is running
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 7 error-level journal entries
+      Oct 16 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1792158605.6868339,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Oct 16 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1792158605.7090192,"logger":"tls","msg":"finished cleaning storage units"}
+      Oct 17 03:38:29 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 17 03:51:12 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 17 04:00:01 omv clamdscan-7f7b4811-304b-4744-9acd-8f10f85bd463[62313]: The scan failed.
+      Oct 17 04:30:22 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 17 05:00:30 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+
+=== Kernel messages (errors and worse) ===
+  [PASS] no kernel error messages
+
+=== Disk usage ===
+  [PASS] / is 76% full
+  [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 23% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 76% full
+
+=== Memory ===
+  [PASS] 29% memory available (2385MB / 7954MB)
+
+=== Load average ===
+  [PASS] 5-min load 1.43 (4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [PASS] all packages up to date
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  14 passed, 2 warnings, 0 failures
