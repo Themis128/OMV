@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-10-18 12:45:14 EEST
+OMV Health Check — OMV-HA — 2026-10-19 13:54:16 EEST
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,40 +7,40 @@ OMV Health Check — OMV-HA — 2026-10-18 12:45:14 EEST
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 39 error-level journal entries (showing last 10)
-      Oct 17 16:27:23 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 17 18:30:23 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 17 20:33:24 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 17 20:41:30 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 17 22:48:32 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 18 00:57:36 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 18 03:12:42 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 18 05:29:51 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 18 07:34:53 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 18 07:38:55 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+  [WARN] 45 error-level journal entries (showing last 10)
+      Oct 18 14:13:39 OMV-HA systemd-udevd[339]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Oct 18 14:13:39 OMV-HA systemd-udevd[339]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Oct 18 14:33:26 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 18 19:52:04 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 19 03:58:06 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 19 04:06:09 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 19 08:22:17 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 19 10:13:12 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 19 10:17:14 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 19 10:23:17 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
 
 === Kernel messages (errors and worse) ===
-  [WARN] 50 kernel error message(s)
-      [330413.686515] hwmon hwmon1: Undervoltage detected!
-      [337794.298987] hwmon hwmon1: Undervoltage detected!
-      [345174.917462] hwmon hwmon1: Undervoltage detected!
-      [345660.774991] hwmon hwmon1: Undervoltage detected!
-      [353283.310381] hwmon hwmon1: Undervoltage detected!
-      [361026.810639] hwmon hwmon1: Undervoltage detected!
-      [369133.187840] hwmon hwmon1: Undervoltage detected!
-      [377362.545009] hwmon hwmon1: Undervoltage detected!
-      [384864.126433] hwmon hwmon1: Undervoltage detected!
-      [385106.048742] hwmon hwmon1: Undervoltage detected!
+  [WARN] 60 kernel error message(s)
+      [408459.517263] hwmon hwmon1: Undervoltage detected!
+      [408624.829587] hwmon hwmon1: Undervoltage detected!
+      [409977.573109] hwmon hwmon1: Undervoltage detected!
+      [429095.407413] hwmon hwmon1: Undervoltage detected!
+      [458256.990897] hwmon hwmon1: Undervoltage detected!
+      [458740.832940] hwmon hwmon1: Undervoltage detected!
+      [474108.885549] hwmon hwmon1: Undervoltage detected!
+      [480763.742328] hwmon hwmon1: Undervoltage detected!
+      [481005.659740] hwmon hwmon1: Undervoltage detected!
+      [481368.541837] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
-  [PASS] / is 49% full
+  [PASS] / is 50% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 36% memory available (348MB / 955MB)
+  [PASS] 39% memory available (379MB / 955MB)
 
 === Load average ===
-  [PASS] 5-min load 0.09 (4 cores)
+  [PASS] 5-min load 0.19 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -48,7 +48,7 @@ OMV Health Check — OMV-HA — 2026-10-18 12:45:14 EEST
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 156 package(s) upgradable
+  [WARN] 1 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
