@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-10-19 13:54:16 EEST
+OMV Health Check — OMV-HA — 2026-10-20 13:11:20 EEST
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,40 +7,40 @@ OMV Health Check — OMV-HA — 2026-10-19 13:54:16 EEST
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 45 error-level journal entries (showing last 10)
-      Oct 18 14:13:39 OMV-HA systemd-udevd[339]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
-      Oct 18 14:13:39 OMV-HA systemd-udevd[339]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
-      Oct 18 14:33:26 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 18 19:52:04 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 19 03:58:06 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 19 04:06:09 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+  [WARN] 48 error-level journal entries (showing last 10)
       Oct 19 08:22:17 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
       Oct 19 10:13:12 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
       Oct 19 10:17:14 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
       Oct 19 10:23:17 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 19 14:25:16 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 19 22:31:18 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 19 22:35:20 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 20 00:00:02 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 20 02:31:18 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 20 08:34:17 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
 
 === Kernel messages (errors and worse) ===
-  [WARN] 60 kernel error message(s)
-      [408459.517263] hwmon hwmon1: Undervoltage detected!
-      [408624.829587] hwmon hwmon1: Undervoltage detected!
-      [409977.573109] hwmon hwmon1: Undervoltage detected!
-      [429095.407413] hwmon hwmon1: Undervoltage detected!
-      [458256.990897] hwmon hwmon1: Undervoltage detected!
-      [458740.832940] hwmon hwmon1: Undervoltage detected!
+  [WARN] 66 kernel error message(s)
       [474108.885549] hwmon hwmon1: Undervoltage detected!
       [480763.742328] hwmon hwmon1: Undervoltage detected!
       [481005.659740] hwmon hwmon1: Undervoltage detected!
       [481368.541837] hwmon hwmon1: Undervoltage detected!
+      [495887.853907] hwmon hwmon1: Undervoltage detected!
+      [525049.443451] hwmon hwmon1: Undervoltage detected!
+      [525291.368479] hwmon hwmon1: Undervoltage detected!
+      [530373.730298] hwmon hwmon1: Undervoltage detected!
+      [539449.806000] hwmon hwmon1: Undervoltage detected!
+      [561228.771881] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 50% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 39% memory available (379MB / 955MB)
+  [PASS] 40% memory available (389MB / 955MB)
 
 === Load average ===
-  [PASS] 5-min load 0.19 (4 cores)
+  [PASS] 5-min load 0.69 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -48,7 +48,7 @@ OMV Health Check — OMV-HA — 2026-10-19 13:54:16 EEST
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 1 package(s) upgradable
+  [WARN] 2 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
