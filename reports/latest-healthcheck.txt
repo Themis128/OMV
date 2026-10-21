@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-10-20 13:06:46 EEST
+OMV Health Check — omv — 2026-10-21 13:14:23 EEST
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,13 +7,17 @@ OMV Health Check — omv — 2026-10-20 13:06:46 EEST
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 6 error-level journal entries
-      Oct 19 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1792417805.68957,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-      Oct 19 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1792417805.7160916,"logger":"tls","msg":"finished cleaning storage units"}
-      Oct 19 17:19:12 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 19 18:19:33 omv sshd-session[18129]: error: maximum authentication attempts exceeded for invalid user root from 100.83.120.93 port 55824 ssh2 [preauth]
-      Oct 20 05:01:27 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 20 05:01:36 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+  [WARN] 11 error-level journal entries (showing last 10)
+      Oct 20 16:50:05 omv wetty-proxy[2361]: {"level":"info","ts":1792504205.6488514,"logger":"tls","msg":"finished cleaning storage units"}
+      Oct 20 21:21:39 omv sshd-session[37436]: error: maximum authentication attempts exceeded for tbaltzakis from 100.83.120.93 port 51634 ssh2 [preauth]
+      Oct 21 03:46:47 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 21 05:00:49 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 21 05:01:37 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 21 05:35:45 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 21 05:36:49 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 21 05:41:59 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 21 05:42:50 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 21 05:44:17 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -22,20 +26,20 @@ OMV Health Check — omv — 2026-10-20 13:06:46 EEST
   [PASS] / is 77% full
   [PASS] /boot/firmware is 15% full
   [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 23% full
-  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 75% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 76% full
 
 === Memory ===
-  [PASS] 28% memory available (2302MB / 7954MB)
+  [PASS] 28% memory available (2270MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.37 (4 cores)
+  [PASS] 5-min load 1.09 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [PASS] all packages up to date
+  [WARN] 8 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -47,4 +51,4 @@ OMV Health Check — omv — 2026-10-20 13:06:46 EEST
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  14 passed, 2 warnings, 0 failures
+  13 passed, 3 warnings, 0 failures
