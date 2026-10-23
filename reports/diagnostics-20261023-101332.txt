@@ -1,0 +1,26 @@
+omv-report diagnostics — 2026-10-23T10:08:17Z
+
+Tailscale step outcome : success
+OMV_SSH_KEY secret     : present
+omv tailnet host       : 100.74.191.58
+omv-ha LAN host        : 192.168.1.130
+
+## tailscale status
+100.124.217.90  omv-report-ci       omv-report-ci.tail4ecae1.ts.net  linux    -  
+100.74.191.58   github-omv          tagged-devices                   linux    -  
+100.83.120.93   office-1            Themis128@                       windows  -  
+100.85.166.50   tailscale-operator  tagged-devices                   linux    -  
+
+## OMV_SSH_KEY structure (no key material printed)
+line count : 8
+header     : BEGIN private-key header OK
+parse test : valid — ssh-keygen loaded the key
+
+## omv SSH connectivity test (tbaltzakis@100.74.191.58)
+Warning: Permanently added '100.74.191.58' (ED25519) to the list of known hosts.
+SSH-OK on omv
+(omv ssh exit code: 0)
+
+## omv-ha collection (omv -> tbaltzakis@192.168.1.130)
+HA-SSH-OK
+(omv-ha ssh exit code: 0)
