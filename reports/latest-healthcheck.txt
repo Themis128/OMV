@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-10-23 13:08:21 EEST
+OMV Health Check — omv — 2026-10-24 12:34:59 EEST
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,17 @@ OMV Health Check — omv — 2026-10-23 13:08:21 EEST
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 21 error-level journal entries (showing last 10)
-      Oct 23 03:48:17 omv kernel: Memory cgroup out of memory: Killed process 35693 (php) total-vm:81784kB, anon-rss:18416kB, file-rss:1428kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
-      Oct 23 03:48:17 omv kernel: Memory cgroup out of memory: Killed process 35694 (php) total-vm:81784kB, anon-rss:19824kB, file-rss:1388kB, shmem-rss:0kB, UID:0 pgtables:192kB oom_score_adj:984
-      Oct 23 03:48:17 omv kernel: Memory cgroup out of memory: Killed process 35695 (php) total-vm:77688kB, anon-rss:14432kB, file-rss:1380kB, shmem-rss:0kB, UID:0 pgtables:176kB oom_score_adj:984
-      Oct 23 03:48:17 omv kernel: Memory cgroup out of memory: Killed process 35696 (php) total-vm:81784kB, anon-rss:18944kB, file-rss:1572kB, shmem-rss:0kB, UID:0 pgtables:180kB oom_score_adj:984
-      Oct 23 03:48:17 omv kernel: Memory cgroup out of memory: Killed process 35866 (php) total-vm:69252kB, anon-rss:7552kB, file-rss:1412kB, shmem-rss:0kB, UID:0 pgtables:164kB oom_score_adj:984
-      Oct 23 05:01:47 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 23 06:02:11 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 23 06:17:17 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 23 06:20:12 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 23 09:05:10 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+  [WARN] 26 error-level journal entries (showing last 10)
+      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16533 (php) total-vm:81784kB, anon-rss:20096kB, file-rss:1016kB, shmem-rss:0kB, UID:0 pgtables:184kB oom_score_adj:984
+      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16534 (php) total-vm:81784kB, anon-rss:19696kB, file-rss:1124kB, shmem-rss:0kB, UID:0 pgtables:176kB oom_score_adj:984
+      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16535 (php) total-vm:79736kB, anon-rss:16512kB, file-rss:1068kB, shmem-rss:0kB, UID:0 pgtables:176kB oom_score_adj:984
+      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16536 (php) total-vm:75640kB, anon-rss:12528kB, file-rss:1052kB, shmem-rss:0kB, UID:0 pgtables:172kB oom_score_adj:984
+      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16538 (php) total-vm:81784kB, anon-rss:20080kB, file-rss:1004kB, shmem-rss:0kB, UID:0 pgtables:184kB oom_score_adj:984
+      Oct 24 04:00:01 omv clamdscan-7f7b4811-304b-4744-9acd-8f10f85bd463[39235]: The scan failed.
+      Oct 24 05:00:18 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 24 05:01:16 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 24 05:34:22 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 24 05:35:00 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -25,21 +25,21 @@ OMV Health Check — omv — 2026-10-23 13:08:21 EEST
 === Disk usage ===
   [PASS] / is 77% full
   [PASS] /boot/firmware is 15% full
-  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 24% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 23% full
   [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 76% full
 
 === Memory ===
-  [PASS] 28% memory available (2235MB / 7954MB)
+  [PASS] 24% memory available (1957MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.50 (4 cores)
+  [PASS] 5-min load 1.52 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 14 package(s) upgradable
+  [PASS] all packages up to date
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -51,4 +51,4 @@ OMV Health Check — omv — 2026-10-23 13:08:21 EEST
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  13 passed, 3 warnings, 0 failures
+  14 passed, 2 warnings, 0 failures
