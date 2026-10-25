@@ -1,0 +1,63 @@
+OMV Health Check — OMV-HA — 2026-10-25 11:56:57 EET
+
+=== OMV engine daemon ===
+  [PASS] OpenMediaVault not installed on this host — skipping OMV checks
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 18 error-level journal entries (showing last 10)
+      Oct 24 21:23:39 OMV-HA blkmapd[543]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
+      Oct 24 21:24:05 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 24 21:28:39 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 24 21:43:20 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 24 21:49:23 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 00:14:34 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 00:18:36 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 03:47:06 OMV-HA dovecot[1170]: lmtp(tbaltzakis@cloudless.gr)<57727><I7IeCJpf3Wp/4QAAGq/KLg>: Error: maildir: stat(/var/mail/vhosts/cloudless.gr/tbaltzakis/.dovecot.sieve/tmp) failed: Not a directory
+      Oct 25 07:22:37 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 07:32:42 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+
+=== Kernel messages (errors and worse) ===
+  [WARN] 14 kernel error message(s)
+      [   15.338992] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   17.118655] hwmon hwmon1: Undervoltage detected!
+      [   43.327784] hwmon hwmon1: Undervoltage detected!
+      [   57.438577] hwmon hwmon1: Undervoltage detected!
+      [  938.436963] hwmon hwmon1: Undervoltage detected!
+      [ 1301.322828] hwmon hwmon1: Undervoltage detected!
+      [10012.498413] hwmon hwmon1: Undervoltage detected!
+      [10254.419495] hwmon hwmon1: Undervoltage detected!
+      [39295.057451] hwmon hwmon1: Undervoltage detected!
+      [39899.856177] hwmon hwmon1: Undervoltage detected!
+
+=== Disk usage ===
+  [PASS] / is 50% full
+  [PASS] /boot/firmware is 14% full
+
+=== Memory ===
+  [PASS] 43% memory available (414MB / 954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.14 (4 cores)
+
+=== Power ===
+  [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
+  [WARN] throttling has occurred since boot (get_throttled=0x50000)
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 34 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  9 passed, 6 warnings, 0 failures

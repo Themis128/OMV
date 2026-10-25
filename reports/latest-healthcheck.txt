@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-10-24 12:34:59 EEST
+OMV Health Check — omv — 2026-10-25 11:50:53 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,17 @@ OMV Health Check — omv — 2026-10-24 12:34:59 EEST
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 26 error-level journal entries (showing last 10)
-      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16533 (php) total-vm:81784kB, anon-rss:20096kB, file-rss:1016kB, shmem-rss:0kB, UID:0 pgtables:184kB oom_score_adj:984
-      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16534 (php) total-vm:81784kB, anon-rss:19696kB, file-rss:1124kB, shmem-rss:0kB, UID:0 pgtables:176kB oom_score_adj:984
-      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16535 (php) total-vm:79736kB, anon-rss:16512kB, file-rss:1068kB, shmem-rss:0kB, UID:0 pgtables:176kB oom_score_adj:984
-      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16536 (php) total-vm:75640kB, anon-rss:12528kB, file-rss:1052kB, shmem-rss:0kB, UID:0 pgtables:172kB oom_score_adj:984
-      Oct 24 03:46:23 omv kernel: Memory cgroup out of memory: Killed process 16538 (php) total-vm:81784kB, anon-rss:20080kB, file-rss:1004kB, shmem-rss:0kB, UID:0 pgtables:184kB oom_score_adj:984
-      Oct 24 04:00:01 omv clamdscan-7f7b4811-304b-4744-9acd-8f10f85bd463[39235]: The scan failed.
-      Oct 24 05:00:18 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 24 05:01:16 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 24 05:34:22 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 24 05:35:00 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+  [WARN] 53 error-level journal entries (showing last 10)
+      Oct 25 06:02:05 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 25 06:04:14 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 25 06:06:25 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 25 06:08:27 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 25 06:10:00 omv systemd[1]: Failed to start k3s-state-backup.service - Backup k3s SQLite datastore (state.db) + server config to NAS mount.
+      Oct 25 06:10:45 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 25 06:12:47 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 25 06:14:31 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 25 06:15:10 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 25 06:16:57 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -25,14 +25,14 @@ OMV Health Check — omv — 2026-10-24 12:34:59 EEST
 === Disk usage ===
   [PASS] / is 77% full
   [PASS] /boot/firmware is 15% full
-  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 23% full
-  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 76% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 77% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 27% full
 
 === Memory ===
-  [PASS] 24% memory available (1957MB / 7954MB)
+  [PASS] 24% memory available (1958MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.52 (4 cores)
+  [PASS] 5-min load 2.84 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling

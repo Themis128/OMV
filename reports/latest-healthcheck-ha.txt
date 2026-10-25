@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-10-24 12:40:56 EEST
+OMV Health Check — OMV-HA — 2026-10-25 11:56:57 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,40 +7,40 @@ OMV Health Check — OMV-HA — 2026-10-24 12:40:56 EEST
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 163 error-level journal entries (showing last 10)
-      Oct 23 14:49:04 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 23 18:57:09 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 23 23:03:10 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 23 23:07:12 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 23 23:13:14 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 24 01:02:08 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 24 01:14:14 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 24 07:11:12 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 24 09:12:12 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 24 11:05:07 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+  [WARN] 18 error-level journal entries (showing last 10)
+      Oct 24 21:23:39 OMV-HA blkmapd[543]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
+      Oct 24 21:24:05 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 24 21:28:39 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 24 21:43:20 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 24 21:49:23 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 00:14:34 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 00:18:36 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 03:47:06 OMV-HA dovecot[1170]: lmtp(tbaltzakis@cloudless.gr)<57727><I7IeCJpf3Wp/4QAAGq/KLg>: Error: maildir: stat(/var/mail/vhosts/cloudless.gr/tbaltzakis/.dovecot.sieve/tmp) failed: Not a directory
+      Oct 25 07:22:37 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 07:32:42 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
 
 === Kernel messages (errors and worse) ===
-  [WARN] 225 kernel error message(s)
-      [842917.852855] hwmon hwmon1: Undervoltage detected!
-      [857802.062387] hwmon hwmon1: Undervoltage detected!
-      [872563.283604] hwmon hwmon1: Undervoltage detected!
-      [872805.204752] hwmon hwmon1: Undervoltage detected!
-      [873168.086559] hwmon hwmon1: Undervoltage detected!
-      [879701.975670] hwmon hwmon1: Undervoltage detected!
-      [880427.738171] hwmon hwmon1: Undervoltage detected!
-      [901845.829330] hwmon hwmon1: Undervoltage detected!
-      [909105.479536] hwmon hwmon1: Undervoltage detected!
-      [915881.289321] hwmon hwmon1: Undervoltage detected!
+  [WARN] 14 kernel error message(s)
+      [   15.338992] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   17.118655] hwmon hwmon1: Undervoltage detected!
+      [   43.327784] hwmon hwmon1: Undervoltage detected!
+      [   57.438577] hwmon hwmon1: Undervoltage detected!
+      [  938.436963] hwmon hwmon1: Undervoltage detected!
+      [ 1301.322828] hwmon hwmon1: Undervoltage detected!
+      [10012.498413] hwmon hwmon1: Undervoltage detected!
+      [10254.419495] hwmon hwmon1: Undervoltage detected!
+      [39295.057451] hwmon hwmon1: Undervoltage detected!
+      [39899.856177] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 50% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 38% memory available (367MB / 955MB)
+  [PASS] 43% memory available (414MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.25 (4 cores)
+  [PASS] 5-min load 0.14 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -48,7 +48,7 @@ OMV Health Check — OMV-HA — 2026-10-24 12:40:56 EEST
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 35 package(s) upgradable
+  [WARN] 34 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
