@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-10-25 11:56:57 EET
+OMV Health Check — OMV-HA — 2026-10-26 13:16:01 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,40 +7,40 @@ OMV Health Check — OMV-HA — 2026-10-25 11:56:57 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 18 error-level journal entries (showing last 10)
-      Oct 24 21:23:39 OMV-HA blkmapd[543]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
-      Oct 24 21:24:05 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 24 21:28:39 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 24 21:43:20 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 24 21:49:23 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 00:14:34 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 00:18:36 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 03:47:06 OMV-HA dovecot[1170]: lmtp(tbaltzakis@cloudless.gr)<57727><I7IeCJpf3Wp/4QAAGq/KLg>: Error: maildir: stat(/var/mail/vhosts/cloudless.gr/tbaltzakis/.dovecot.sieve/tmp) failed: Not a directory
-      Oct 25 07:22:37 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 07:32:42 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+  [WARN] 31 error-level journal entries (showing last 10)
+      Oct 25 12:06:58 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 12:08:59 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 12:11:00 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 12:13:01 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 12:15:02 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 12:17:03 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 25 16:18:52 OMV-HA postfix/postmap[3455]: fatal: no 'map create' support for this type: cidr
+      Oct 25 16:19:20 OMV-HA postfix/camrelay/smtpd[4212]: fatal: unexpected command-line argument: hash:/etc/postfix/cam_clients
+      Oct 25 16:20:21 OMV-HA postfix/camrelay/smtpd[4275]: fatal: unexpected command-line argument: hash:/etc/postfix/cam_clients
+      Oct 25 16:20:21 OMV-HA postfix/camrelay/smtpd[4276]: fatal: unexpected command-line argument: hash:/etc/postfix/cam_clients
 
 === Kernel messages (errors and worse) ===
-  [WARN] 14 kernel error message(s)
-      [   15.338992] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   17.118655] hwmon hwmon1: Undervoltage detected!
-      [   43.327784] hwmon hwmon1: Undervoltage detected!
-      [   57.438577] hwmon hwmon1: Undervoltage detected!
-      [  938.436963] hwmon hwmon1: Undervoltage detected!
-      [ 1301.322828] hwmon hwmon1: Undervoltage detected!
-      [10012.498413] hwmon hwmon1: Undervoltage detected!
-      [10254.419495] hwmon hwmon1: Undervoltage detected!
-      [39295.057451] hwmon hwmon1: Undervoltage detected!
+  [WARN] 23 kernel error message(s)
       [39899.856177] hwmon hwmon1: Undervoltage detected!
+      [55943.269419] hwmon hwmon1: Undervoltage detected!
+      [55977.541711] hwmon hwmon1: Undervoltage detected!
+      [56114.630445] hwmon hwmon1: Undervoltage detected!
+      [56356.551687] hwmon hwmon1: Undervoltage detected!
+      [56477.512230] hwmon hwmon1: Undervoltage detected!
+      [56598.472681] hwmon hwmon1: Undervoltage detected!
+      [56719.433277] hwmon hwmon1: Undervoltage detected!
+      [56840.397786] hwmon hwmon1: Undervoltage detected!
+      [56961.354307] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 50% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 43% memory available (414MB / 954MB)
+  [PASS] 40% memory available (382MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.14 (4 cores)
+  [PASS] 5-min load 0.16 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
