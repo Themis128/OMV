@@ -1,28 +1,27 @@
-OMV Health Check — OMV-HA — 2026-10-26 13:16:01 EET
+OMV Health Check — OMV-HA — 2026-10-27 12:43:24 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
 
 === Failed systemd units ===
-  [PASS] no failed units
+  [FAIL] 1 failed unit(s)
+      ●
 
 === Journal errors (this boot) ===
-  [WARN] 31 error-level journal entries (showing last 10)
-      Oct 25 12:06:58 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 12:08:59 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 12:11:00 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 12:13:01 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 12:15:02 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 12:17:03 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 25 16:18:52 OMV-HA postfix/postmap[3455]: fatal: no 'map create' support for this type: cidr
-      Oct 25 16:19:20 OMV-HA postfix/camrelay/smtpd[4212]: fatal: unexpected command-line argument: hash:/etc/postfix/cam_clients
+  [WARN] 39 error-level journal entries (showing last 10)
       Oct 25 16:20:21 OMV-HA postfix/camrelay/smtpd[4275]: fatal: unexpected command-line argument: hash:/etc/postfix/cam_clients
       Oct 25 16:20:21 OMV-HA postfix/camrelay/smtpd[4276]: fatal: unexpected command-line argument: hash:/etc/postfix/cam_clients
+      Oct 27 00:03:49 OMV-HA sshd-session[721]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
+      Oct 27 00:03:51 OMV-HA sshd-session[721]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
+      Oct 27 00:03:53 OMV-HA sshd-session[721]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
+      Oct 27 00:03:53 OMV-HA sshd-session[721]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 60220 ssh2 [preauth]
+      Oct 27 00:39:21 OMV-HA systemctl[11318]: Failed to start k3s-agent.service: Unit k3s-agent.service not found.
+      Oct 27 00:39:21 OMV-HA systemd[1]: Failed to start k3s.service - k3s agent (OMV monit alias).
+      Oct 27 04:49:09 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 27 09:15:22 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
 
 === Kernel messages (errors and worse) ===
-  [WARN] 23 kernel error message(s)
-      [39899.856177] hwmon hwmon1: Undervoltage detected!
-      [55943.269419] hwmon hwmon1: Undervoltage detected!
+  [WARN] 25 kernel error message(s)
       [55977.541711] hwmon hwmon1: Undervoltage detected!
       [56114.630445] hwmon hwmon1: Undervoltage detected!
       [56356.551687] hwmon hwmon1: Undervoltage detected!
@@ -31,16 +30,18 @@ OMV Health Check — OMV-HA — 2026-10-26 13:16:01 EET
       [56719.433277] hwmon hwmon1: Undervoltage detected!
       [56840.397786] hwmon hwmon1: Undervoltage detected!
       [56961.354307] hwmon hwmon1: Undervoltage detected!
+      [202888.284172] hwmon hwmon1: Undervoltage detected!
+      [218861.142304] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 50% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 40% memory available (382MB / 954MB)
+  [PASS] 38% memory available (365MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.16 (4 cores)
+  [PASS] 5-min load 0.27 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -48,7 +49,7 @@ OMV Health Check — OMV-HA — 2026-10-26 13:16:01 EET
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 34 package(s) upgradable
+  [WARN] 35 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -60,4 +61,4 @@ OMV Health Check — OMV-HA — 2026-10-26 13:16:01 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  9 passed, 6 warnings, 0 failures
+  8 passed, 6 warnings, 1 failures

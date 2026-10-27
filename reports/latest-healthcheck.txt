@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-10-26 13:10:23 EET
+OMV Health Check — omv — 2026-10-27 12:39:55 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,32 +7,32 @@ OMV Health Check — omv — 2026-10-26 13:10:23 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 58 error-level journal entries (showing last 10)
-      Oct 25 06:10:45 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 25 06:12:47 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 25 06:14:31 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Oct 25 06:15:10 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 25 06:16:57 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 25 20:43:56 omv wetty-proxy[2687]: {"level":"info","ts":1792953836.0158606,"logger":"tls","msg":"storage cleaning happened too recently; skipping for now","storage":"FileStorage:/data/caddy","instance":"f29dac5e-1bdd-4026-84d2-43604b70c045","try_again":1793040236.0158503,"try_again_in":86399.999999389}
-      Oct 25 20:43:56 omv wetty-proxy[2687]: {"level":"info","ts":1792953836.0287259,"logger":"tls","msg":"finished cleaning storage units"}
-      Oct 26 02:07:55 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 26 02:10:08 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Oct 26 05:00:38 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+  [WARN] 79 error-level journal entries (showing last 10)
+      Oct 26 17:45:43 omv monit[1207]: 'omv' loadavg (5min) of 15.4 matches resource limit [loadavg (5min) > 10.0]
+      Oct 26 17:45:43 omv monit[1207]: 'omv' loadavg (1min) of 16.5 matches resource limit [loadavg (1min) > 16.0]
+      Oct 26 17:46:13 omv monit[1207]: 'omv' loadavg (5min) of 15.0 matches resource limit [loadavg (5min) > 10.0]
+      Oct 26 17:46:43 omv monit[1207]: 'omv' loadavg (5min) of 13.7 matches resource limit [loadavg (5min) > 10.0]
+      Oct 26 17:47:13 omv monit[1207]: 'omv' loadavg (5min) of 12.5 matches resource limit [loadavg (5min) > 10.0]
+      Oct 26 17:47:43 omv monit[1207]: 'omv' loadavg (5min) of 11.3 matches resource limit [loadavg (5min) > 10.0]
+      Oct 26 17:48:13 omv monit[1207]: 'omv' loadavg (5min) of 10.2 matches resource limit [loadavg (5min) > 10.0]
+      Oct 26 20:43:56 omv wetty-proxy[2687]: {"level":"info","ts":1793040236.0181825,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Oct 26 20:43:56 omv wetty-proxy[2687]: {"level":"info","ts":1793040236.034684,"logger":"tls","msg":"finished cleaning storage units"}
+      Oct 27 05:00:11 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
 
 === Disk usage ===
-  [PASS] / is 77% full
+  [PASS] / is 78% full
   [PASS] /boot/firmware is 15% full
-  [WARN] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 83% full
-  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 27% full
+  [WARN] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 82% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 24% full
 
 === Memory ===
-  [PASS] 29% memory available (2355MB / 7954MB)
+  [PASS] 25% memory available (2067MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.53 (4 cores)
+  [PASS] 5-min load 1.45 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
