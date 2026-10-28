@@ -1,23 +1,25 @@
-OMV Health Check — omv — 2026-10-27 12:39:55 EET
+OMV Health Check — omv — 2026-10-28 13:22:34 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
 
 === Failed systemd units ===
-  [PASS] no failed units
+  [FAIL] 2 failed unit(s)
+      ●
+      ●
 
 === Journal errors (this boot) ===
-  [WARN] 79 error-level journal entries (showing last 10)
-      Oct 26 17:45:43 omv monit[1207]: 'omv' loadavg (5min) of 15.4 matches resource limit [loadavg (5min) > 10.0]
-      Oct 26 17:45:43 omv monit[1207]: 'omv' loadavg (1min) of 16.5 matches resource limit [loadavg (1min) > 16.0]
-      Oct 26 17:46:13 omv monit[1207]: 'omv' loadavg (5min) of 15.0 matches resource limit [loadavg (5min) > 10.0]
-      Oct 26 17:46:43 omv monit[1207]: 'omv' loadavg (5min) of 13.7 matches resource limit [loadavg (5min) > 10.0]
-      Oct 26 17:47:13 omv monit[1207]: 'omv' loadavg (5min) of 12.5 matches resource limit [loadavg (5min) > 10.0]
-      Oct 26 17:47:43 omv monit[1207]: 'omv' loadavg (5min) of 11.3 matches resource limit [loadavg (5min) > 10.0]
-      Oct 26 17:48:13 omv monit[1207]: 'omv' loadavg (5min) of 10.2 matches resource limit [loadavg (5min) > 10.0]
-      Oct 26 20:43:56 omv wetty-proxy[2687]: {"level":"info","ts":1793040236.0181825,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-      Oct 26 20:43:56 omv wetty-proxy[2687]: {"level":"info","ts":1793040236.034684,"logger":"tls","msg":"finished cleaning storage units"}
-      Oct 27 05:00:11 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+  [WARN] 18 error-level journal entries (showing last 10)
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 21963 (php) total-vm:86140kB, anon-rss:23772kB, file-rss:21420kB, shmem-rss:0kB, UID:0 pgtables:192kB oom_score_adj:984
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 21989 (php) total-vm:84092kB, anon-rss:22744kB, file-rss:21500kB, shmem-rss:0kB, UID:0 pgtables:180kB oom_score_adj:984
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 21999 (php) total-vm:86140kB, anon-rss:23736kB, file-rss:21424kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 22003 (php) total-vm:86140kB, anon-rss:23280kB, file-rss:21392kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 22322 (php) total-vm:77688kB, anon-rss:15328kB, file-rss:21328kB, shmem-rss:0kB, UID:0 pgtables:172kB oom_score_adj:984
+      Oct 28 10:56:07 omv sshd-session[30374]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 60736 ssh2 [preauth]
+      Oct 28 11:24:20 omv kernel: Memory cgroup out of memory: Killed process 12318 (loki) total-vm:1744488kB, anon-rss:260224kB, file-rss:41900kB, shmem-rss:0kB, UID:10001 pgtables:1088kB oom_score_adj:992
+      Oct 28 11:24:20 omv kernel: Memory cgroup out of memory: Killed process 12335 (loki) total-vm:1744488kB, anon-rss:260224kB, file-rss:41900kB, shmem-rss:0kB, UID:10001 pgtables:1088kB oom_score_adj:992
+      Oct 28 11:25:16 omv kernel: Memory cgroup out of memory: Killed process 14150 (loki) total-vm:1744680kB, anon-rss:258048kB, file-rss:40780kB, shmem-rss:0kB, UID:10001 pgtables:1092kB oom_score_adj:992
+      Oct 28 11:25:16 omv kernel: Memory cgroup out of memory: Killed process 14163 (loki) total-vm:1744680kB, anon-rss:258048kB, file-rss:40780kB, shmem-rss:0kB, UID:10001 pgtables:1092kB oom_score_adj:992
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -25,21 +27,21 @@ OMV Health Check — omv — 2026-10-27 12:39:55 EET
 === Disk usage ===
   [PASS] / is 78% full
   [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 25% full
   [WARN] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 82% full
-  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 24% full
 
 === Memory ===
-  [PASS] 25% memory available (2067MB / 7954MB)
+  [PASS] 27% memory available (2207MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.45 (4 cores)
+  [PASS] 5-min load 1.32 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 1 package(s) upgradable
+  [PASS] all packages up to date
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -51,4 +53,4 @@ OMV Health Check — omv — 2026-10-27 12:39:55 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  12 passed, 4 warnings, 0 failures
+  12 passed, 3 warnings, 1 failures

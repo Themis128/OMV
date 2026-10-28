@@ -1,0 +1,59 @@
+OMV Health Check — OMV-HA — 2026-10-28 13:26:28 EET
+
+=== OMV engine daemon ===
+  [PASS] OpenMediaVault not installed on this host — skipping OMV checks
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 10 error-level journal entries (showing last 10)
+      Oct 28 10:46:27 OMV-HA systemd-udevd[337]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Oct 28 10:46:27 OMV-HA systemd-udevd[337]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Oct 28 10:46:28 OMV-HA kernel: vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      Oct 28 10:46:28 OMV-HA kernel: [vc_sm_connected_init]: failed to initialize shared memory service
+      Oct 28 10:46:28 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Oct 28 10:46:28 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Oct 28 10:46:28 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Oct 28 10:46:30 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 28 10:46:31 OMV-HA blkmapd[539]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
+      Oct 28 10:48:10 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+
+=== Kernel messages (errors and worse) ===
+  [WARN] 6 kernel error message(s)
+      [   13.886720] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      [   13.886773] [vc_sm_connected_init]: failed to initialize shared memory service
+      [   13.934660] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   13.950704] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   13.954188] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   15.750713] hwmon hwmon1: Undervoltage detected!
+
+=== Disk usage ===
+  [PASS] / is 50% full
+  [PASS] /boot/firmware is 14% full
+
+=== Memory ===
+  [PASS] 47% memory available (452MB / 954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.17 (4 cores)
+
+=== Power ===
+  [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
+  [WARN] throttling has occurred since boot (get_throttled=0x50000)
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 37 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  9 passed, 6 warnings, 0 failures

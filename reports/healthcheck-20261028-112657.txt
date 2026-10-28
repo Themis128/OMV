@@ -1,0 +1,56 @@
+OMV Health Check — omv — 2026-10-28 13:22:34 EET
+
+=== OMV engine daemon ===
+  [PASS] openmediavault-engined is running
+
+=== Failed systemd units ===
+  [FAIL] 2 failed unit(s)
+      ●
+      ●
+
+=== Journal errors (this boot) ===
+  [WARN] 18 error-level journal entries (showing last 10)
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 21963 (php) total-vm:86140kB, anon-rss:23772kB, file-rss:21420kB, shmem-rss:0kB, UID:0 pgtables:192kB oom_score_adj:984
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 21989 (php) total-vm:84092kB, anon-rss:22744kB, file-rss:21500kB, shmem-rss:0kB, UID:0 pgtables:180kB oom_score_adj:984
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 21999 (php) total-vm:86140kB, anon-rss:23736kB, file-rss:21424kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 22003 (php) total-vm:86140kB, anon-rss:23280kB, file-rss:21392kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
+      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 22322 (php) total-vm:77688kB, anon-rss:15328kB, file-rss:21328kB, shmem-rss:0kB, UID:0 pgtables:172kB oom_score_adj:984
+      Oct 28 10:56:07 omv sshd-session[30374]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 60736 ssh2 [preauth]
+      Oct 28 11:24:20 omv kernel: Memory cgroup out of memory: Killed process 12318 (loki) total-vm:1744488kB, anon-rss:260224kB, file-rss:41900kB, shmem-rss:0kB, UID:10001 pgtables:1088kB oom_score_adj:992
+      Oct 28 11:24:20 omv kernel: Memory cgroup out of memory: Killed process 12335 (loki) total-vm:1744488kB, anon-rss:260224kB, file-rss:41900kB, shmem-rss:0kB, UID:10001 pgtables:1088kB oom_score_adj:992
+      Oct 28 11:25:16 omv kernel: Memory cgroup out of memory: Killed process 14150 (loki) total-vm:1744680kB, anon-rss:258048kB, file-rss:40780kB, shmem-rss:0kB, UID:10001 pgtables:1092kB oom_score_adj:992
+      Oct 28 11:25:16 omv kernel: Memory cgroup out of memory: Killed process 14163 (loki) total-vm:1744680kB, anon-rss:258048kB, file-rss:40780kB, shmem-rss:0kB, UID:10001 pgtables:1092kB oom_score_adj:992
+
+=== Kernel messages (errors and worse) ===
+  [PASS] no kernel error messages
+
+=== Disk usage ===
+  [PASS] / is 78% full
+  [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 25% full
+  [WARN] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 82% full
+
+=== Memory ===
+  [PASS] 27% memory available (2207MB / 7954MB)
+
+=== Load average ===
+  [PASS] 5-min load 1.32 (4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [PASS] all packages up to date
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  12 passed, 3 warnings, 1 failures

@@ -1,47 +1,42 @@
-OMV Health Check — OMV-HA — 2026-10-27 12:43:24 EET
+OMV Health Check — OMV-HA — 2026-10-28 13:26:28 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
 
 === Failed systemd units ===
-  [FAIL] 1 failed unit(s)
-      ●
+  [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 39 error-level journal entries (showing last 10)
-      Oct 25 16:20:21 OMV-HA postfix/camrelay/smtpd[4275]: fatal: unexpected command-line argument: hash:/etc/postfix/cam_clients
-      Oct 25 16:20:21 OMV-HA postfix/camrelay/smtpd[4276]: fatal: unexpected command-line argument: hash:/etc/postfix/cam_clients
-      Oct 27 00:03:49 OMV-HA sshd-session[721]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
-      Oct 27 00:03:51 OMV-HA sshd-session[721]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
-      Oct 27 00:03:53 OMV-HA sshd-session[721]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
-      Oct 27 00:03:53 OMV-HA sshd-session[721]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 60220 ssh2 [preauth]
-      Oct 27 00:39:21 OMV-HA systemctl[11318]: Failed to start k3s-agent.service: Unit k3s-agent.service not found.
-      Oct 27 00:39:21 OMV-HA systemd[1]: Failed to start k3s.service - k3s agent (OMV monit alias).
-      Oct 27 04:49:09 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 27 09:15:22 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+  [WARN] 10 error-level journal entries (showing last 10)
+      Oct 28 10:46:27 OMV-HA systemd-udevd[337]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Oct 28 10:46:27 OMV-HA systemd-udevd[337]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Oct 28 10:46:28 OMV-HA kernel: vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      Oct 28 10:46:28 OMV-HA kernel: [vc_sm_connected_init]: failed to initialize shared memory service
+      Oct 28 10:46:28 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Oct 28 10:46:28 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Oct 28 10:46:28 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Oct 28 10:46:30 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 28 10:46:31 OMV-HA blkmapd[539]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
+      Oct 28 10:48:10 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
 
 === Kernel messages (errors and worse) ===
-  [WARN] 25 kernel error message(s)
-      [55977.541711] hwmon hwmon1: Undervoltage detected!
-      [56114.630445] hwmon hwmon1: Undervoltage detected!
-      [56356.551687] hwmon hwmon1: Undervoltage detected!
-      [56477.512230] hwmon hwmon1: Undervoltage detected!
-      [56598.472681] hwmon hwmon1: Undervoltage detected!
-      [56719.433277] hwmon hwmon1: Undervoltage detected!
-      [56840.397786] hwmon hwmon1: Undervoltage detected!
-      [56961.354307] hwmon hwmon1: Undervoltage detected!
-      [202888.284172] hwmon hwmon1: Undervoltage detected!
-      [218861.142304] hwmon hwmon1: Undervoltage detected!
+  [WARN] 6 kernel error message(s)
+      [   13.886720] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      [   13.886773] [vc_sm_connected_init]: failed to initialize shared memory service
+      [   13.934660] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   13.950704] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   13.954188] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   15.750713] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 50% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 38% memory available (365MB / 954MB)
+  [PASS] 47% memory available (452MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.27 (4 cores)
+  [PASS] 5-min load 0.17 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -49,7 +44,7 @@ OMV Health Check — OMV-HA — 2026-10-27 12:43:24 EET
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 35 package(s) upgradable
+  [WARN] 37 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -61,4 +56,4 @@ OMV Health Check — OMV-HA — 2026-10-27 12:43:24 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  8 passed, 6 warnings, 1 failures
+  9 passed, 6 warnings, 0 failures
