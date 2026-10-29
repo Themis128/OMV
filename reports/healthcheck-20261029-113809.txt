@@ -1,0 +1,54 @@
+OMV Health Check — omv — 2026-10-29 13:33:14 EET
+
+=== OMV engine daemon ===
+  [PASS] openmediavault-engined is running
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 32 error-level journal entries (showing last 10)
+      Oct 29 04:58:24 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 29 04:59:04 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 29 05:01:10 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 29 05:01:23 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 29 10:49:11 omv wetty-proxy[2611]: {"level":"info","ts":1793263751.5717578,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Oct 29 10:49:11 omv wetty-proxy[2611]: {"level":"info","ts":1793263751.5928395,"logger":"tls","msg":"finished cleaning storage units"}
+      Oct 29 13:12:11 omv sshd-session[36471]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 53980 ssh2 [preauth]
+      Oct 29 13:32:49 omv sshd-session[3716]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 53958 ssh2 [preauth]
+      Oct 29 13:32:49 omv sshd-session[3718]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 53972 ssh2 [preauth]
+      Oct 29 13:32:49 omv sshd-session[3720]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 53986 ssh2 [preauth]
+
+=== Kernel messages (errors and worse) ===
+  [PASS] no kernel error messages
+
+=== Disk usage ===
+  [PASS] / is 78% full
+  [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 25% full
+  [WARN] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 82% full
+
+=== Memory ===
+  [PASS] 25% memory available (1993MB / 7954MB)
+
+=== Load average ===
+  [PASS] 5-min load 1.83 (4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [PASS] all packages up to date
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  13 passed, 3 warnings, 0 failures

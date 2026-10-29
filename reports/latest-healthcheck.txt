@@ -1,25 +1,23 @@
-OMV Health Check — omv — 2026-10-28 13:22:34 EET
+OMV Health Check — omv — 2026-10-29 13:33:14 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
 
 === Failed systemd units ===
-  [FAIL] 2 failed unit(s)
-      ●
-      ●
+  [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 18 error-level journal entries (showing last 10)
-      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 21963 (php) total-vm:86140kB, anon-rss:23772kB, file-rss:21420kB, shmem-rss:0kB, UID:0 pgtables:192kB oom_score_adj:984
-      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 21989 (php) total-vm:84092kB, anon-rss:22744kB, file-rss:21500kB, shmem-rss:0kB, UID:0 pgtables:180kB oom_score_adj:984
-      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 21999 (php) total-vm:86140kB, anon-rss:23736kB, file-rss:21424kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
-      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 22003 (php) total-vm:86140kB, anon-rss:23280kB, file-rss:21392kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
-      Oct 28 10:51:54 omv kernel: Memory cgroup out of memory: Killed process 22322 (php) total-vm:77688kB, anon-rss:15328kB, file-rss:21328kB, shmem-rss:0kB, UID:0 pgtables:172kB oom_score_adj:984
-      Oct 28 10:56:07 omv sshd-session[30374]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 60736 ssh2 [preauth]
-      Oct 28 11:24:20 omv kernel: Memory cgroup out of memory: Killed process 12318 (loki) total-vm:1744488kB, anon-rss:260224kB, file-rss:41900kB, shmem-rss:0kB, UID:10001 pgtables:1088kB oom_score_adj:992
-      Oct 28 11:24:20 omv kernel: Memory cgroup out of memory: Killed process 12335 (loki) total-vm:1744488kB, anon-rss:260224kB, file-rss:41900kB, shmem-rss:0kB, UID:10001 pgtables:1088kB oom_score_adj:992
-      Oct 28 11:25:16 omv kernel: Memory cgroup out of memory: Killed process 14150 (loki) total-vm:1744680kB, anon-rss:258048kB, file-rss:40780kB, shmem-rss:0kB, UID:10001 pgtables:1092kB oom_score_adj:992
-      Oct 28 11:25:16 omv kernel: Memory cgroup out of memory: Killed process 14163 (loki) total-vm:1744680kB, anon-rss:258048kB, file-rss:40780kB, shmem-rss:0kB, UID:10001 pgtables:1092kB oom_score_adj:992
+  [WARN] 32 error-level journal entries (showing last 10)
+      Oct 29 04:58:24 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 29 04:59:04 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 29 05:01:10 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 29 05:01:23 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Oct 29 10:49:11 omv wetty-proxy[2611]: {"level":"info","ts":1793263751.5717578,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Oct 29 10:49:11 omv wetty-proxy[2611]: {"level":"info","ts":1793263751.5928395,"logger":"tls","msg":"finished cleaning storage units"}
+      Oct 29 13:12:11 omv sshd-session[36471]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 53980 ssh2 [preauth]
+      Oct 29 13:32:49 omv sshd-session[3716]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 53958 ssh2 [preauth]
+      Oct 29 13:32:49 omv sshd-session[3718]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 53972 ssh2 [preauth]
+      Oct 29 13:32:49 omv sshd-session[3720]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 53986 ssh2 [preauth]
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -31,10 +29,10 @@ OMV Health Check — omv — 2026-10-28 13:22:34 EET
   [WARN] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 82% full
 
 === Memory ===
-  [PASS] 27% memory available (2207MB / 7954MB)
+  [PASS] 25% memory available (1993MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.32 (4 cores)
+  [PASS] 5-min load 1.83 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
@@ -53,4 +51,4 @@ OMV Health Check — omv — 2026-10-28 13:22:34 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  12 passed, 3 warnings, 1 failures
+  13 passed, 3 warnings, 0 failures
