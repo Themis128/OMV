@@ -1,0 +1,56 @@
+OMV Health Check — omv — 2026-10-30 13:25:35 EET
+
+=== OMV engine daemon ===
+  [PASS] openmediavault-engined is running
+
+=== Failed systemd units ===
+  [FAIL] 2 failed unit(s)
+      ●
+      ●
+
+=== Journal errors (this boot) ===
+  [WARN] 43 error-level journal entries (showing last 10)
+      Oct 30 12:08:50 omv systemd[1]: Failed to start nextcloud-wedge-watchdog.service - Nextcloud Apache wedge watchdog.
+      Oct 30 12:10:52 omv systemd[1]: Failed to start nextcloud-wedge-watchdog.service - Nextcloud Apache wedge watchdog.
+      Oct 30 12:14:50 omv systemd[1]: Failed to start nextcloud-wedge-watchdog.service - Nextcloud Apache wedge watchdog.
+      Oct 30 12:16:50 omv systemd[1]: Failed to start nextcloud-wedge-watchdog.service - Nextcloud Apache wedge watchdog.
+      Oct 30 12:18:50 omv systemd[1]: Failed to start nextcloud-wedge-watchdog.service - Nextcloud Apache wedge watchdog.
+      Oct 30 12:20:52 omv systemd[1]: Failed to start nextcloud-wedge-watchdog.service - Nextcloud Apache wedge watchdog.
+      Oct 30 12:22:57 omv systemd[1]: Failed to start nextcloud-wedge-watchdog.service - Nextcloud Apache wedge watchdog.
+      Oct 30 12:24:28 omv systemd[1]: Failed to start nextcloud-wedge-watchdog.service - Nextcloud Apache wedge watchdog.
+      Oct 30 12:26:31 omv systemd[1]: Failed to start nextcloud-wedge-watchdog.service - Nextcloud Apache wedge watchdog.
+      Oct 30 13:07:12 omv systemd[1]: /etc/systemd/system/fb-forward.service:5: Unbalanced quoting, ignoring: "/usr/bin/python3 -c "import socket,threading"
+
+=== Kernel messages (errors and worse) ===
+  [PASS] no kernel error messages
+
+=== Disk usage ===
+  [PASS] / is 32% full
+  [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 74% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 39% full
+
+=== Memory ===
+  [PASS] 29% memory available (2316MB / 7954MB)
+
+=== Load average ===
+  [PASS] 5-min load 1.61 (4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [PASS] all packages up to date
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  13 passed, 2 warnings, 1 failures

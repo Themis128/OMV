@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-10-29 13:37:32 EET
+OMV Health Check — OMV-HA — 2026-10-30 13:30:26 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,36 +7,40 @@ OMV Health Check — OMV-HA — 2026-10-29 13:37:32 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 10 error-level journal entries (showing last 10)
-      Oct 28 10:46:27 OMV-HA systemd-udevd[337]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
-      Oct 28 10:46:27 OMV-HA systemd-udevd[337]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
-      Oct 28 10:46:28 OMV-HA kernel: vc_sm_cma_vchi_init: failed to open VCHI service (-22)
-      Oct 28 10:46:28 OMV-HA kernel: [vc_sm_connected_init]: failed to initialize shared memory service
-      Oct 28 10:46:28 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      Oct 28 10:46:28 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      Oct 28 10:46:28 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      Oct 28 10:46:30 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 28 10:46:31 OMV-HA blkmapd[539]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
-      Oct 28 10:48:10 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+  [WARN] 70 error-level journal entries (showing last 10)
+      Oct 30 13:15:53 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 30 13:16:56 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 30 13:17:56 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 30 13:19:57 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 30 13:22:00 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 30 13:24:03 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 30 13:24:09 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 30 13:26:04 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 30 13:28:05 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Oct 30 13:28:11 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
 
 === Kernel messages (errors and worse) ===
-  [WARN] 6 kernel error message(s)
-      [   13.886720] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
-      [   13.886773] [vc_sm_connected_init]: failed to initialize shared memory service
-      [   13.934660] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   13.950704] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   13.954188] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   15.750713] hwmon hwmon1: Undervoltage detected!
+  [WARN] 67 kernel error message(s)
+      [ 5959.315417] hwmon hwmon1: Undervoltage detected!
+      [ 6021.811176] hwmon hwmon1: Undervoltage detected!
+      [ 6082.294918] hwmon hwmon1: Undervoltage detected!
+      [ 6203.254046] hwmon hwmon1: Undervoltage detected!
+      [ 6326.239147] hwmon hwmon1: Undervoltage detected!
+      [ 6449.228419] hwmon hwmon1: Undervoltage detected!
+      [ 6455.270945] hwmon hwmon1: Undervoltage detected!
+      [ 6570.188611] hwmon hwmon1: Undervoltage detected!
+      [ 6691.153582] hwmon hwmon1: Undervoltage detected!
+      [ 6697.202129] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 50% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 41% memory available (399MB / 954MB)
+  [PASS] 45% memory available (433MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.13 (4 cores)
+  [PASS] 5-min load 0.34 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)

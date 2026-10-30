@@ -1,4 +1,4 @@
-omv-report diagnostics — 2026-10-29T11:33:08Z
+omv-report diagnostics — 2026-10-30T11:25:30Z
 
 Tailscale step outcome : success
 OMV_SSH_KEY secret     : present
@@ -6,7 +6,7 @@ omv tailnet host       : 100.74.191.58
 omv-ha LAN host        : 192.168.1.130
 
 ## tailscale status
-100.89.98.21   omv-report-ci       omv-report-ci.tail4ecae1.ts.net  linux    -  
+100.94.37.89   omv-report-ci       omv-report-ci.tail4ecae1.ts.net  linux    -  
 100.84.31.85   galaxy-s22          Themis128@                       android  -  
 100.74.191.58  github-omv          tagged-devices                   linux    -  
 100.83.120.93  office-1            Themis128@                       windows  -  
