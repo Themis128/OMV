@@ -1,0 +1,54 @@
+OMV Health Check — omv — 2026-10-31 12:57:02 EET
+
+=== OMV engine daemon ===
+  [PASS] openmediavault-engined is running
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 95 error-level journal entries (showing last 10)
+      Oct 31 02:24:54 omv monit[1214]: 'omv' loadavg (5min) of 14.9 matches resource limit [loadavg (5min) > 10.0]
+      Oct 31 02:25:24 omv monit[1214]: 'omv' loadavg (5min) of 14.6 matches resource limit [loadavg (5min) > 10.0]
+      Oct 31 02:25:54 omv monit[1214]: 'omv' loadavg (5min) of 13.5 matches resource limit [loadavg (5min) > 10.0]
+      Oct 31 02:26:24 omv monit[1214]: 'omv' loadavg (5min) of 12.5 matches resource limit [loadavg (5min) > 10.0]
+      Oct 31 02:26:54 omv monit[1214]: 'omv' loadavg (5min) of 11.6 matches resource limit [loadavg (5min) > 10.0]
+      Oct 31 02:27:25 omv monit[1214]: 'omv' loadavg (5min) of 10.8 matches resource limit [loadavg (5min) > 10.0]
+      Oct 31 02:27:55 omv monit[1214]: 'omv' loadavg (5min) of 10.0 matches resource limit [loadavg (5min) > 10.0]
+      Oct 31 04:00:02 omv clamdscan-7f7b4811-304b-4744-9acd-8f10f85bd463[1730]: The scan failed.
+      Oct 31 04:39:07 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Oct 31 05:00:31 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+
+=== Kernel messages (errors and worse) ===
+  [PASS] no kernel error messages
+
+=== Disk usage ===
+  [PASS] / is 31% full
+  [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 42% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 51% full
+
+=== Memory ===
+  [WARN] 14% memory available (1178MB / 7954MB)
+
+=== Load average ===
+  [WARN] 5-min load 4.29 (>= 4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [PASS] all packages up to date
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  12 passed, 4 warnings, 0 failures
