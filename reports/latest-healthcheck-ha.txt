@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-10-31 13:04:22 EET
+OMV Health Check — OMV-HA — 2026-11-01 13:56:41 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,30 +7,38 @@ OMV Health Check — OMV-HA — 2026-10-31 13:04:22 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 32 error-level journal entries (showing last 10)
-      Oct 31 05:16:20 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 31 06:00:42 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 31 07:05:14 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 31 07:08:20 OMV-HA NetworkManager[590]: <error> [1793423300.2536] platform-linux: sysctl: failed to set '/proc/sys/net/ipv6/conf/vethdea262a/disable_ipv6' to '1': (2) No such file or directory
-      Oct 31 09:08:15 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Oct 31 09:28:19 OMV-HA NetworkManager[590]: <error> [1793431699.3127] platform-linux: sysctl: failed to set '/proc/sys/net/ipv6/conf/veth5475049/disable_ipv6' to '0': (2) No such file or directory
-      Oct 31 09:34:28 OMV-HA NetworkManager[590]: <error> [1793432068.8923] platform-linux: sysctl: failed to set '/proc/sys/net/ipv6/conf/veth9d928d0/disable_ipv6' to '1': (2) No such file or directory
-      Oct 31 10:13:31 OMV-HA NetworkManager[590]: <error> [1793434411.4727] platform-linux: sysctl: failed to set '/proc/sys/net/ipv6/conf/veth37571d0/disable_ipv6' to '1': (2) No such file or directory
-      Oct 31 10:48:44 OMV-HA NetworkManager[590]: <error> [1793436524.0891] platform-linux: sysctl: failed to set '/proc/sys/net/ipv6/conf/veth9416c4d/disable_ipv6' to '1': (2) No such file or directory
-      Oct 31 11:20:34 OMV-HA NetworkManager[590]: <error> [1793438434.7264] platform-linux: sysctl: failed to set '/proc/sys/net/ipv6/conf/vethd78fdc7/disable_ipv6' to '1': (2) No such file or directory
+  [WARN] 12 error-level journal entries (showing last 10)
+      Nov 01 12:44:22 OMV-HA kernel: vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      Nov 01 12:44:22 OMV-HA kernel: [vc_sm_connected_init]: failed to initialize shared memory service
+      Nov 01 12:44:22 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Nov 01 12:44:22 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Nov 01 12:44:22 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Nov 01 12:44:24 OMV-HA blkmapd[543]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
+      Nov 01 12:44:24 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 01 12:44:50 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 01 12:45:29 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 01 12:48:36 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
 
 === Kernel messages (errors and worse) ===
-  [PASS] no kernel error messages
+  [WARN] 8 kernel error message(s)
+      [   15.019632] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      [   15.019671] [vc_sm_connected_init]: failed to initialize shared memory service
+      [   15.058594] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   15.074589] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   15.111581] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   16.862452] hwmon hwmon1: Undervoltage detected!
+      [   43.070629] hwmon hwmon1: Undervoltage detected!
+      [   81.374476] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 53% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 37% memory available (360MB / 954MB)
+  [PASS] 33% memory available (324MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.29 (4 cores)
+  [PASS] 5-min load 0.45 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -38,7 +46,7 @@ OMV Health Check — OMV-HA — 2026-10-31 13:04:22 EET
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 36 package(s) upgradable
+  [WARN] 37 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -50,4 +58,4 @@ OMV Health Check — OMV-HA — 2026-10-31 13:04:22 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  10 passed, 5 warnings, 0 failures
+  9 passed, 6 warnings, 0 failures
