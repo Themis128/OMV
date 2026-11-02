@@ -1,0 +1,63 @@
+OMV Health Check — OMV-HA — 2026-11-02 15:39:13 EET
+
+=== OMV engine daemon ===
+  [PASS] OpenMediaVault not installed on this host — skipping OMV checks
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 17 error-level journal entries (showing last 10)
+      Nov 01 16:23:11 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 01 16:23:11 OMV-HA blkmapd[541]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
+      Nov 01 16:24:40 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 01 18:20:08 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 01 22:42:17 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 02 02:44:18 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 02 02:48:20 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 02 02:50:21 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 02 11:12:30 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 02 15:16:30 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+
+=== Kernel messages (errors and worse) ===
+  [WARN] 13 kernel error message(s)
+      [   15.636044] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   15.690669] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   17.310569] hwmon hwmon1: Undervoltage detected!
+      [ 6988.676587] hwmon hwmon1: Undervoltage detected!
+      [22717.592982] hwmon hwmon1: Undervoltage detected!
+      [37238.923146] hwmon hwmon1: Undervoltage detected!
+      [37480.847849] hwmon hwmon1: Undervoltage detected!
+      [37601.808368] hwmon hwmon1: Undervoltage detected!
+      [67731.089185] hwmon hwmon1: Undervoltage detected!
+      [82371.358480] hwmon hwmon1: Undervoltage detected!
+
+=== Disk usage ===
+  [PASS] / is 53% full
+  [PASS] /boot/firmware is 14% full
+
+=== Memory ===
+  [PASS] 36% memory available (352MB / 954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.32 (4 cores)
+
+=== Power ===
+  [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
+  [WARN] throttling has occurred since boot (get_throttled=0x50000)
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 39 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  9 passed, 6 warnings, 0 failures
