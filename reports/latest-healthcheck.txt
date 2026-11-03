@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-02 15:33:43 EET
+OMV Health Check — omv — 2026-11-03 14:50:21 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,9 +7,7 @@ OMV Health Check — omv — 2026-11-02 15:33:43 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 56 error-level journal entries (showing last 10)
-      Nov 02 03:46:24 omv kernel: Memory cgroup out of memory: Killed process 40426 (php) total-vm:87928kB, anon-rss:25324kB, file-rss:7444kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
-      Nov 02 03:46:24 omv kernel: Memory cgroup out of memory: Killed process 40427 (php) total-vm:87928kB, anon-rss:25328kB, file-rss:7508kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
+  [WARN] 58 error-level journal entries (showing last 10)
       Nov 02 03:46:24 omv kernel: Memory cgroup out of memory: Killed process 40432 (php) total-vm:83832kB, anon-rss:21632kB, file-rss:7556kB, shmem-rss:0kB, UID:0 pgtables:192kB oom_score_adj:984
       Nov 02 03:46:24 omv kernel: Memory cgroup out of memory: Killed process 40433 (php) total-vm:83832kB, anon-rss:21616kB, file-rss:7352kB, shmem-rss:0kB, UID:0 pgtables:180kB oom_score_adj:984
       Nov 02 03:46:24 omv kernel: Memory cgroup out of memory: Killed process 40434 (php) total-vm:85880kB, anon-rss:24548kB, file-rss:7508kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
@@ -18,6 +16,8 @@ OMV Health Check — omv — 2026-11-02 15:33:43 EET
       Nov 02 03:46:24 omv kernel: Memory cgroup out of memory: Killed process 40494 (php) total-vm:49644kB, anon-rss:2048kB, file-rss:2904kB, shmem-rss:0kB, UID:0 pgtables:92kB oom_score_adj:984
       Nov 02 04:27:51 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
       Nov 02 05:00:55 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+      Nov 02 16:24:11 omv wetty-proxy[1868]: {"level":"info","ts":1793629451.0821326,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Nov 02 16:24:11 omv wetty-proxy[1868]: {"level":"info","ts":1793629451.1613178,"logger":"tls","msg":"finished cleaning storage units"}
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -29,10 +29,10 @@ OMV Health Check — omv — 2026-11-02 15:33:43 EET
   [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 50% full
 
 === Memory ===
-  [WARN] 16% memory available (1310MB / 7954MB)
+  [WARN] 17% memory available (1354MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 2.55 (4 cores)
+  [PASS] 5-min load 1.97 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
