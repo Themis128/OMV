@@ -1,0 +1,63 @@
+OMV Health Check — OMV-HA — 2026-11-04 15:07:08 EET
+
+=== OMV engine daemon ===
+  [PASS] OpenMediaVault not installed on this host — skipping OMV checks
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 46 error-level journal entries (showing last 10)
+      Nov 03 21:11:21 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 03 21:35:32 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 03 23:50:39 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 04 02:01:45 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 04 03:32:28 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 04 03:50:39 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 04 03:52:40 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 04 08:41:03 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 04 11:52:37 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 04 11:54:38 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+
+=== Kernel messages (errors and worse) ===
+  [WARN] 42 kernel error message(s)
+      [190062.617211] hwmon hwmon1: Undervoltage detected!
+      [191514.149436] hwmon hwmon1: Undervoltage detected!
+      [199620.525573] hwmon hwmon1: Undervoltage detected!
+      [207487.003313] hwmon hwmon1: Undervoltage detected!
+      [212930.232578] hwmon hwmon1: Undervoltage detected!
+      [214020.895292] hwmon hwmon1: Undervoltage detected!
+      [214141.851934] hwmon hwmon1: Undervoltage detected!
+      [231445.265579] hwmon hwmon1: Undervoltage detected!
+      [242938.550800] hwmon hwmon1: Undervoltage detected!
+      [243059.511130] hwmon hwmon1: Undervoltage detected!
+
+=== Disk usage ===
+  [PASS] / is 53% full
+  [PASS] /boot/firmware is 14% full
+
+=== Memory ===
+  [PASS] 35% memory available (336MB / 954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.30 (4 cores)
+
+=== Power ===
+  [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
+  [WARN] throttling has occurred since boot (get_throttled=0x50000)
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 44 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  9 passed, 6 warnings, 0 failures
