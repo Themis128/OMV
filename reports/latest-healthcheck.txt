@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-04 15:01:33 EET
+OMV Health Check — omv — 2026-11-05 15:14:35 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,17 @@ OMV Health Check — omv — 2026-11-04 15:01:33 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 95 error-level journal entries (showing last 10)
-      Nov 04 13:09:30 omv monit[1202]: 'omv' loadavg (5min) of 17.1 matches resource limit [loadavg (5min) > 10.0]
-      Nov 04 13:10:00 omv monit[1202]: 'omv' loadavg (5min) of 16.0 matches resource limit [loadavg (5min) > 10.0]
-      Nov 04 13:10:30 omv monit[1202]: 'omv' loadavg (5min) of 15.4 matches resource limit [loadavg (5min) > 10.0]
-      Nov 04 13:11:00 omv monit[1202]: 'omv' loadavg (5min) of 14.6 matches resource limit [loadavg (5min) > 10.0]
-      Nov 04 13:11:30 omv monit[1202]: 'omv' loadavg (5min) of 13.9 matches resource limit [loadavg (5min) > 10.0]
+  [WARN] 100 error-level journal entries (showing last 10)
       Nov 04 13:12:00 omv monit[1202]: 'omv' loadavg (5min) of 13.0 matches resource limit [loadavg (5min) > 10.0]
       Nov 04 13:12:30 omv monit[1202]: 'omv' loadavg (5min) of 12.2 matches resource limit [loadavg (5min) > 10.0]
       Nov 04 13:13:00 omv monit[1202]: 'omv' loadavg (5min) of 11.5 matches resource limit [loadavg (5min) > 10.0]
       Nov 04 13:13:30 omv monit[1202]: 'omv' loadavg (5min) of 10.8 matches resource limit [loadavg (5min) > 10.0]
       Nov 04 13:14:00 omv monit[1202]: 'omv' loadavg (5min) of 10.2 matches resource limit [loadavg (5min) > 10.0]
+      Nov 04 16:24:10 omv wetty-proxy[1868]: {"level":"info","ts":1793802250.7302108,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Nov 04 16:24:10 omv wetty-proxy[1868]: {"level":"info","ts":1793802250.7562199,"logger":"tls","msg":"finished cleaning storage units"}
+      Nov 05 01:02:24 omv monit[1202]: 'omv' loadavg (1min) of 17.5 matches resource limit [loadavg (1min) > 16.0]
+      Nov 05 03:07:34 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Nov 05 05:01:25 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -26,20 +26,20 @@ OMV Health Check — omv — 2026-11-04 15:01:33 EET
   [PASS] / is 31% full
   [PASS] /boot/firmware is 15% full
   [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 43% full
-  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 50% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 48% full
 
 === Memory ===
-  [WARN] 15% memory available (1234MB / 7954MB)
+  [WARN] 16% memory available (1314MB / 7954MB)
 
 === Load average ===
-  [WARN] 5-min load 5.21 (>= 4 cores)
+  [PASS] 5-min load 1.19 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 10 package(s) upgradable
+  [WARN] 11 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -51,4 +51,4 @@ OMV Health Check — omv — 2026-11-04 15:01:33 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  11 passed, 5 warnings, 0 failures
+  12 passed, 4 warnings, 0 failures
