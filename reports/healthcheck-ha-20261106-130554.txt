@@ -1,0 +1,63 @@
+OMV Health Check — OMV-HA — 2026-11-06 15:05:15 EET
+
+=== OMV engine daemon ===
+  [PASS] OpenMediaVault not installed on this host — skipping OMV checks
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 60 error-level journal entries (showing last 10)
+      Nov 05 00:00:39 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 05 01:43:30 OMV-HA sshd-session[40599]: error: PAM: Authentication failure for root from 100.86.188.43
+      Nov 05 01:43:32 OMV-HA sshd-session[40599]: error: PAM: Authentication failure for root from 100.86.188.43
+      Nov 05 01:43:35 OMV-HA sshd-session[40599]: error: PAM: Authentication failure for root from 100.86.188.43
+      Nov 05 01:43:35 OMV-HA sshd-session[40599]: error: maximum authentication attempts exceeded for root from 100.86.188.43 port 46944 ssh2 [preauth]
+      Nov 05 01:43:43 OMV-HA sshd-session[40617]: error: PAM: Authentication failure for root from 100.86.188.43
+      Nov 05 01:43:44 OMV-HA sshd-session[40617]: error: PAM: Authentication failure for root from 100.86.188.43
+      Nov 05 01:43:46 OMV-HA sshd-session[40617]: error: PAM: Authentication failure for root from 100.86.188.43
+      Nov 05 01:43:46 OMV-HA sshd-session[40617]: error: maximum authentication attempts exceeded for root from 100.86.188.43 port 52348 ssh2 [preauth]
+      Nov 05 05:59:36 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+
+=== Kernel messages (errors and worse) ===
+  [WARN] 48 kernel error message(s)
+      [214141.851934] hwmon hwmon1: Undervoltage detected!
+      [231445.265579] hwmon hwmon1: Undervoltage detected!
+      [242938.550800] hwmon hwmon1: Undervoltage detected!
+      [243059.511130] hwmon hwmon1: Undervoltage detected!
+      [271979.187603] hwmon hwmon1: Undervoltage detected!
+      [278875.959208] hwmon hwmon1: Undervoltage detected!
+      [279238.842269] hwmon hwmon1: Undervoltage detected!
+      [286258.589929] hwmon hwmon1: Undervoltage detected!
+      [286621.471862] hwmon hwmon1: Undervoltage detected!
+      [308158.515617] hwmon hwmon1: Undervoltage detected!
+
+=== Disk usage ===
+  [PASS] / is 53% full
+  [PASS] /boot/firmware is 14% full
+
+=== Memory ===
+  [PASS] 32% memory available (309MB / 954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.18 (4 cores)
+
+=== Power ===
+  [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
+  [WARN] throttling has occurred since boot (get_throttled=0x50000)
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 55 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  9 passed, 6 warnings, 0 failures
