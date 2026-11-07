@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-06 14:58:56 EET
+OMV Health Check — omv — 2026-11-07 13:45:42 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,17 @@ OMV Health Check — omv — 2026-11-06 14:58:56 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 102 error-level journal entries (showing last 10)
-      Nov 04 13:13:00 omv monit[1202]: 'omv' loadavg (5min) of 11.5 matches resource limit [loadavg (5min) > 10.0]
-      Nov 04 13:13:30 omv monit[1202]: 'omv' loadavg (5min) of 10.8 matches resource limit [loadavg (5min) > 10.0]
-      Nov 04 13:14:00 omv monit[1202]: 'omv' loadavg (5min) of 10.2 matches resource limit [loadavg (5min) > 10.0]
-      Nov 04 16:24:10 omv wetty-proxy[1868]: {"level":"info","ts":1793802250.7302108,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-      Nov 04 16:24:10 omv wetty-proxy[1868]: {"level":"info","ts":1793802250.7562199,"logger":"tls","msg":"finished cleaning storage units"}
-      Nov 05 01:02:24 omv monit[1202]: 'omv' loadavg (1min) of 17.5 matches resource limit [loadavg (1min) > 16.0]
-      Nov 05 03:07:34 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Nov 05 05:01:25 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
-      Nov 05 16:24:10 omv wetty-proxy[1868]: {"level":"info","ts":1793888650.736758,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-      Nov 05 16:24:10 omv wetty-proxy[1868]: {"level":"info","ts":1793888650.7692983,"logger":"tls","msg":"finished cleaning storage units"}
+  [WARN] 267 error-level journal entries (showing last 10)
+      Nov 07 03:46:50 omv kernel: Memory cgroup out of memory: Killed process 31481 (php) total-vm:75640kB, anon-rss:13424kB, file-rss:692kB, shmem-rss:0kB, UID:0 pgtables:168kB oom_score_adj:984
+      Nov 07 03:46:50 omv kernel: Memory cgroup out of memory: Killed process 31484 (php) total-vm:75640kB, anon-rss:13184kB, file-rss:644kB, shmem-rss:0kB, UID:0 pgtables:180kB oom_score_adj:984
+      Nov 07 03:46:50 omv kernel: Memory cgroup out of memory: Killed process 31487 (php) total-vm:52508kB, anon-rss:2560kB, file-rss:560kB, shmem-rss:0kB, UID:0 pgtables:112kB oom_score_adj:984
+      Nov 07 04:00:02 omv clamdscan-7f7b4811-304b-4744-9acd-8f10f85bd463[53080]: The scan failed.
+      Nov 07 05:01:28 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
+      Nov 07 09:01:00 omv monit[1202]: 'omv' mem usage of 90.6% matches resource limit [mem usage > 90.0%]
+      Nov 07 11:00:18 omv monit[1202]: 'omv' mem usage of 90.2% matches resource limit [mem usage > 90.0%]
+      Nov 07 13:00:06 omv monit[1202]: 'omv' mem usage of 90.1% matches resource limit [mem usage > 90.0%]
+      Nov 07 13:00:37 omv monit[1202]: 'omv' mem usage of 91.3% matches resource limit [mem usage > 90.0%]
+      Nov 07 13:01:07 omv monit[1202]: 'omv' mem usage of 90.1% matches resource limit [mem usage > 90.0%]
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -29,17 +29,17 @@ OMV Health Check — omv — 2026-11-06 14:58:56 EET
   [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 49% full
 
 === Memory ===
-  [WARN] 15% memory available (1237MB / 7954MB)
+  [WARN] 12% memory available (956MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.54 (4 cores)
+  [PASS] 5-min load 1.78 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 20 package(s) upgradable
+  [WARN] 21 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
