@@ -2,6 +2,12 @@
 
 ## Goal
 
+
+> **Historical (pre-2026-08-08):** the cluster is now **single-node** — `omv-ha`
+> was drained, removed from k3s, and repurposed as the dedicated mail host
+> (webmail.cloudless.gr). This document describes the old 2-node HA design;
+> do not follow it as current procedure. See `../README.md` → "Current state".
+
 When DNS failover sends production traffic from the AWS primary (CloudFront + Lambda — effectively unbounded) to the **Pi k3s standby**, the cluster has to absorb the surge without crashing or losing data. `cloudless-app` runs on the `omv` node (Pi 5); the second node, `omv-ha`, is a control-plane peer too small to host the app.
 
 The Pi cannot match Lambda's elastic scale — it's one physical box. But within its envelope it can:

@@ -1,5 +1,11 @@
 # Runbook — promote `omv-ha` to a k3s control-plane server
 
+
+> **Historical (pre-2026-08-08):** the cluster is now **single-node** — `omv-ha`
+> was drained, removed from k3s, and repurposed as the dedicated mail host
+> (webmail.cloudless.gr). This document describes the old 2-node HA design;
+> do not follow it as current procedure. See `../README.md` → "Current state".
+
 > **Status: Completed 2026-05-08.** `omv-ha` is now a control-plane server
 > with embedded etcd. This runbook is retained for re-creation (e.g. rebuilding
 > `omv-ha` from scratch) and for the *Failover Test* + *Troubleshooting*

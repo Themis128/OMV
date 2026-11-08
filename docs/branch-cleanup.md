@@ -1,5 +1,11 @@
 # Runbook — branch cleanup
 
+
+> **Historical (pre-2026-08-08):** the cluster is now **single-node** — `omv-ha`
+> was drained, removed from k3s, and repurposed as the dedicated mail host
+> (webmail.cloudless.gr). This document describes the old 2-node HA design;
+> do not follow it as current procedure. See `../README.md` → "Current state".
+
 The `cleanup-branches` GitHub Actions workflow
 (`.github/workflows/cleanup-branches.yml`) keeps stale branches off origin
 without needing a shell on your laptop. It uses the auto-issued

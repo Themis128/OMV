@@ -1,5 +1,11 @@
 # Phase 1 — acceptance test (2026-05-02)
 
+
+> **Historical (pre-2026-08-08):** the cluster is now **single-node** — `omv-ha`
+> was drained, removed from k3s, and repurposed as the dedicated mail host
+> (webmail.cloudless.gr). This document describes the old 2-node HA design;
+> do not follow it as current procedure. See `../README.md` → "Current state".
+
 End-to-end verification that the cloudless HA standby is up on the Pi 5 and serving over real Let's Encrypt TLS.
 
 ## Verdict — ✅ Phase 1 complete (LAN)

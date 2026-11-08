@@ -64,15 +64,18 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
   Public TLS is handled by Cloudflare Universal SSL automatically; the origin leg uses
   `noTLSVerify: true`, so Traefik's default self-signed cert is fine and **cert-manager is
   not required**. No port forwarding, no Route 53 DNS-based failover, no direct WAN IP
-  exposure. HA is intra-cluster: keepalived VIP + k3s agent on omv-ha.
+  exposure. **Single-node since 2026-08-08** — no intra-cluster HA; keepalived/etcd-peer
+  docs in `docs/` are historical.
 - **AWS serverless app (cloudless.gr CloudFront + Lambda, SST-managed)**: stays as it is — out of
   scope for this repo. The Pi cluster is the active origin for `cloudless.gr`; the AWS
   serverless stack is the failover origin via the Cloudflare Worker.
-- **Cloudflare Worker failover** (`cloudflare/worker-failover.js`): deployed at `cloudless.gr/*`.
-  Proxies to Pi cluster via `pi-origin.cloudless.gr` (CF Tunnel backend). On 5xx/timeout falls
-  back to `AWS_FALLBACK_HOST` (CloudFront). Worker is NOT yet live — needs `CLOUDFLARE_ACCOUNT_ID`
-  and `AWS_CLOUDFRONT_HOST` repo variables set first, then trigger `deploy-cloudflare-worker`.
-- **k3s cluster topology**: omv (Pi 5, 8GB) = server + worker. omv-ha (Pi 4, 1GB) = agent only
-  (demoted from server 2026-05-24 — fixes 2-node etcd quorum problem). NFS-backed workloads
-  (ntfy, alertmanager) stay pinned to omv-ha via `nodeSelector: kubernetes.io/hostname: omv-ha`
-  (Pi 5 kernel 6.12 has broken NFS RPC; Pi 4 kernel works fine).
+- **Cloudflare Worker failover** (`cloudflare/worker-failover.js`): proxies to Pi cluster via
+  `pi-origin.cloudless.gr` (CF Tunnel backend) → k3s `cloudless-app` on omv. Live edge is the
+  `cloudless2` Worker (reverse proxy only, no app secrets) per cloudless.gr repo rules.
+- **k3s cluster topology (current)**: omv (Pi 5, 8GB) is the ONLY k3s node — server + worker,
+  embedded etcd single-member. `omv-ha` (Pi 4) was drained and removed from k3s on 2026-08-08
+  and repurposed as a dedicated mail host (webmail.cloudless.gr). All former omv-ha workloads
+  (traefik, tailscale operator, postiz-redis, ntfy, alertmanager, etc.) now run on omv;
+  local-path PVCs are omv-local. The Nextcloud workspace (cloud/office/signal.cloudless.gr)
+  is plain Docker Compose on omv's sdb1 data SSD — NOT k3s; sources in
+  `Themis128/cloudless-nextcloud`.

@@ -1,8 +1,17 @@
 # OMV — k3s cluster for cloudless.gr
 
-This repository holds the infrastructure-as-code and runbooks for the **Pi 5 / OMV** node (and its `omv-ha` peer) that serves [cloudless.gr](https://cloudless.gr) via a 2-node k3s cluster.
+This repository holds the infrastructure-as-code and runbooks for the **Pi 5 / OMV** node that serves [cloudless.gr](https://cloudless.gr).
 
-External ingress is **Cloudflare Tunnel** (`cloudflared` on omv → Traefik :18443) — outbound-only, no router port-forward, no WAN-IP exposure. Public TLS is handled by Cloudflare Universal SSL; the origin leg uses `noTLSVerify`, so no cert-manager / Let's Encrypt / Cloudflare API token is required on the cluster. Intra-cluster HA is keepalived VIP + embedded etcd across both Pis. The AWS serverless app (Lambda + CloudFront, SST-managed in the `cloudless.gr` repo) is a separate concern and is not configured by this repo.
+> **Current state (2026-11): single-node cluster.** `omv-ha` was drained and
+> removed from k3s on 2026-08-08 and repurposed as a dedicated mail host
+> (webmail.cloudless.gr — postfix/dovecot/Roundcube, no k3s). All HA runbooks
+> below (`docs/ha-*.md`, failover, etcd promotion) are **historical** — kept
+> for reference, not current procedure. The Nextcloud workspace stack
+> (`cloud.`/`office.`/`signal.cloudless.gr`) is plain Docker Compose on omv's
+> data SSD — its source of truth now lives in
+> [Themis128/cloudless-nextcloud](https://github.com/Themis128/cloudless-nextcloud).
+
+External ingress is **Cloudflare Tunnel** (`cloudflared` on omv → Traefik :18443) — outbound-only, no router port-forward, no WAN-IP exposure. Public TLS is handled by Cloudflare Universal SSL; the origin leg uses `noTLSVerify`, so no cert-manager / Let's Encrypt / Cloudflare API token is required on the cluster. The AWS serverless app (Lambda + CloudFront, SST-managed in the `cloudless.gr` repo) is a separate concern and is not configured by this repo.
 
 ## Layout
 

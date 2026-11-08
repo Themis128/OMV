@@ -1,5 +1,11 @@
 # Synthetic monitoring (playwright)
 
+
+> **Historical (pre-2026-08-08):** the cluster is now **single-node** — `omv-ha`
+> was drained, removed from k3s, and repurposed as the dedicated mail host
+> (webmail.cloudless.gr). This document describes the old 2-node HA design;
+> do not follow it as current procedure. See `../README.md` → "Current state".
+
 End-to-end checks against `cloudless.gr` served by the Pi k3s cluster via
 Cloudflare Tunnel. Runs every 30 minutes on the Pi via a user systemd
 timer. Silent on success; pages by SES email on failure.

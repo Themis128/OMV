@@ -1,5 +1,11 @@
 # Runbook — failover & recovery
 
+
+> **Historical (pre-2026-08-08):** the cluster is now **single-node** — `omv-ha`
+> was drained, removed from k3s, and repurposed as the dedicated mail host
+> (webmail.cloudless.gr). This document describes the old 2-node HA design;
+> do not follow it as current procedure. See `../README.md` → "Current state".
+
 For control-plane (k3s API) failover between `omv` and `omv-ha`, see
 [ha-control-plane-promotion.md](ha-control-plane-promotion.md). This file
 covers user-traffic failover (Route 53) and routine recovery.
