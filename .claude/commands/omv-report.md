@@ -25,7 +25,7 @@ The content is base64-encoded — decode it before reading.
 
 For each node print:
 
-**Node**: omv (or omv-ha)
+**Node**: omv (omv-ha reports are historical — mail host since 2026-08-08)
 **Collected**: <timestamp from first line of inventory>
 
 #### System
