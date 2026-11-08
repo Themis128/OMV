@@ -64,8 +64,8 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
   Public TLS is handled by Cloudflare Universal SSL automatically; the origin leg uses
   `noTLSVerify: true`, so Traefik's default self-signed cert is fine and **cert-manager is
   not required**. No port forwarding, no Route 53 DNS-based failover, no direct WAN IP
-  exposure. **Single-node since 2026-08-08** — no intra-cluster HA; keepalived/etcd-peer
-  docs in `docs/` are historical.
+  exposure. **Single-node since 2026-08-08** — no intra-cluster HA; the
+  keepalived/etcd-peer docs in `docs/` are historical.
 - **AWS serverless app (cloudless.gr CloudFront + Lambda, SST-managed)**: stays as it is — out of
   scope for this repo. The Pi cluster is the active origin for `cloudless.gr`; the AWS
   serverless stack is the failover origin via the Cloudflare Worker.
