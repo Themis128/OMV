@@ -25,7 +25,7 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 |---|---|---|
 | `.github/dispatches/provision-cert-manager.json` | provision-cert-manager | Uses `CLOUDFLARE_API_TOKEN` secret |
 | `.github/dispatches/apply-cluster-manifests.json` | apply-cluster-manifests | No inputs |
-| `.github/dispatches/recover-standby.json` | recover-standby | Set `apply/etcd_recover/omv_ha_prep/node_cleanup/k3s_rejoin/demote_ha_to_agent` |
+| `.github/dispatches/recover-standby.json` | recover-standby | **Historical** — no standby node exists (single-node since 2026-08-08). Kept for reference only |
 | `.github/dispatches/configure-cloudflared.json` | configure-cloudflared | Set `hostnames/tunnel_name` |
 | `.github/dispatches/rotate-k3s-credentials.json` | rotate-k3s-credentials | Uses `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` secrets |
 | `.github/dispatches/setup-cloudflare.json` | setup-cloudflare | Uses `CLOUDFLARE_API_TOKEN` secret |
@@ -36,12 +36,12 @@ To trigger a workflow, update `triggered_at` in the JSON file and push to main:
 | `.github/dispatches/cleanup-disk.json` | cleanup-disk | Docker prune + logrotate fix + monit fix + unattended-upgrades + reset failed units on omv |
 | `.github/dispatches/tune-k3s-config.json` | tune-k3s-config | Apply kubelet GC, log rotation, eviction, etcd retention to k3s config |
 | `.github/dispatches/configure-workloads.json` | configure-workloads | Patch ntfy + alertmanager resource limits on the live cluster |
-| `.github/dispatches/install-cloudflared-ha.json` | install-cloudflared-ha | Install cloudflared on omv-ha + copy tunnel credentials from omv |
+| `.github/dispatches/install-cloudflared-ha.json` | install-cloudflared-ha | **Historical for k3s HA** — omv-ha is a mail host now; its cloudflared serves webmail.cloudless.gr, not cluster failover |
 | `.github/dispatches/restart-runners.json` | restart-runners | Set `OMV2_SSH_HOST` + `OMV3_SSH_HOST` repo vars first; skips nodes with unset vars |
-| `.github/dispatches/provision-cognito-admin.json` | provision-cognito-admin | Set `email` + optional `group`; requires `AdminCreateUser`+`AdminAddUserToGroup` IAM first; posts temp password to issue #66 |
+| `.github/dispatches/provision-cognito-admin.json` | provision-cognito-admin | **Historical** — Cognito retired; auth is Cloudflare D1 (`user-auth-db`). Use `POST /api/admin/users` promote flow instead |
 | `.github/dispatches/apply-github-secrets-from-ssm.json` | apply-github-secrets-from-ssm | Reads `cloudless-ops` keys from SSM `/sst/cloudless/github/*` via OIDC → stores as GitHub secrets. Requires OIDC trust policy fix + SSM params (see Notion) |
-| `.github/dispatches/stabilize-tailscale.json` | stabilize-tailscale | Apply OOM hardening (tailscaled=-900, sshd=-800, k3s=-500) + Restart=always on both nodes. Set `apply=true/false`, `skip_omv_ha=true` if omv-ha unreachable. Requires `OMV_HA_SSH_HOST` repo var + `OMV_HA_SSH_KEY` secret (can reuse `OMV_SSH_KEY`) |
-| `.github/dispatches/register-tailscale-nodes.json` | register-tailscale-nodes | Migrate omv + omv-ha to themis128.github tailnet. Requires `TS_AUTHKEY` (Gmail tailnet) + `TS_NEW_AUTHKEY` (reusable, themis128 tailnet) secrets |
+| `.github/dispatches/stabilize-tailscale.json` | stabilize-tailscale | OOM hardening + Restart=always. "Both nodes" = omv (k3s) + omv-ha (mail host, host-level only — not a cluster peer). Set `apply=true/false`, `skip_omv_ha=true` if omv-ha unreachable. Requires `OMV_HA_SSH_HOST` repo var + `OMV_HA_SSH_KEY` secret |
+| `.github/dispatches/register-tailscale-nodes.json` | register-tailscale-nodes | Migrate omv + omv-ha to themis128.github tailnet (omv-ha = mail host). Verify tailnet state before re-running — likely already done. Requires `TS_AUTHKEY` + `TS_NEW_AUTHKEY` secrets |
 | `.github/dispatches/generate-ts-authkey.json` | generate-ts-authkey | Generate `TS_NEW_AUTHKEY` via Tailscale API + auto-trigger register-tailscale-nodes. Requires `TS_API_KEY` + `GH_PAT` secrets |
 | `.github/dispatches/approve-tailscale-subnet-route.json` | approve-tailscale-subnet-route | Enable 192.168.1.0/24 subnet route for omv via Tailscale API. Requires `TS_API_KEY` secret (personal API access token from https://login.tailscale.com/admin/settings/keys) |
 
