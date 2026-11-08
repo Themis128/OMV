@@ -1,0 +1,54 @@
+OMV Health Check — omv — 2026-11-08 13:57:44 EET
+
+=== OMV engine daemon ===
+  [PASS] openmediavault-engined is running
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 682 error-level journal entries (showing last 10)
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 38285 (php) total-vm:87928kB, anon-rss:24944kB, file-rss:2708kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39119 (php) total-vm:56708kB, anon-rss:6180kB, file-rss:2292kB, shmem-rss:0kB, UID:0 pgtables:128kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39120 (php) total-vm:56708kB, anon-rss:5920kB, file-rss:2420kB, shmem-rss:0kB, UID:0 pgtables:140kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39144 (php) total-vm:85880kB, anon-rss:24556kB, file-rss:2444kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39145 (php) total-vm:85880kB, anon-rss:24704kB, file-rss:2792kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39148 (php) total-vm:83832kB, anon-rss:21248kB, file-rss:2808kB, shmem-rss:0kB, UID:0 pgtables:192kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39151 (php) total-vm:85880kB, anon-rss:24176kB, file-rss:2548kB, shmem-rss:0kB, UID:0 pgtables:184kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39181 (php) total-vm:69252kB, anon-rss:7532kB, file-rss:2644kB, shmem-rss:0kB, UID:0 pgtables:156kB oom_score_adj:984
+      Nov 08 04:42:17 omv sshd-session[1545]: error: maximum authentication attempts exceeded for invalid user root from 100.86.188.43 port 50490 ssh2 [preauth]
+      Nov 08 05:01:02 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
+
+=== Kernel messages (errors and worse) ===
+  [PASS] no kernel error messages
+
+=== Disk usage ===
+  [PASS] / is 32% full
+  [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 49% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 43% full
+
+=== Memory ===
+  [WARN] 15% memory available (1198MB / 7954MB)
+
+=== Load average ===
+  [PASS] 5-min load 1.80 (4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [PASS] all packages up to date
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  13 passed, 3 warnings, 0 failures

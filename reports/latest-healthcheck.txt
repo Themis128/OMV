@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-07 13:45:42 EET
+OMV Health Check — omv — 2026-11-08 13:57:44 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,39 +7,39 @@ OMV Health Check — omv — 2026-11-07 13:45:42 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 267 error-level journal entries (showing last 10)
-      Nov 07 03:46:50 omv kernel: Memory cgroup out of memory: Killed process 31481 (php) total-vm:75640kB, anon-rss:13424kB, file-rss:692kB, shmem-rss:0kB, UID:0 pgtables:168kB oom_score_adj:984
-      Nov 07 03:46:50 omv kernel: Memory cgroup out of memory: Killed process 31484 (php) total-vm:75640kB, anon-rss:13184kB, file-rss:644kB, shmem-rss:0kB, UID:0 pgtables:180kB oom_score_adj:984
-      Nov 07 03:46:50 omv kernel: Memory cgroup out of memory: Killed process 31487 (php) total-vm:52508kB, anon-rss:2560kB, file-rss:560kB, shmem-rss:0kB, UID:0 pgtables:112kB oom_score_adj:984
-      Nov 07 04:00:02 omv clamdscan-7f7b4811-304b-4744-9acd-8f10f85bd463[53080]: The scan failed.
-      Nov 07 05:01:28 omv systemd[1]: Failed to start safedeploy-watchdog.service - SafeDeploy watchdog — polls cloudless.gr health, notifies and auto-rolls-back on failure.
-      Nov 07 09:01:00 omv monit[1202]: 'omv' mem usage of 90.6% matches resource limit [mem usage > 90.0%]
-      Nov 07 11:00:18 omv monit[1202]: 'omv' mem usage of 90.2% matches resource limit [mem usage > 90.0%]
-      Nov 07 13:00:06 omv monit[1202]: 'omv' mem usage of 90.1% matches resource limit [mem usage > 90.0%]
-      Nov 07 13:00:37 omv monit[1202]: 'omv' mem usage of 91.3% matches resource limit [mem usage > 90.0%]
-      Nov 07 13:01:07 omv monit[1202]: 'omv' mem usage of 90.1% matches resource limit [mem usage > 90.0%]
+  [WARN] 682 error-level journal entries (showing last 10)
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 38285 (php) total-vm:87928kB, anon-rss:24944kB, file-rss:2708kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39119 (php) total-vm:56708kB, anon-rss:6180kB, file-rss:2292kB, shmem-rss:0kB, UID:0 pgtables:128kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39120 (php) total-vm:56708kB, anon-rss:5920kB, file-rss:2420kB, shmem-rss:0kB, UID:0 pgtables:140kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39144 (php) total-vm:85880kB, anon-rss:24556kB, file-rss:2444kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39145 (php) total-vm:85880kB, anon-rss:24704kB, file-rss:2792kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39148 (php) total-vm:83832kB, anon-rss:21248kB, file-rss:2808kB, shmem-rss:0kB, UID:0 pgtables:192kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39151 (php) total-vm:85880kB, anon-rss:24176kB, file-rss:2548kB, shmem-rss:0kB, UID:0 pgtables:184kB oom_score_adj:984
+      Nov 08 03:46:10 omv kernel: Memory cgroup out of memory: Killed process 39181 (php) total-vm:69252kB, anon-rss:7532kB, file-rss:2644kB, shmem-rss:0kB, UID:0 pgtables:156kB oom_score_adj:984
+      Nov 08 04:42:17 omv sshd-session[1545]: error: maximum authentication attempts exceeded for invalid user root from 100.86.188.43 port 50490 ssh2 [preauth]
+      Nov 08 05:01:02 omv systemd[1]: Failed to start pi-release-pull.service - Pull cloudless.gr standalone release from R2 (load-guarded).
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
 
 === Disk usage ===
-  [PASS] / is 31% full
+  [PASS] / is 32% full
   [PASS] /boot/firmware is 15% full
-  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 43% full
   [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 49% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 43% full
 
 === Memory ===
-  [WARN] 12% memory available (956MB / 7954MB)
+  [WARN] 15% memory available (1198MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.78 (4 cores)
+  [PASS] 5-min load 1.80 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 21 package(s) upgradable
+  [PASS] all packages up to date
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -51,4 +51,4 @@ OMV Health Check — omv — 2026-11-07 13:45:42 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  12 passed, 4 warnings, 0 failures
+  13 passed, 3 warnings, 0 failures

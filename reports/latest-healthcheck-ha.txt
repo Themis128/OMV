@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-11-07 13:51:51 EET
+OMV Health Check — OMV-HA — 2026-11-08 14:06:32 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,7 +7,7 @@ OMV Health Check — OMV-HA — 2026-11-07 13:51:51 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 45 error-level journal entries (showing last 10)
+  [WARN] 27 error-level journal entries (showing last 10)
       Nov 05 00:00:39 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
       Nov 05 01:43:30 OMV-HA sshd-session[40599]: error: PAM: Authentication failure for root from 100.86.188.43
       Nov 05 01:43:32 OMV-HA sshd-session[40599]: error: PAM: Authentication failure for root from 100.86.188.43
@@ -37,10 +37,10 @@ OMV Health Check — OMV-HA — 2026-11-07 13:51:51 EET
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 35% memory available (334MB / 954MB)
+  [PASS] 35% memory available (341MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.20 (4 cores)
+  [PASS] 5-min load 0.19 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -48,7 +48,7 @@ OMV Health Check — OMV-HA — 2026-11-07 13:51:51 EET
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 56 package(s) upgradable
+  [WARN] 55 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
