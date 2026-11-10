@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-09 15:57:32 EET
+OMV Health Check — omv — 2026-11-10 15:30:18 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -8,39 +8,41 @@ OMV Health Check — omv — 2026-11-09 15:57:32 EET
       ●
 
 === Journal errors (this boot) ===
-  [WARN] 41 error-level journal entries (showing last 10)
-      Nov 09 11:15:28 omv kernel: Memory cgroup out of memory: Killed process 23281 (php) total-vm:87928kB, anon-rss:25472kB, file-rss:17696kB, shmem-rss:0kB, UID:0 pgtables:204kB oom_score_adj:984
-      Nov 09 11:15:28 omv kernel: Memory cgroup out of memory: Killed process 23300 (php) total-vm:87928kB, anon-rss:25344kB, file-rss:17632kB, shmem-rss:0kB, UID:0 pgtables:200kB oom_score_adj:984
-      Nov 09 11:15:28 omv kernel: Memory cgroup out of memory: Killed process 23305 (php) total-vm:87928kB, anon-rss:25216kB, file-rss:17712kB, shmem-rss:0kB, UID:0 pgtables:200kB oom_score_adj:984
-      Nov 09 11:15:28 omv kernel: Memory cgroup out of memory: Killed process 23314 (php) total-vm:87928kB, anon-rss:25328kB, file-rss:17764kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
-      Nov 09 11:15:28 omv kernel: Memory cgroup out of memory: Killed process 23337 (php) total-vm:87928kB, anon-rss:25200kB, file-rss:17760kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
-      Nov 09 11:15:28 omv kernel: Memory cgroup out of memory: Killed process 23355 (php) total-vm:87928kB, anon-rss:25200kB, file-rss:17708kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
-      Nov 09 11:15:28 omv kernel: Memory cgroup out of memory: Killed process 23368 (php) total-vm:87928kB, anon-rss:25344kB, file-rss:17712kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
-      Nov 09 11:15:28 omv kernel: Memory cgroup out of memory: Killed process 23704 (php) total-vm:69252kB, anon-rss:6784kB, file-rss:17152kB, shmem-rss:0kB, UID:0 pgtables:164kB oom_score_adj:984
-      Nov 09 11:16:19 omv monit[1211]: 'omv' loadavg (1min) of 16.4 matches resource limit [loadavg (1min) > 16.0]
-      Nov 09 11:20:57 omv monit[1211]: 'omv' loadavg (5min) of 10.3 matches resource limit [loadavg (5min) > 10.0]
+  [WARN] 358 error-level journal entries (showing last 10)
+      Nov 10 13:06:16 omv monit[1211]: 'omv' loadavg (5min) of 12.3 matches resource limit [loadavg (5min) > 10.0]
+      Nov 10 13:06:46 omv monit[1211]: 'omv' loadavg (5min) of 11.8 matches resource limit [loadavg (5min) > 10.0]
+      Nov 10 13:07:16 omv monit[1211]: 'omv' loadavg (5min) of 11.1 matches resource limit [loadavg (5min) > 10.0]
+      Nov 10 13:07:46 omv monit[1211]: 'omv' loadavg (5min) of 10.6 matches resource limit [loadavg (5min) > 10.0]
+      Nov 10 13:08:16 omv monit[1211]: 'omv' loadavg (5min) of 10.4 matches resource limit [loadavg (5min) > 10.0]
+      Nov 10 14:06:28 omv monit[1211]: 'omv' loadavg (5min) of 10.7 matches resource limit [loadavg (5min) > 10.0]
+      Nov 10 14:06:58 omv monit[1211]: 'omv' loadavg (5min) of 10.7 matches resource limit [loadavg (5min) > 10.0]
+      Nov 10 14:07:28 omv monit[1211]: 'omv' loadavg (5min) of 10.2 matches resource limit [loadavg (5min) > 10.0]
+      Nov 10 15:06:24 omv kernel: Memory cgroup out of memory: Killed process 871 (appflowy_cloud) total-vm:5533560kB, anon-rss:317680kB, file-rss:1464kB, shmem-rss:0kB, UID:0 pgtables:1992kB oom_score_adj:984
+      Nov 10 15:06:24 omv kernel: Memory cgroup out of memory: Killed process 871 (appflowy_cloud) total-vm:5533560kB, anon-rss:317680kB, file-rss:1464kB, shmem-rss:0kB, UID:0 pgtables:1992kB oom_score_adj:984
 
 === Kernel messages (errors and worse) ===
-  [PASS] no kernel error messages
+  [WARN] 2 kernel error message(s)
+      [100456.365616] Memory cgroup out of memory: Killed process 871 (appflowy_cloud) total-vm:5533560kB, anon-rss:317680kB, file-rss:1464kB, shmem-rss:0kB, UID:0 pgtables:1992kB oom_score_adj:984
+      [100456.373235] Memory cgroup out of memory: Killed process 871 (appflowy_cloud) total-vm:5533560kB, anon-rss:317680kB, file-rss:1464kB, shmem-rss:0kB, UID:0 pgtables:1992kB oom_score_adj:984
 
 === Disk usage ===
   [PASS] / is 32% full
   [PASS] /boot/firmware is 15% full
-  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 50% full
-  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 44% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 53% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 47% full
 
 === Memory ===
-  [WARN] 18% memory available (1453MB / 7954MB)
+  [WARN] 13% memory available (1046MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 1.51 (4 cores)
+  [WARN] 5-min load 5.73 (>= 4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 5 package(s) upgradable
+  [WARN] 7 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -52,4 +54,4 @@ OMV Health Check — omv — 2026-11-09 15:57:32 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  11 passed, 4 warnings, 1 failures
+  9 passed, 6 warnings, 1 failures

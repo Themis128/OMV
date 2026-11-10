@@ -1,0 +1,57 @@
+OMV Health Check — OMV-HA — 2026-11-10 15:37:28 EET
+
+=== OMV engine daemon ===
+  [PASS] OpenMediaVault not installed on this host — skipping OMV checks
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 37 error-level journal entries (showing last 10)
+      Nov 10 10:13:45 OMV-HA sshd-session[56021]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 10 10:13:45 OMV-HA sshd-session[56021]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 32966 ssh2 [preauth]
+      Nov 10 10:13:48 OMV-HA sshd-session[56030]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 10 10:13:50 OMV-HA sshd-session[56030]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 10 10:13:52 OMV-HA sshd-session[56030]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 10 10:13:52 OMV-HA sshd-session[56030]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 32978 ssh2 [preauth]
+      Nov 10 10:15:12 OMV-HA sshd-session[56426]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 10 10:15:14 OMV-HA sshd-session[56426]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 10 10:15:16 OMV-HA sshd-session[56426]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 10 10:15:16 OMV-HA sshd-session[56426]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 44316 ssh2 [preauth]
+
+=== Kernel messages (errors and worse) ===
+  [WARN] 5 kernel error message(s)
+      [   14.729030] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      [   14.729089] [vc_sm_connected_init]: failed to initialize shared memory service
+      [   14.786061] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   14.787532] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   14.824095] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+
+=== Disk usage ===
+  [PASS] / is 53% full
+  [PASS] /boot/firmware is 14% full
+
+=== Memory ===
+  [PASS] 36% memory available (346MB / 954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.18 (4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 60 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  10 passed, 4 warnings, 0 failures
