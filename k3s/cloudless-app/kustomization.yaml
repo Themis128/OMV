@@ -4,15 +4,18 @@ namespace: cloudless
 resources:
   - namespace.yaml
   - resourcequota.yaml
-  - ecr-cred-refresher.yaml
-  - image-sync.yaml
-  - config-sync.yaml
-  - sync-webhook
-  - middleware-ratelimit.yaml
-  - deployment.yaml
-  - hpa.yaml
-  - pdb.yaml
+  - limitrange.yaml
   - service.yaml
-  - ingress.yaml
 # NOTE: app-config (Secret) is intentionally NOT listed — it's populated
-# out-of-band from /etc/cloudless/pi-standby.env / SSM.  See app-config.example.yaml.
+# out-of-band. Live env comes from configMap `cloudless-app-config` +
+# secret `cloudless-secrets` (see live Deployment envFrom).
+#
+# SUPERSEDED — files retained for reference, deliberately NOT applied:
+#   deployment.yaml, hpa.yaml, pdb.yaml, ingress.yaml,
+#   middleware-ratelimit.yaml, ecr-cred-refresher.yaml,
+#   image-sync.yaml, config-sync.yaml, sync-webhook/, app-config.example.yaml
+# These describe the retired containerized-ECR / SSM-sync design. The live
+# cloudless-app Deployment is a hostPath standalone Next.js rollout owned by
+# the deploy-pi.yml pipeline (Themis128/cloudless.gr). Applying them would
+# fail on the immutable selector or, worse, repoint the Service selector and
+# cause an endpoint outage. SSM sync is disabled live (SSM_DISABLED=1).

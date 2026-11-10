@@ -1,0 +1,16 @@
+# LimitRange — reconciled to LIVE spec 2026-11-11 (created out-of-band
+# 2026-09-19; captured here so the overlay owns it declaratively).
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-container-limits
+  namespace: cloudless
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: 500m
+        memory: 768Mi
+      defaultRequest:
+        cpu: 100m
+        memory: 256Mi

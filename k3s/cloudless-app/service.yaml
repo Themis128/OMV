@@ -1,16 +1,30 @@
+# Service — reconciled to LIVE spec 2026-11-11.
+#
+# Live ownership note: the cloudless-app Deployment itself is rolled out by
+# the deploy-pi.yml pipeline in Themis128/cloudless.gr (SafeDeploy → hostPath
+# standalone Next.js on node:22-bookworm-slim). This overlay manages only the
+# stable namespace plumbing below; do NOT re-add deployment/hpa/pdb/ingress
+# resources here — the retired containerized-ECR design they describe is
+# superseded and applying them would fight the live rollout (immutable
+# selector, wrong image, wrong service selector → endpoint outage).
 apiVersion: v1
 kind: Service
 metadata:
   name: cloudless-app
   namespace: cloudless
   labels:
-    app.kubernetes.io/name: cloudless-app
+    app: cloudless-app
 spec:
-  type: ClusterIP
+  type: NodePort
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
   selector:
-    app.kubernetes.io/name: cloudless-app
+    app: cloudless-app
   ports:
     - name: http
       port: 80
-      targetPort: http
+      targetPort: 3000
       protocol: TCP
+      nodePort: 30300
