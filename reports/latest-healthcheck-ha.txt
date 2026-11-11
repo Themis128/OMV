@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-11-10 15:37:28 EET
+OMV Health Check — OMV-HA — 2026-11-11 14:51:28 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,42 +7,44 @@ OMV Health Check — OMV-HA — 2026-11-10 15:37:28 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 37 error-level journal entries (showing last 10)
-      Nov 10 10:13:45 OMV-HA sshd-session[56021]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 10 10:13:45 OMV-HA sshd-session[56021]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 32966 ssh2 [preauth]
-      Nov 10 10:13:48 OMV-HA sshd-session[56030]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 10 10:13:50 OMV-HA sshd-session[56030]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 10 10:13:52 OMV-HA sshd-session[56030]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 10 10:13:52 OMV-HA sshd-session[56030]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 32978 ssh2 [preauth]
-      Nov 10 10:15:12 OMV-HA sshd-session[56426]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 10 10:15:14 OMV-HA sshd-session[56426]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 10 10:15:16 OMV-HA sshd-session[56426]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 10 10:15:16 OMV-HA sshd-session[56426]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 44316 ssh2 [preauth]
+  [WARN] 10 error-level journal entries (showing last 10)
+      Nov 11 06:53:19 OMV-HA systemd-udevd[340]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Nov 11 06:53:19 OMV-HA systemd-udevd[340]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Nov 11 06:53:20 OMV-HA kernel: vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      Nov 11 06:53:20 OMV-HA kernel: [vc_sm_connected_init]: failed to initialize shared memory service
+      Nov 11 06:53:20 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Nov 11 06:53:20 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Nov 11 06:53:20 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Nov 11 06:53:22 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 11 06:53:22 OMV-HA blkmapd[542]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
+      Nov 11 06:54:43 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
 
 === Kernel messages (errors and worse) ===
-  [WARN] 5 kernel error message(s)
-      [   14.729030] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
-      [   14.729089] [vc_sm_connected_init]: failed to initialize shared memory service
-      [   14.786061] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   14.787532] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   14.824095] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+  [WARN] 6 kernel error message(s)
+      [   15.047179] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      [   15.047235] [vc_sm_connected_init]: failed to initialize shared memory service
+      [   15.106678] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   15.116278] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   15.198646] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   16.766599] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 53% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 36% memory available (346MB / 954MB)
+  [PASS] 32% memory available (307MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.18 (4 cores)
+  [PASS] 5-min load 0.29 (4 cores)
 
 === Power ===
-  [PASS] no undervoltage or throttling
+  [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
+  [WARN] throttling has occurred since boot (get_throttled=0x50000)
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 60 package(s) upgradable
+  [WARN] 70 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -54,4 +56,4 @@ OMV Health Check — OMV-HA — 2026-11-10 15:37:28 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  10 passed, 4 warnings, 0 failures
+  9 passed, 6 warnings, 0 failures

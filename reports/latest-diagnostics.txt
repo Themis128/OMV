@@ -1,4 +1,4 @@
-omv-report diagnostics — 2026-11-10T13:30:14Z
+omv-report diagnostics — 2026-11-11T12:45:09Z
 
 Tailscale step outcome : success
 OMV_SSH_KEY secret     : present
@@ -6,14 +6,14 @@ omv tailnet host       : 100.74.191.58
 omv-ha LAN host        : 192.168.1.130
 
 ## tailscale status
-100.99.138.28   omv-report-ci           omv-report-ci.tail4ecae1.ts.net  linux    -                          
-100.84.31.85    galaxy-s22              Themis128@                       android  -                          
-100.74.191.58   github-omv              tagged-devices                   linux    -                          
-100.65.100.39   grokbot-box-1           Themis128@                       linux    offline, last seen 1h ago  
-100.99.123.103  grokbot-user-249203278  Themis128@                       linux    offline, last seen 2h ago  
-100.83.120.93   office-1-win-exitnode   Themis128@                       windows  -                          
-100.85.166.50   tailscale-operator      tagged-devices                   linux    -                          
-100.100.186.88  wsl-ubuntu2404-1        Themis128@                       linux    -                          
+100.99.19.27    omv-report-ci           omv-report-ci.tail4ecae1.ts.net  linux    -                           
+100.84.31.85    galaxy-s22              Themis128@                       android  -                           
+100.74.191.58   github-omv              tagged-devices                   linux    -                           
+100.65.100.39   grokbot-box-1           Themis128@                       linux    offline, last seen 13h ago  
+100.99.123.103  grokbot-user-249203278  Themis128@                       linux    offline, last seen 12m ago  
+100.83.120.93   office-1-win-exitnode   Themis128@                       windows  -                           
+100.85.166.50   tailscale-operator      tagged-devices                   linux    -                           
+100.100.186.88  wsl-ubuntu2404-1        Themis128@                       linux    -                           
 
 ## OMV_SSH_KEY structure (no key material printed)
 line count : 8

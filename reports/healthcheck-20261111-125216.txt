@@ -1,0 +1,55 @@
+OMV Health Check — omv — 2026-11-11 14:45:14 EET
+
+=== OMV engine daemon ===
+  [PASS] openmediavault-engined is running
+
+=== Failed systemd units ===
+  [FAIL] 1 failed unit(s)
+      ●
+
+=== Journal errors (this boot) ===
+  [WARN] 57 error-level journal entries (showing last 10)
+      Nov 11 07:02:24 omv kernel: Memory cgroup out of memory: Killed process 28093 (php) total-vm:85880kB, anon-rss:24576kB, file-rss:6412kB, shmem-rss:0kB, UID:0 pgtables:200kB oom_score_adj:984
+      Nov 11 07:02:24 omv kernel: Memory cgroup out of memory: Killed process 28094 (php) total-vm:85880kB, anon-rss:24576kB, file-rss:6252kB, shmem-rss:0kB, UID:0 pgtables:192kB oom_score_adj:984
+      Nov 11 07:02:24 omv kernel: Memory cgroup out of memory: Killed process 28096 (php) total-vm:85880kB, anon-rss:24704kB, file-rss:6248kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
+      Nov 11 07:02:24 omv kernel: Memory cgroup out of memory: Killed process 28098 (php) total-vm:85880kB, anon-rss:24704kB, file-rss:6276kB, shmem-rss:0kB, UID:0 pgtables:192kB oom_score_adj:984
+      Nov 11 07:02:24 omv kernel: Memory cgroup out of memory: Killed process 28102 (php) total-vm:85880kB, anon-rss:24704kB, file-rss:6260kB, shmem-rss:0kB, UID:0 pgtables:188kB oom_score_adj:984
+      Nov 11 07:02:24 omv kernel: Memory cgroup out of memory: Killed process 28103 (php) total-vm:85880kB, anon-rss:24704kB, file-rss:6344kB, shmem-rss:0kB, UID:0 pgtables:196kB oom_score_adj:984
+      Nov 11 07:02:24 omv kernel: Memory cgroup out of memory: Killed process 28162 (php) total-vm:73528kB, anon-rss:10496kB, file-rss:6132kB, shmem-rss:0kB, UID:0 pgtables:160kB oom_score_adj:984
+      Nov 11 07:02:24 omv kernel: Memory cgroup out of memory: Killed process 28531 (php) total-vm:49644kB, anon-rss:640kB, file-rss:2148kB, shmem-rss:0kB, UID:0 pgtables:92kB oom_score_adj:984
+      Nov 11 07:02:28 omv monit[1215]: 'omv' loadavg (1min) of 39.3 matches resource limit [loadavg (1min) > 24.0]
+      Nov 11 07:03:00 omv monit[1215]: 'omv' loadavg (1min) of 29.8 matches resource limit [loadavg (1min) > 24.0]
+
+=== Kernel messages (errors and worse) ===
+  [PASS] no kernel error messages
+
+=== Disk usage ===
+  [PASS] / is 32% full
+  [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 51% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 52% full
+
+=== Memory ===
+  [WARN] 13% memory available (1042MB / 7954MB)
+
+=== Load average ===
+  [WARN] 5-min load 5.01 (>= 4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 11 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  10 passed, 5 warnings, 1 failures
