@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-11-11 14:51:28 EET
+OMV Health Check — OMV-HA — 2026-11-12 15:54:25 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,36 +7,36 @@ OMV Health Check — OMV-HA — 2026-11-11 14:51:28 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 10 error-level journal entries (showing last 10)
-      Nov 11 06:53:19 OMV-HA systemd-udevd[340]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
-      Nov 11 06:53:19 OMV-HA systemd-udevd[340]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
-      Nov 11 06:53:20 OMV-HA kernel: vc_sm_cma_vchi_init: failed to open VCHI service (-22)
-      Nov 11 06:53:20 OMV-HA kernel: [vc_sm_connected_init]: failed to initialize shared memory service
-      Nov 11 06:53:20 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      Nov 11 06:53:20 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      Nov 11 06:53:20 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      Nov 11 06:53:22 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Nov 11 06:53:22 OMV-HA blkmapd[542]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
-      Nov 11 06:54:43 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+  [WARN] 20 error-level journal entries (showing last 10)
+      Nov 12 08:58:16 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 08:58:50 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 08:59:56 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 09:00:22 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 09:01:11 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 09:01:38 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 09:02:07 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 09:03:01 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 09:03:40 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 09:04:10 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
 
 === Kernel messages (errors and worse) ===
   [WARN] 6 kernel error message(s)
-      [   15.047179] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
-      [   15.047235] [vc_sm_connected_init]: failed to initialize shared memory service
-      [   15.106678] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   15.116278] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   15.198646] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
-      [   16.766599] hwmon hwmon1: Undervoltage detected!
+      [   13.558363] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      [   13.558393] [vc_sm_connected_init]: failed to initialize shared memory service
+      [   13.624615] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   13.642425] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   13.645225] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   15.230527] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
-  [PASS] / is 53% full
+  [PASS] / is 57% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 32% memory available (307MB / 954MB)
+  [PASS] 36% memory available (345MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.29 (4 cores)
+  [PASS] 5-min load 0.21 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -44,7 +44,7 @@ OMV Health Check — OMV-HA — 2026-11-11 14:51:28 EET
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 70 package(s) upgradable
+  [WARN] 9 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
