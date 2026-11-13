@@ -1,0 +1,59 @@
+OMV Health Check — OMV-HA — 2026-11-13 15:15:25 EET
+
+=== OMV engine daemon ===
+  [PASS] OpenMediaVault not installed on this host — skipping OMV checks
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 28 error-level journal entries (showing last 10)
+      Nov 12 09:03:40 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 12 09:04:10 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
+      Nov 13 01:28:23 OMV-HA sshd-session[33416]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
+      Nov 13 01:28:26 OMV-HA sshd-session[33416]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
+      Nov 13 01:28:27 OMV-HA sshd-session[33416]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
+      Nov 13 01:28:27 OMV-HA sshd-session[33416]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 51522 ssh2 [preauth]
+      Nov 13 01:28:35 OMV-HA sshd-session[33435]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
+      Nov 13 01:28:37 OMV-HA sshd-session[33435]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
+      Nov 13 01:28:38 OMV-HA sshd-session[33435]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
+      Nov 13 01:28:38 OMV-HA sshd-session[33435]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 51520 ssh2 [preauth]
+
+=== Kernel messages (errors and worse) ===
+  [WARN] 6 kernel error message(s)
+      [   13.558363] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      [   13.558393] [vc_sm_connected_init]: failed to initialize shared memory service
+      [   13.624615] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   13.642425] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   13.645225] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   15.230527] hwmon hwmon1: Undervoltage detected!
+
+=== Disk usage ===
+  [PASS] / is 57% full
+  [PASS] /boot/firmware is 14% full
+
+=== Memory ===
+  [PASS] 36% memory available (346MB / 954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.14 (4 cores)
+
+=== Power ===
+  [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
+  [WARN] throttling has occurred since boot (get_throttled=0x50000)
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 1 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  9 passed, 6 warnings, 0 failures
