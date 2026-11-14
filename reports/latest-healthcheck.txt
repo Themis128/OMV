@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-13 15:09:45 EET
+OMV Health Check — omv — 2026-11-14 14:13:47 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,22 +7,20 @@ OMV Health Check — omv — 2026-11-13 15:09:45 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 2449 error-level journal entries (showing last 10)
-      Nov 13 05:10:41 omv sshd-session[60307]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12435
-      Nov 13 05:10:41 omv sshd-session[60307]: error: bind [::]:11434: Address already in use
-      Nov 13 05:10:41 omv sshd-session[60307]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 11434
-      Nov 13 10:35:19 omv wetty-proxy[2143]: {"level":"info","ts":1794558919.3544312,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-      Nov 13 10:35:19 omv wetty-proxy[2143]: {"level":"info","ts":1794558919.374032,"logger":"tls","msg":"finished cleaning storage units"}
-      Nov 13 12:36:20 omv kernel: Memory cgroup out of memory: Killed process 11259 (appflowy_cloud) total-vm:5537812kB, anon-rss:319116kB, file-rss:896kB, shmem-rss:0kB, UID:0 pgtables:1920kB oom_score_adj:984
-      Nov 13 12:36:20 omv kernel: Memory cgroup out of memory: Killed process 11321 (appflowy_cloud) total-vm:5537812kB, anon-rss:319116kB, file-rss:896kB, shmem-rss:0kB, UID:0 pgtables:1920kB oom_score_adj:984
-      Nov 13 13:19:12 omv sshd-session[28521]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 42812 ssh2 [preauth]
-      Nov 13 14:57:02 omv kernel: Memory cgroup out of memory: Killed process 22172 (appflowy_cloud) total-vm:5532972kB, anon-rss:317880kB, file-rss:2532kB, shmem-rss:0kB, UID:0 pgtables:1984kB oom_score_adj:984
-      Nov 13 14:57:02 omv kernel: Memory cgroup out of memory: Killed process 22172 (appflowy_cloud) total-vm:5532972kB, anon-rss:317880kB, file-rss:2532kB, shmem-rss:0kB, UID:0 pgtables:1984kB oom_score_adj:984
+  [WARN] 3538 error-level journal entries (showing last 10)
+      Nov 14 11:09:38 omv sshd-session[27947]: error: bind [::]:11434: Address already in use
+      Nov 14 11:09:38 omv sshd-session[27947]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 11434
+      Nov 14 11:09:38 omv sshd-session[27949]: error: bind [::]:12436: Address already in use
+      Nov 14 11:09:38 omv sshd-session[27949]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 14 11:09:48 omv sshd-session[28092]: error: bind [::]:12435: Address already in use
+      Nov 14 11:09:48 omv sshd-session[28092]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12435
+      Nov 14 11:09:48 omv sshd-session[28092]: error: bind [::]:11434: Address already in use
+      Nov 14 11:09:48 omv sshd-session[28092]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 11434
+      Nov 14 11:09:53 omv sshd-session[28208]: error: bind [::]:12436: Address already in use
+      Nov 14 11:09:53 omv sshd-session[28208]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
 
 === Kernel messages (errors and worse) ===
-  [WARN] 2 kernel error message(s)
-      [102138.146601] Memory cgroup out of memory: Killed process 22172 (appflowy_cloud) total-vm:5532972kB, anon-rss:317880kB, file-rss:2532kB, shmem-rss:0kB, UID:0 pgtables:1984kB oom_score_adj:984
-      [102138.146793] Memory cgroup out of memory: Killed process 22172 (appflowy_cloud) total-vm:5532972kB, anon-rss:317880kB, file-rss:2532kB, shmem-rss:0kB, UID:0 pgtables:1984kB oom_score_adj:984
+  [PASS] no kernel error messages
 
 === Disk usage ===
   [PASS] / is 32% full
@@ -31,17 +29,17 @@ OMV Health Check — omv — 2026-11-13 15:09:45 EET
   [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 49% full
 
 === Memory ===
-  [WARN] 15% memory available (1238MB / 7954MB)
+  [WARN] 16% memory available (1346MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 2.74 (4 cores)
+  [PASS] 5-min load 1.85 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 3 package(s) upgradable
+  [PASS] all packages up to date
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -53,4 +51,4 @@ OMV Health Check — omv — 2026-11-13 15:09:45 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  11 passed, 5 warnings, 0 failures
+  13 passed, 3 warnings, 0 failures
