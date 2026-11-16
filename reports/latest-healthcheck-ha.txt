@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-11-15 14:52:25 EET
+OMV Health Check — OMV-HA — 2026-11-16 15:49:17 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,7 +7,7 @@ OMV Health Check — OMV-HA — 2026-11-15 14:52:25 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 32 error-level journal entries (showing last 10)
+  [WARN] 12 error-level journal entries (showing last 10)
       Nov 13 01:28:27 OMV-HA sshd-session[33416]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
       Nov 13 01:28:27 OMV-HA sshd-session[33416]: error: maximum authentication attempts exceeded for tbaltzakis from 192.168.1.23 port 51522 ssh2 [preauth]
       Nov 13 01:28:35 OMV-HA sshd-session[33435]: error: PAM: Authentication failure for tbaltzakis from 192.168.1.23
@@ -33,10 +33,10 @@ OMV Health Check — OMV-HA — 2026-11-15 14:52:25 EET
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 35% memory available (339MB / 954MB)
+  [PASS] 34% memory available (330MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.45 (4 cores)
+  [PASS] 5-min load 0.22 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
