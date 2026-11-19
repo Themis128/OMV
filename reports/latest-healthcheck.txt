@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-18 16:05:33 EET
+OMV Health Check — omv — 2026-11-19 16:28:19 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,17 @@ OMV Health Check — omv — 2026-11-18 16:05:33 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 29 error-level journal entries (showing last 10)
-      Apr 13 22:38:29 omv wetty-proxy[1901]: {"level":"info","ts":1776109109.2129724,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
-      Apr 13 22:38:29 omv wetty-proxy[1901]: {"level":"info","ts":1776109109.2294965,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
-      Apr 13 22:38:29 omv wetty-proxy[1901]: {"level":"info","ts":1776109109.2295308,"msg":"serving initial configuration"}
-      Apr 13 22:38:29 omv wetty-proxy[1901]: {"level":"info","ts":1776109109.2695777,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-      Apr 13 22:38:29 omv wetty-proxy[1901]: {"level":"info","ts":1776109109.314057,"logger":"tls","msg":"finished cleaning storage units"}
-      Apr 13 22:38:34 omv systemd[1]: Failed to start k3s-k3s-omv.service - Lightweight Kubernetes.
-      Apr 13 22:38:48 omv monit[1207]: 'k3s' process is not running
-      Apr 13 22:39:04 omv systemd[1]: Failed to start k3s-k3s-omv.service - Lightweight Kubernetes.
-      Apr 13 22:39:19 omv monit[1207]: 'k3s' process is not running
-      Nov 18 12:10:31 omv systemd[1]: Failed to start omv-main-heartbeat.service - Daily heartbeat email confirming alert chain is alive.
+  [WARN] 27 error-level journal entries (showing last 10)
+      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"warn","ts":1795078847.1821234,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":8443"}
+      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"warn","ts":1795078847.1821434,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":8443"}
+      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.1821473,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
+      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.2280505,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
+      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.228076,"msg":"serving initial configuration"}
+      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.3189778,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.4114995,"logger":"tls","msg":"finished cleaning storage units"}
+      Nov 19 11:00:52 omv systemd[1]: Failed to start k3s-k3s-omv.service - Lightweight Kubernetes.
+      Nov 19 11:01:05 omv monit[1228]: 'k3s' process is not running
+      Nov 19 15:20:50 omv sshd-session[52108]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 39656 ssh2 [preauth]
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -29,17 +29,17 @@ OMV Health Check — omv — 2026-11-18 16:05:33 EET
   [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 52% full
 
 === Memory ===
-  [WARN] 17% memory available (1403MB / 7954MB)
+  [WARN] 18% memory available (1459MB / 7954MB)
 
 === Load average ===
-  [WARN] 5-min load 5.35 (>= 4 cores)
+  [PASS] 5-min load 2.17 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [PASS] all packages up to date
+  [WARN] 9 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
