@@ -1,0 +1,54 @@
+OMV Health Check — omv — 2026-11-20 16:03:49 EET
+
+=== OMV engine daemon ===
+  [PASS] openmediavault-engined is running
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 1225 error-level journal entries (showing last 10)
+      Nov 20 16:02:39 omv sshd-session[22929]: error: bind [::]:12436: Address already in use
+      Nov 20 16:02:39 omv sshd-session[22929]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 20 16:02:53 omv sshd-session[23124]: error: bind [::]:12436: Address already in use
+      Nov 20 16:02:53 omv sshd-session[23124]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 20 16:03:08 omv sshd-session[23523]: error: bind [::]:12436: Address already in use
+      Nov 20 16:03:08 omv sshd-session[23523]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 20 16:03:23 omv sshd-session[23743]: error: bind [::]:12436: Address already in use
+      Nov 20 16:03:23 omv sshd-session[23743]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 20 16:03:38 omv sshd-session[24198]: error: bind [::]:12436: Address already in use
+      Nov 20 16:03:38 omv sshd-session[24198]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+
+=== Kernel messages (errors and worse) ===
+  [PASS] no kernel error messages
+
+=== Disk usage ===
+  [PASS] / is 32% full
+  [PASS] /boot/firmware is 15% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 52% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 53% full
+
+=== Memory ===
+  [WARN] 17% memory available (1380MB / 7954MB)
+
+=== Load average ===
+  [WARN] 5-min load 4.14 (>= 4 cores)
+
+=== Power ===
+  [PASS] no undervoltage or throttling
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 4 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  11 passed, 5 warnings, 0 failures

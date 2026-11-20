@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-19 16:28:19 EET
+OMV Health Check — omv — 2026-11-20 16:03:49 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,17 @@ OMV Health Check — omv — 2026-11-19 16:28:19 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 27 error-level journal entries (showing last 10)
-      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"warn","ts":1795078847.1821234,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":8443"}
-      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"warn","ts":1795078847.1821434,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":8443"}
-      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.1821473,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
-      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.2280505,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
-      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.228076,"msg":"serving initial configuration"}
-      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.3189778,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-      Nov 19 11:00:47 omv wetty-proxy[1972]: {"level":"info","ts":1795078847.4114995,"logger":"tls","msg":"finished cleaning storage units"}
-      Nov 19 11:00:52 omv systemd[1]: Failed to start k3s-k3s-omv.service - Lightweight Kubernetes.
-      Nov 19 11:01:05 omv monit[1228]: 'k3s' process is not running
-      Nov 19 15:20:50 omv sshd-session[52108]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 39656 ssh2 [preauth]
+  [WARN] 1225 error-level journal entries (showing last 10)
+      Nov 20 16:02:39 omv sshd-session[22929]: error: bind [::]:12436: Address already in use
+      Nov 20 16:02:39 omv sshd-session[22929]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 20 16:02:53 omv sshd-session[23124]: error: bind [::]:12436: Address already in use
+      Nov 20 16:02:53 omv sshd-session[23124]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 20 16:03:08 omv sshd-session[23523]: error: bind [::]:12436: Address already in use
+      Nov 20 16:03:08 omv sshd-session[23523]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 20 16:03:23 omv sshd-session[23743]: error: bind [::]:12436: Address already in use
+      Nov 20 16:03:23 omv sshd-session[23743]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 20 16:03:38 omv sshd-session[24198]: error: bind [::]:12436: Address already in use
+      Nov 20 16:03:38 omv sshd-session[24198]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -25,21 +25,21 @@ OMV Health Check — omv — 2026-11-19 16:28:19 EET
 === Disk usage ===
   [PASS] / is 32% full
   [PASS] /boot/firmware is 15% full
-  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 51% full
-  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 52% full
+  [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 52% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 53% full
 
 === Memory ===
-  [WARN] 18% memory available (1459MB / 7954MB)
+  [WARN] 17% memory available (1380MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 2.17 (4 cores)
+  [WARN] 5-min load 4.14 (>= 4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 9 package(s) upgradable
+  [WARN] 4 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -51,4 +51,4 @@ OMV Health Check — omv — 2026-11-19 16:28:19 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  12 passed, 4 warnings, 0 failures
+  11 passed, 5 warnings, 0 failures
