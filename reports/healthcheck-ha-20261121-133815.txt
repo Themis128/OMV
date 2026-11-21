@@ -1,0 +1,63 @@
+OMV Health Check — OMV-HA — 2026-11-21 15:37:22 EET
+
+=== OMV engine daemon ===
+  [PASS] OpenMediaVault not installed on this host — skipping OMV checks
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 26 error-level journal entries (showing last 10)
+      Nov 21 03:35:13 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 21 03:37:13 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 21 03:47:18 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 21 03:51:20 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 21 06:26:38 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 21 11:04:55 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 21 11:12:58 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 21 11:17:00 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 21 13:36:10 OMV-HA sshd-session[59917]: error: kex_exchange_identification: read: Connection reset by peer
+      Nov 21 13:37:32 OMV-HA sshd-session[60491]: error: kex_exchange_identification: read: Connection reset by peer
+
+=== Kernel messages (errors and worse) ===
+  [WARN] 20 kernel error message(s)
+      [121080.015171] hwmon hwmon1: Undervoltage detected!
+      [137292.774309] hwmon hwmon1: Undervoltage detected!
+      [145522.113951] hwmon hwmon1: Undervoltage detected!
+      [145643.078345] hwmon hwmon1: Undervoltage detected!
+      [146247.876743] hwmon hwmon1: Undervoltage detected!
+      [146489.797728] hwmon hwmon1: Undervoltage detected!
+      [155807.853750] hwmon hwmon1: Undervoltage detected!
+      [172504.425731] hwmon hwmon1: Undervoltage detected!
+      [172988.268569] hwmon hwmon1: Undervoltage detected!
+      [173230.193839] hwmon hwmon1: Undervoltage detected!
+
+=== Disk usage ===
+  [PASS] / is 57% full
+  [PASS] /boot/firmware is 14% full
+
+=== Memory ===
+  [PASS] 40% memory available (391MB / 954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.52 (4 cores)
+
+=== Power ===
+  [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
+  [WARN] throttling has occurred since boot (get_throttled=0x50000)
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [WARN] 15 package(s) upgradable
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  9 passed, 6 warnings, 0 failures

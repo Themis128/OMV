@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-20 16:03:49 EET
+OMV Health Check — omv — 2026-11-21 15:30:15 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,17 @@ OMV Health Check — omv — 2026-11-20 16:03:49 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 1225 error-level journal entries (showing last 10)
-      Nov 20 16:02:39 omv sshd-session[22929]: error: bind [::]:12436: Address already in use
-      Nov 20 16:02:39 omv sshd-session[22929]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
-      Nov 20 16:02:53 omv sshd-session[23124]: error: bind [::]:12436: Address already in use
-      Nov 20 16:02:53 omv sshd-session[23124]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
-      Nov 20 16:03:08 omv sshd-session[23523]: error: bind [::]:12436: Address already in use
-      Nov 20 16:03:08 omv sshd-session[23523]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
-      Nov 20 16:03:23 omv sshd-session[23743]: error: bind [::]:12436: Address already in use
-      Nov 20 16:03:23 omv sshd-session[23743]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
-      Nov 20 16:03:38 omv sshd-session[24198]: error: bind [::]:12436: Address already in use
-      Nov 20 16:03:38 omv sshd-session[24198]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+  [WARN] 6409 error-level journal entries (showing last 10)
+      Nov 21 05:15:07 omv sshd-session[53719]: error: bind [::]:12436: Address already in use
+      Nov 21 05:15:07 omv sshd-session[53719]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
+      Nov 21 08:24:51 omv kernel: Memory cgroup out of memory: Killed process 17322 (appflowy_cloud) total-vm:5537848kB, anon-rss:515652kB, file-rss:996kB, shmem-rss:0kB, UID:0 pgtables:2468kB oom_score_adj:984
+      Nov 21 08:24:51 omv kernel: Memory cgroup out of memory: Killed process 17322 (appflowy_cloud) total-vm:5537848kB, anon-rss:515652kB, file-rss:996kB, shmem-rss:0kB, UID:0 pgtables:2468kB oom_score_adj:984
+      Nov 21 09:33:26 omv kernel: Memory cgroup out of memory: Killed process 57128 (appflowy_cloud) total-vm:5532972kB, anon-rss:514632kB, file-rss:2180kB, shmem-rss:0kB, UID:0 pgtables:2460kB oom_score_adj:984
+      Nov 21 09:33:26 omv kernel: Memory cgroup out of memory: Killed process 57128 (appflowy_cloud) total-vm:5532972kB, anon-rss:514632kB, file-rss:2180kB, shmem-rss:0kB, UID:0 pgtables:2460kB oom_score_adj:984
+      Nov 21 11:10:50 omv wetty-proxy[1972]: {"level":"info","ts":1795252250.4102345,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+      Nov 21 11:10:50 omv wetty-proxy[1972]: {"level":"info","ts":1795252250.4459617,"logger":"tls","msg":"finished cleaning storage units"}
+      Nov 21 14:11:24 omv kernel: Memory cgroup out of memory: Killed process 48340 (appflowy_cloud) total-vm:5539932kB, anon-rss:511120kB, file-rss:2040kB, shmem-rss:0kB, UID:0 pgtables:2472kB oom_score_adj:984
+      Nov 21 14:11:24 omv kernel: Memory cgroup out of memory: Killed process 48340 (appflowy_cloud) total-vm:5539932kB, anon-rss:511120kB, file-rss:2040kB, shmem-rss:0kB, UID:0 pgtables:2472kB oom_score_adj:984
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -29,17 +29,17 @@ OMV Health Check — omv — 2026-11-20 16:03:49 EET
   [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 53% full
 
 === Memory ===
-  [WARN] 17% memory available (1380MB / 7954MB)
+  [WARN] 13% memory available (1064MB / 7954MB)
 
 === Load average ===
-  [WARN] 5-min load 4.14 (>= 4 cores)
+  [PASS] 5-min load 2.16 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 4 package(s) upgradable
+  [WARN] 19 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -51,4 +51,4 @@ OMV Health Check — omv — 2026-11-20 16:03:49 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  11 passed, 5 warnings, 0 failures
+  12 passed, 4 warnings, 0 failures
