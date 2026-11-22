@@ -1,0 +1,63 @@
+OMV Health Check — OMV-HA — 2026-11-22 15:29:53 EET
+
+=== OMV engine daemon ===
+  [PASS] OpenMediaVault not installed on this host — skipping OMV checks
+
+=== Failed systemd units ===
+  [PASS] no failed units
+
+=== Journal errors (this boot) ===
+  [WARN] 37 error-level journal entries (showing last 10)
+      Nov 21 18:14:29 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 22 01:20:57 OMV-HA dovecot[1148]: auth(tbaltzakis@cloudless.gr): Error: userdb: client doesn't have lookup permissions for this user: userdb uid (5000) doesn't match peer uid (1000) (to bypass this check, set: service auth { unix_listener /run/dovecot/auth-userdb { mode=0777 } })
+      Nov 22 01:20:57 OMV-HA dovecot[1148]: auth(tbaltzakis@cloudless.gr): Error: userdb: client doesn't have lookup permissions for this user: userdb uid (5000) doesn't match peer uid (1000) (to bypass this check, set: service auth { unix_listener /run/dovecot/auth-userdb { mode=0777 } })
+      Nov 22 03:53:15 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 22 05:56:15 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 22 05:56:16 OMV-HA systemd-udevd[338]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Nov 22 05:56:16 OMV-HA systemd-udevd[338]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Nov 22 08:09:23 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 22 15:21:12 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 22 15:21:29 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+
+=== Kernel messages (errors and worse) ===
+  [WARN] 27 kernel error message(s)
+      [172504.425731] hwmon hwmon1: Undervoltage detected!
+      [172988.268569] hwmon hwmon1: Undervoltage detected!
+      [173230.193839] hwmon hwmon1: Undervoltage detected!
+      [189444.967030] hwmon hwmon1: Undervoltage detected!
+      [198279.124796] hwmon hwmon1: Undervoltage detected!
+      [233004.891084] hwmon hwmon1: Undervoltage detected!
+      [240385.522945] hwmon hwmon1: Undervoltage detected!
+      [248372.950686] hwmon hwmon1: Undervoltage detected!
+      [274282.730264] hwmon hwmon1: Undervoltage detected!
+      [274298.858348] hwmon hwmon1: Undervoltage detected!
+
+=== Disk usage ===
+  [PASS] / is 57% full
+  [PASS] /boot/firmware is 14% full
+
+=== Memory ===
+  [PASS] 37% memory available (356MB / 954MB)
+
+=== Load average ===
+  [PASS] 5-min load 0.31 (4 cores)
+
+=== Power ===
+  [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
+  [WARN] throttling has occurred since boot (get_throttled=0x50000)
+
+=== APT repositories ===
+  [PASS] apt update is clean
+  [PASS] all packages up to date
+
+=== Logrotate ===
+  [PASS] logrotate configuration is valid
+
+=== Time synchronisation ===
+  [PASS] system clock is NTP-synchronised
+
+=== SMART disk health ===
+  [WARN] smartctl not installed — skipping SMART checks
+
+=== Summary ===
+  10 passed, 5 warnings, 0 failures

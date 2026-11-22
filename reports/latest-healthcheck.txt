@@ -1,4 +1,4 @@
-OMV Health Check — omv — 2026-11-21 15:30:15 EET
+OMV Health Check — omv — 2026-11-22 15:24:03 EET
 
 === OMV engine daemon ===
   [PASS] openmediavault-engined is running
@@ -7,17 +7,17 @@ OMV Health Check — omv — 2026-11-21 15:30:15 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 6409 error-level journal entries (showing last 10)
-      Nov 21 05:15:07 omv sshd-session[53719]: error: bind [::]:12436: Address already in use
-      Nov 21 05:15:07 omv sshd-session[53719]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12436
-      Nov 21 08:24:51 omv kernel: Memory cgroup out of memory: Killed process 17322 (appflowy_cloud) total-vm:5537848kB, anon-rss:515652kB, file-rss:996kB, shmem-rss:0kB, UID:0 pgtables:2468kB oom_score_adj:984
-      Nov 21 08:24:51 omv kernel: Memory cgroup out of memory: Killed process 17322 (appflowy_cloud) total-vm:5537848kB, anon-rss:515652kB, file-rss:996kB, shmem-rss:0kB, UID:0 pgtables:2468kB oom_score_adj:984
-      Nov 21 09:33:26 omv kernel: Memory cgroup out of memory: Killed process 57128 (appflowy_cloud) total-vm:5532972kB, anon-rss:514632kB, file-rss:2180kB, shmem-rss:0kB, UID:0 pgtables:2460kB oom_score_adj:984
-      Nov 21 09:33:26 omv kernel: Memory cgroup out of memory: Killed process 57128 (appflowy_cloud) total-vm:5532972kB, anon-rss:514632kB, file-rss:2180kB, shmem-rss:0kB, UID:0 pgtables:2460kB oom_score_adj:984
-      Nov 21 11:10:50 omv wetty-proxy[1972]: {"level":"info","ts":1795252250.4102345,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-      Nov 21 11:10:50 omv wetty-proxy[1972]: {"level":"info","ts":1795252250.4459617,"logger":"tls","msg":"finished cleaning storage units"}
-      Nov 21 14:11:24 omv kernel: Memory cgroup out of memory: Killed process 48340 (appflowy_cloud) total-vm:5539932kB, anon-rss:511120kB, file-rss:2040kB, shmem-rss:0kB, UID:0 pgtables:2472kB oom_score_adj:984
-      Nov 21 14:11:24 omv kernel: Memory cgroup out of memory: Killed process 48340 (appflowy_cloud) total-vm:5539932kB, anon-rss:511120kB, file-rss:2040kB, shmem-rss:0kB, UID:0 pgtables:2472kB oom_score_adj:984
+  [WARN] 6924 error-level journal entries (showing last 10)
+      Nov 22 13:33:38 omv sshd-session[22063]: error: bind [::]:11434: Address already in use
+      Nov 22 13:33:38 omv sshd-session[22063]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 11434
+      Nov 22 13:33:49 omv sshd-session[22368]: error: bind [::]:12435: Address already in use
+      Nov 22 13:33:49 omv sshd-session[22368]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12435
+      Nov 22 13:33:49 omv sshd-session[22368]: error: bind [::]:11434: Address already in use
+      Nov 22 13:33:49 omv sshd-session[22368]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 11434
+      Nov 22 13:33:59 omv sshd-session[22534]: error: bind [::]:12435: Address already in use
+      Nov 22 13:33:59 omv sshd-session[22534]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 12435
+      Nov 22 13:33:59 omv sshd-session[22534]: error: bind [::]:11434: Address already in use
+      Nov 22 13:33:59 omv sshd-session[22534]: error: channel_setup_fwd_listener_tcpip: cannot listen to port: 11434
 
 === Kernel messages (errors and worse) ===
   [PASS] no kernel error messages
@@ -26,20 +26,20 @@ OMV Health Check — omv — 2026-11-21 15:30:15 EET
   [PASS] / is 32% full
   [PASS] /boot/firmware is 15% full
   [PASS] /srv/dev-disk-by-uuid-a9a5a108-8095-4b7b-8011-716889995cd7 is 52% full
-  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 53% full
+  [PASS] /srv/dev-disk-by-uuid-fa6231ab-eae7-40ea-a4b6-400f767a89d7 is 52% full
 
 === Memory ===
-  [WARN] 13% memory available (1064MB / 7954MB)
+  [WARN] 12% memory available (1006MB / 7954MB)
 
 === Load average ===
-  [PASS] 5-min load 2.16 (4 cores)
+  [PASS] 5-min load 2.93 (4 cores)
 
 === Power ===
   [PASS] no undervoltage or throttling
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 19 package(s) upgradable
+  [WARN] 1 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
