@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-11-22 15:29:53 EET
+OMV Health Check — OMV-HA — 2026-11-23 18:10:27 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -37,10 +37,10 @@ OMV Health Check — OMV-HA — 2026-11-22 15:29:53 EET
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 37% memory available (356MB / 954MB)
+  [PASS] 35% memory available (343MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.31 (4 cores)
+  [PASS] 5-min load 0.33 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -48,7 +48,7 @@ OMV Health Check — OMV-HA — 2026-11-22 15:29:53 EET
 
 === APT repositories ===
   [PASS] apt update is clean
-  [PASS] all packages up to date
+  [WARN] 2 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
@@ -60,4 +60,4 @@ OMV Health Check — OMV-HA — 2026-11-22 15:29:53 EET
   [WARN] smartctl not installed — skipping SMART checks
 
 === Summary ===
-  10 passed, 5 warnings, 0 failures
+  9 passed, 6 warnings, 0 failures
