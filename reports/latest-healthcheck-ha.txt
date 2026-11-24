@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-11-23 18:10:27 EET
+OMV Health Check — OMV-HA — 2026-11-24 18:06:11 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,17 +7,17 @@ OMV Health Check — OMV-HA — 2026-11-23 18:10:27 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 37 error-level journal entries (showing last 10)
-      Nov 21 18:14:29 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Nov 22 01:20:57 OMV-HA dovecot[1148]: auth(tbaltzakis@cloudless.gr): Error: userdb: client doesn't have lookup permissions for this user: userdb uid (5000) doesn't match peer uid (1000) (to bypass this check, set: service auth { unix_listener /run/dovecot/auth-userdb { mode=0777 } })
-      Nov 22 01:20:57 OMV-HA dovecot[1148]: auth(tbaltzakis@cloudless.gr): Error: userdb: client doesn't have lookup permissions for this user: userdb uid (5000) doesn't match peer uid (1000) (to bypass this check, set: service auth { unix_listener /run/dovecot/auth-userdb { mode=0777 } })
-      Nov 22 03:53:15 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Nov 22 05:56:15 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Nov 22 05:56:16 OMV-HA systemd-udevd[338]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
-      Nov 22 05:56:16 OMV-HA systemd-udevd[338]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
-      Nov 22 08:09:23 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Nov 22 15:21:12 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
-      Nov 22 15:21:29 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+  [WARN] 33 error-level journal entries (showing last 10)
+      Nov 23 19:19:41 OMV-HA dovecot[1148]: imap(tbaltzakis@cloudless.gr)<34980><kvl4zPRgOJlkZLpY>: Error: maildir: stat(/var/mail/vhosts/cloudless.gr/tbaltzakis/.dovecot.sieve/tmp) failed: Not a directory
+      Nov 24 07:38:07 OMV-HA dovecot[1148]: auth(tbaltzakis@cloudless.gr): Error: userdb: client doesn't have lookup permissions for this user: userdb uid (5000) doesn't match peer uid (1000) (to bypass this check, set: service auth { unix_listener /run/dovecot/auth-userdb { mode=0777 } })
+      Nov 24 14:06:38 OMV-HA sshd-session[43434]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 24 14:06:39 OMV-HA sshd-session[43434]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 24 14:06:41 OMV-HA sshd-session[43434]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 24 14:06:41 OMV-HA sshd-session[43434]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 36202 ssh2 [preauth]
+      Nov 24 14:06:46 OMV-HA sshd-session[43451]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 24 14:06:49 OMV-HA sshd-session[43451]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 24 14:06:51 OMV-HA sshd-session[43451]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
+      Nov 24 14:06:51 OMV-HA sshd-session[43451]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 36212 ssh2 [preauth]
 
 === Kernel messages (errors and worse) ===
   [WARN] 27 kernel error message(s)
@@ -37,10 +37,10 @@ OMV Health Check — OMV-HA — 2026-11-23 18:10:27 EET
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 35% memory available (343MB / 954MB)
+  [PASS] 32% memory available (306MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.33 (4 cores)
+  [PASS] 5-min load 0.41 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -48,7 +48,7 @@ OMV Health Check — OMV-HA — 2026-11-23 18:10:27 EET
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 2 package(s) upgradable
+  [WARN] 1 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
