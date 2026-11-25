@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-11-24 18:06:11 EET
+OMV Health Check — OMV-HA — 2026-11-25 17:48:03 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,7 +7,7 @@ OMV Health Check — OMV-HA — 2026-11-24 18:06:11 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 33 error-level journal entries (showing last 10)
+  [WARN] 23 error-level journal entries (showing last 10)
       Nov 23 19:19:41 OMV-HA dovecot[1148]: imap(tbaltzakis@cloudless.gr)<34980><kvl4zPRgOJlkZLpY>: Error: maildir: stat(/var/mail/vhosts/cloudless.gr/tbaltzakis/.dovecot.sieve/tmp) failed: Not a directory
       Nov 24 07:38:07 OMV-HA dovecot[1148]: auth(tbaltzakis@cloudless.gr): Error: userdb: client doesn't have lookup permissions for this user: userdb uid (5000) doesn't match peer uid (1000) (to bypass this check, set: service auth { unix_listener /run/dovecot/auth-userdb { mode=0777 } })
       Nov 24 14:06:38 OMV-HA sshd-session[43434]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
@@ -37,10 +37,10 @@ OMV Health Check — OMV-HA — 2026-11-24 18:06:11 EET
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 32% memory available (306MB / 954MB)
+  [PASS] 37% memory available (354MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.41 (4 cores)
+  [PASS] 5-min load 0.28 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -48,7 +48,7 @@ OMV Health Check — OMV-HA — 2026-11-24 18:06:11 EET
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 1 package(s) upgradable
+  [WARN] 6 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
