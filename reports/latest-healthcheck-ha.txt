@@ -1,4 +1,4 @@
-OMV Health Check — OMV-HA — 2026-11-25 17:48:03 EET
+OMV Health Check — OMV-HA — 2026-11-26 17:28:50 EET
 
 === OMV engine daemon ===
   [PASS] OpenMediaVault not installed on this host — skipping OMV checks
@@ -7,40 +7,36 @@ OMV Health Check — OMV-HA — 2026-11-25 17:48:03 EET
   [PASS] no failed units
 
 === Journal errors (this boot) ===
-  [WARN] 23 error-level journal entries (showing last 10)
-      Nov 23 19:19:41 OMV-HA dovecot[1148]: imap(tbaltzakis@cloudless.gr)<34980><kvl4zPRgOJlkZLpY>: Error: maildir: stat(/var/mail/vhosts/cloudless.gr/tbaltzakis/.dovecot.sieve/tmp) failed: Not a directory
-      Nov 24 07:38:07 OMV-HA dovecot[1148]: auth(tbaltzakis@cloudless.gr): Error: userdb: client doesn't have lookup permissions for this user: userdb uid (5000) doesn't match peer uid (1000) (to bypass this check, set: service auth { unix_listener /run/dovecot/auth-userdb { mode=0777 } })
-      Nov 24 14:06:38 OMV-HA sshd-session[43434]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 24 14:06:39 OMV-HA sshd-session[43434]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 24 14:06:41 OMV-HA sshd-session[43434]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 24 14:06:41 OMV-HA sshd-session[43434]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 36202 ssh2 [preauth]
-      Nov 24 14:06:46 OMV-HA sshd-session[43451]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 24 14:06:49 OMV-HA sshd-session[43451]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 24 14:06:51 OMV-HA sshd-session[43451]: error: PAM: Authentication failure for tbaltzakis from 100.100.186.88
-      Nov 24 14:06:51 OMV-HA sshd-session[43451]: error: maximum authentication attempts exceeded for tbaltzakis from 100.100.186.88 port 36212 ssh2 [preauth]
+  [WARN] 10 error-level journal entries (showing last 10)
+      Nov 26 10:47:15 OMV-HA systemd-udevd[339]: /usr/lib/udev/rules.d/90-alsa-restore.rules:18 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Nov 26 10:47:15 OMV-HA systemd-udevd[339]: /usr/lib/udev/rules.d/90-alsa-restore.rules:22 GOTO="alsa_restore_std" has no matching label, ignoring.
+      Nov 26 10:47:17 OMV-HA kernel: vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      Nov 26 10:47:17 OMV-HA kernel: [vc_sm_connected_init]: failed to initialize shared memory service
+      Nov 26 10:47:17 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Nov 26 10:47:17 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Nov 26 10:47:17 OMV-HA kernel: bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      Nov 26 10:47:18 OMV-HA blkmapd[540]: open pipe file /run/rpc_pipefs/nfs/blocklayout failed: No such file or directory
+      Nov 26 10:47:30 OMV-HA kernel: hwmon hwmon1: Undervoltage detected!
+      Nov 26 10:50:27 OMV-HA systemd[1]: Failed to start cloudflared.service - cloudflared.
 
 === Kernel messages (errors and worse) ===
-  [WARN] 27 kernel error message(s)
-      [172504.425731] hwmon hwmon1: Undervoltage detected!
-      [172988.268569] hwmon hwmon1: Undervoltage detected!
-      [173230.193839] hwmon hwmon1: Undervoltage detected!
-      [189444.967030] hwmon hwmon1: Undervoltage detected!
-      [198279.124796] hwmon hwmon1: Undervoltage detected!
-      [233004.891084] hwmon hwmon1: Undervoltage detected!
-      [240385.522945] hwmon hwmon1: Undervoltage detected!
-      [248372.950686] hwmon hwmon1: Undervoltage detected!
-      [274282.730264] hwmon hwmon1: Undervoltage detected!
-      [274298.858348] hwmon hwmon1: Undervoltage detected!
+  [WARN] 6 kernel error message(s)
+      [   15.931145] vc_sm_cma_vchi_init: failed to open VCHI service (-22)
+      [   15.931171] [vc_sm_connected_init]: failed to initialize shared memory service
+      [   16.078881] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   16.090816] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   16.148746] bcm2835_mmal_vchiq: Failed to open VCHI service connection (status=-22)
+      [   29.534781] hwmon hwmon1: Undervoltage detected!
 
 === Disk usage ===
   [PASS] / is 57% full
   [PASS] /boot/firmware is 14% full
 
 === Memory ===
-  [PASS] 37% memory available (354MB / 954MB)
+  [PASS] 32% memory available (313MB / 954MB)
 
 === Load average ===
-  [PASS] 5-min load 0.28 (4 cores)
+  [PASS] 5-min load 0.21 (4 cores)
 
 === Power ===
   [WARN] under-voltage has occurred since boot (get_throttled=0x50000)
@@ -48,7 +44,7 @@ OMV Health Check — OMV-HA — 2026-11-25 17:48:03 EET
 
 === APT repositories ===
   [PASS] apt update is clean
-  [WARN] 6 package(s) upgradable
+  [WARN] 2 package(s) upgradable
 
 === Logrotate ===
   [PASS] logrotate configuration is valid
