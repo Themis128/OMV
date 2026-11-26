@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ntfy-config
+  namespace: ntfy
+data:
+  # Canonical ntfy server config — applied 2026-07-28, enable_login added
+  # 2026-11-26 (web-app subscriptions then sync server-side into accounts.db;
+  # without it they live only in browser storage and vanish on profile loss).
+  # enable_signup stays false — user creation is operator-only via `ntfy user add`.
+  #
+  # web-push-private-key is intentionally NOT committed: copy the live value
+  # from `kubectl -n ntfy get cm ntfy-config -o jsonpath='{.data.server\.yml}'`
+  # (or Infisical) before applying on a rebuild — regenerating the VAPID pair
+  # orphans every existing web-push subscription.
+  server.yml: |
+    base_url: "https://ntfy.cloudless.gr"
+    listen_http: ":80"
+    cache_file: "/var/cache/ntfy/cache.db"
+    message_cache_duration: "168h"
+    attachment_cache_dir: "/var/cache/ntfy"
+    attachment_cache_max_size: "5GiB"
+    attachment_total_max_size: "10GiB"
+    auth_file: "/var/cache/ntfy/accounts.db"
+    enable_login: true
+    enable_signup: false
+    auth_default_access: "deny-all"
+    web-push-public-key: BPh-tY73EOt2R5f8bgc0b6W9bDOhocusBGQ7YsgjBPrr3M4FQ_ieU-lXHCxFeteaT7y1bat3w0xDhC-NnGGDklU
+    web-push-private-key: REPLACE_FROM_LIVE_CONFIGMAP_OR_INFISICAL
+    web-push-file: /var/cache/ntfy/webpush.db
+    web-push-email-address: tbaltzakis@cloudless.gr
