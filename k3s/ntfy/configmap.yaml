@@ -25,6 +25,13 @@ data:
     enable_login: true
     enable_signup: false
     auth_default_access: "deny-all"
+    # 2026-11-27: without behind_proxy every Cloudflare-path client shares
+    # ONE rate-limit bucket (traefik pod IP) — a bulk purge starved all
+    # readers/writers (HTTP 429). With it, ntfy buckets per real client IP
+    # from X-Forwarded-For. Tailnet/LAN automation is exempt outright so
+    # watchdogs/triage scripts never hit visitor limits.
+    behind_proxy: true
+    visitor-request-limit-exempt-hosts: "100.64.0.0/10,192.168.1.0/24,10.42.0.0/16"
     web-push-public-key: BPh-tY73EOt2R5f8bgc0b6W9bDOhocusBGQ7YsgjBPrr3M4FQ_ieU-lXHCxFeteaT7y1bat3w0xDhC-NnGGDklU
     web-push-private-key: REPLACE_FROM_LIVE_CONFIGMAP_OR_INFISICAL
     web-push-file: /var/cache/ntfy/webpush.db
